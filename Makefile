@@ -1,14 +1,18 @@
 MD_FILES := $(wildcard articles/*.md)
 HTML_FILES := $(patsubst articles/%.md,html/%.html,$(MD_FILES))
 
-all: index.html
+all: html/index.html html/style.css
 
-index.html: $(HTML_FILES) order.txt scripts/concat.py
-	python3 scripts/concat.py order.txt html index.html
+html/index.html: $(HTML_FILES) concat.py style.css
+	python3 concat.py
 
-html/%.html: articles/%.md
-	pandoc -f markdown -t html -o $@ $<
+html/style.css: style.css
+	cp $< $@
+
+html/%.html: articles/%.md template.html
+	pandoc $< -o $@ \
+	  -f markdown -t html \
+	  --standalone --template template.html \
 
 clean:
 	rm -f html/*
-	rm -f index.html

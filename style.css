@@ -1,0 +1,13 @@
+html {
+   color-scheme: light dark;
+}
+
+body {
+   max-width: 70ch;
+   padding: 3em 1em;
+   margin: auto;
+   line-height: 1.5;
+   font-size: 1.25em;
+   font-family: sans-serif;
+   color: light-dark(#222222, #efefec)
+}

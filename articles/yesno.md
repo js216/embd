@@ -1,6 +1,8 @@
-# Yes/No Productivity
-
-*Published 24 Aug 2025*
+---
+title: Yes/No Productivity
+author: Jakob Kastelic
+date: 24 Aug 2025
+---
 
 Many systems have been devised to organize work into several priority queues,
 calendars, etc., with sophisticated tracking tools and graphics. Here's instead
