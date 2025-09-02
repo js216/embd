@@ -1,7 +1,8 @@
 ---
-title: A checklist of values for programming
+title: A Checklist of Values for Programming
 author: Jakob Kastelic
 date: 31 Aug 2025
+modified: 2 Sep 2025
 ---
 
 ### 1. Simplicity and minimalism
