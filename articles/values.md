@@ -65,8 +65,10 @@ Both of these should be present from the very beginning of a project. If the
 infrastructure is not in place yet, simply make a file like `errors.c` with
 empty implementations:
 
-    void fail(char *msg) {}
-    int error(enum err_code err) {}
+```c
+void fail(char *msg) {}
+int error(enum err_code err) {}
+```
 
 Most likely it will be appropriate to include a way to print the error messages,
 or to report them to the user, or trigger a debugger breakpoint when they

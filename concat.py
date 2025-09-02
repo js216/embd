@@ -68,7 +68,7 @@ def main():
     # Sort by date, newest first
     articles.sort(key=lambda x: x[1] or datetime.min, reverse=True)
 
-    concatenated_body = "\n<hr>\n".join(body for body, _ in articles)
+    concatenated_body = '\n<div class="article-sep"></div>\n'.join(body for body, _ in articles)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(HTML_TOP)

@@ -9,10 +9,8 @@ html/index.html: $(HTML_FILES) concat.py style.css
 html/style.css: style.css
 	cp $< $@
 
-html/%.html: articles/%.md template.html
-	pandoc $< -o $@ \
-	  -f markdown -t html \
-	  --standalone --template template.html \
+html/%.html: articles/%.md template.html md2html.py
+	python3 md2html.py $< template.html $@
 
 clean:
 	rm -f html/*
