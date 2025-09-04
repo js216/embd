@@ -21,8 +21,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h2 a {
-   color: inherit;        /* use the same color as h2 */
-   text-decoration: none; /* remove underline */
+   color: inherit;
+   text-decoration: none;
 }
 
 .article-sep {
@@ -30,19 +30,19 @@ h2 a {
 }
 
 .article img {
-   max-width: 100%;   /* never exceed parent’s width */
-   height: auto;      /* keep aspect ratio */
-   display: block;    /* removes the little inline gap below images */
-   margin: 1em auto;  /* optional: center and give breathing room */
+   max-width: 100%;
+   height: auto;
+   display: block;
+   margin: 1em auto;
 }
 
 blockquote {
-   margin: 1.5em 0;            /* breathing space above and below */
-   padding: 0.8em 1.2em;       /* space inside */
-   border-left: 4px solid #999;/* subtle vertical bar */
-   background: #f9f9f9;        /* light background */
-   color: #555;                /* softer text */
-   font-style: italic;         /* optional: makes it feel "quoted" */
+   margin: 1.5em 0;
+   padding: 0.8em 1.2em;
+   border-left: 4px solid #999;
+   background: #f9f9f9;
+   color: #555;
+   font-style: italic;
 }
 
 blockquote p {
