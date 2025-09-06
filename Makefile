@@ -1,9 +1,9 @@
-MD_FILES := $(wildcard articles/*.md)
-HTML_FILES := $(patsubst articles/%.md,html/%.html,$(MD_FILES))
+ARTICLES_MARK := $(wildcard articles/*.md)
+ARTICLES_HTML := $(patsubst articles/%.md,html/%.html,$(ARTICLES_MARK))
 
 all: html/index.html html/style.css
 
-html/index.html: $(HTML_FILES) concat.py style.css
+html/index.html: $(ARTICLES_HTML) concat.py style.css
 	python3 concat.py
 
 html/style.css: style.css

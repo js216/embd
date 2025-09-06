@@ -4,6 +4,8 @@ author: Jakob Kastelic
 date: 24 Aug 2025
 ---
 
+![](../images/avant.jpg)
+
 Many systems have been devised to organize work into several priority queues,
 calendars, etc., with sophisticated tracking tools and graphics. Here's instead
 the simplest possible effective way to get things done.

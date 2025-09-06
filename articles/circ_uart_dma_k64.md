@@ -4,6 +4,8 @@ author: Jakob Kastelic
 date: 2 Sep 2025
 ---
 
+![](../images/circ.jpg)
+
 Working on a FreeRTOS-based project running on the NXP Kinetis K64, I wanted to
 read data from several UART interfaces. The default "easy" method using
 interrupts is easy to set up via the NXP MCUXpresso Config Tools; the problem is
@@ -23,7 +25,7 @@ The "point-and-click" method works out of the box with the Config tools. Leave
 things at their default values, or change whatever is necessary. In my setup, I
 had the values shown in the image below.
 
-![Config Tools: UART Interrupt Configuration](../images/inter.gif)
+![Config Tools: UART Interrupt Configuration](../images/inter.jpg)
 
 Even the interrupt handler is provided by the tool. Click on "Copy to
 clipboard", and adapt as necessary. All that is needed is to read the status
@@ -62,7 +64,7 @@ ensuring that we'll be able to get to the data eventually and process it.
 Thanks to the Config Tools, setting this up is again very straightforward. Just
 enable some checkboxes and set up DMA channels, as I did in the image below.
 
-![Config Tools: UART eDMA Configuration](../images/edma.gif)
+![Config Tools: UART eDMA Configuration](../images/edma.jpg)
 
 This time, we do not have a handy "Click to get code" button. Instead, ChatGPT
 or Gemini or Claude are happy to write something that nearly works. In a

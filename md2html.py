@@ -41,13 +41,6 @@ html_body = markdown.markdown(
     }
 )
 
-# Wrap images in links to themselves
-html_body = re.sub(
-    r'<img([^>]+)src="([^"]+)"([^>]*)>',
-    r'<a href="\2" target="_blank"><img\1src="\2"\3></a>',
-    html_body
-)
-
 # Read template
 template = template_file.read_text(encoding="utf-8")
 

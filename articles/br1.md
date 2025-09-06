@@ -4,6 +4,8 @@ author: Jakob Kastelic
 date: 3 Sep 2025
 ---
 
+![](../images/vax.jpg)
+
 Wouldn't it be great to have a single board computer that runs *just Linux*?
 That is, no external libraries, tools, driver modules---just the kernel binary,
 and whichever programs you *choose* to run under it. After all, Linux is just a

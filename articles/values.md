@@ -5,6 +5,8 @@ date: 31 Aug 2025
 modified: 2 Sep 2025
 ---
 
+![](../images/sub.jpg)
+
 ### 1. Simplicity and minimalism
 
 Each program does *one* thing only.
