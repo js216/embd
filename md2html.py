@@ -26,18 +26,20 @@ else:
     md_body = md_text
     metadata = {}
 
-# Convert Markdown to HTML with syntax highlighting
+# Convert Markdown to HTML with syntax highlighting and footnotes
 html_body = markdown.markdown(
     md_body,
     extensions=[
         'codehilite',
-        'fenced_code'
+        'fenced_code',
+        'footnotes'
     ],
     extension_configs={
         'codehilite': {
             'guess_lang': False,
             'noclasses': False
-        }
+        },
+        'footnotes': {}
     }
 )
 
