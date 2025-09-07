@@ -79,7 +79,7 @@ def main():
         html_file = os.path.join(HTML_DIR, f"{stem}.html")
         if not os.path.isfile(html_file):
             continue
-        body, date = extract_body_and_date(html_file, f"{stem}.html")
+        body, date = extract_body_and_date(html_file, f"{stem}")
         if body:
             articles.append((body, date))
 

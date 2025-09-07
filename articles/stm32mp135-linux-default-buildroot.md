@@ -79,7 +79,7 @@ Time to run it on the evaluation board! Set it up as follows:
 ![](../images/board.jpg)
 
 Set the DIP switches to boot from the SD card as shown in the image below. In
-this orientation, press in onthe upper side of the rockers of `BOOT0` and
+this orientation, press in on the upper side of the rockers of `BOOT0` and
 `BOOT2`, and on the lower side for `BOOT1`.
 
 ![](../images/buttons.jpg)
