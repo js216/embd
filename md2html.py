@@ -60,5 +60,20 @@ template = template.replace('$body$', html_body)
 for key in ['title', 'author', 'date']:
     template = template.replace(f"${key}$", metadata.get(key, ''))
 
+# Add license footer
+license_footer = '''
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+'''
+
+# Insert before closing </body> if present, otherwise append
+if '</body>' in template:
+    template = template.replace('</body>', f'{license_footer}\n</body>')
+else:
+    template += license_footer
+
 # Write output
 out_file.write_text(template, encoding="utf-8")
