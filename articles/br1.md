@@ -88,6 +88,11 @@ Press the black reset button and if everything went right, you should see the
 kernel boot messages displayed on the serial monitor, until the login prompt
 gets displayed. Done!
 
+    Welcome to Buildroot
+    buildroot login: root
+    # uname -a
+    Linux buildroot 6.12.22 #1 SMP PREEMPT Wed Sep  3 20:23:46 PDT 2025 armv7l GNU/Linux
+
 ### Discussion
 
 This is, to my knowledge, the fastest way to get started with embedded Linux on
