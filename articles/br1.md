@@ -2,6 +2,7 @@
 title: Linux on STM32MP135: Default Buildroot Configuration
 author: Jakob Kastelic
 date: 3 Sep 2025
+modified: 7 Sep 2025
 ---
 
 ![](../images/vax.jpg)
@@ -74,12 +75,18 @@ Time to run it on the evaluation board! Set it up as follows:
 - Connect the Micro USB (`CN10`, left of the screen) to a desktop computer,
   which will enumerate as a serial port (`/dev/ttyACM0` on my computer).
 - Open a serial console (115200 baud, no parity) to listen
-- Set the DIP switches to boot from the SD card (when the DIP is below the
-  screen, from left to right press in: up, down, up, down)
 
-Press the reset button and if everything went right, you should see the kernel
-boot messages displayed on the serial monitor, until the login prompt gets
-displayed. Done!
+![](../images/board.jpg)
+
+Set the DIP switches to boot from the SD card as shown in the image below. In
+this orientation, press in onthe upper side of the rockers of `BOOT0` and
+`BOOT2`, and on the lower side for `BOOT1`.
+
+![](../images/buttons.jpg)
+
+Press the black reset button and if everything went right, you should see the
+kernel boot messages displayed on the serial monitor, until the login prompt
+gets displayed. Done!
 
 ### Discussion
 
