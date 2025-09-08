@@ -7,6 +7,9 @@ modified: 7 Sep 2025
 
 ![](../images/vax.jpg)
 
+*This is Part 1 in the series: Linux on STM32MP135. [See other
+articles.](#series-list)*
+
 Wouldn't it be great to have a single board computer that runs *just Linux*?
 That is, no external libraries, tools, driver modules---just the kernel binary,
 and whichever programs you *choose* to run under it. After all, Linux is just a
@@ -16,8 +19,10 @@ exploring the wild world of embedded Linux.
 ### Tutorial
 
 In this tutorial, we show how to get a basic "minimal" Linux installed on the
-STM32MP135 evaluation board with a minimum of steps or obscure scripts. For
-detailed explanations, refer to the excellent writeup from [Bootlin.](
+[STM32MP135 evaluation
+board](https://www.st.com/en/evaluation-tools/stm32mp135f-dk.html) with a
+minimum of steps or obscure scripts. For detailed explanations, refer to the
+excellent writeup from [Bootlin.](
 https://bootlin.com/blog/building-a-linux-system-for-the-stm32mp1-basic-system/)
 
 Get a copy of Buildroot:
@@ -125,3 +130,9 @@ only to confuse everyone.
 
 In the next articles, we will take this "primordial mess" and cut it down to
 size. Stay tuned!
+
+::: series-box
+<h3 id="series-list">All Articles in This Series</h3>
+- *(This article)*
+- [Flashing via USB with STM32CubeProg](stm32mp135-linux-cubeprog)
+:::

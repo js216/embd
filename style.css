@@ -7,13 +7,6 @@ body {
    font-family: sans-serif;
 }
 
-@media (max-width: 600px) {
-    body {
-        max-width: 100%;
-        padding: 1em;
-    }
-}
-
 h2 {
    font-size: 1.6em;
    font-weight: 600;
@@ -71,6 +64,26 @@ blockquote p + p {
    margin-top: 40px;
    padding: 15px 10px;
    border-top: 1px solid #ddd;
+}
+
+.series-box {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  padding: 1em;
+  margin: 2em 0;
+  font-size: 0.95em;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.series-box h1, .series-box h2, .series-box h3 {
+  margin-top: 0;
+}
+
+.article-meta {
+    font-size: 0.85em;
+    color: #333;
+    font-style: italic;
 }
 
 .codehilite {

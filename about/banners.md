@@ -32,6 +32,20 @@ Cray Research, Inc.:
 [Link](https://s3data.computerhistory.org/brochures/cray.vax-vms.1986.102646190.pdf)
 ![](../images/vax.jpg)
 
+Shieldforyoureyes:
+*Front panel from a PDP-11/70. From the collection at the RCS/RI..*
+(2007)
+[Source](https://en.wikipedia.org/wiki/File:Pdp-11-70-panel.jpg)
+[Link](https://upload.wikimedia.org/wikipedia/commons/f/fe/Pdp-11-70-panel.jpg)
+![](../images/pdp1170.jpg)
+
+Pieter Bruegel the Elder:
+The Procession to Calvary
+(1564)
+[Source](https://commons.wikimedia.org/wiki/File:Pieter_Bruegel_d._%C3%84._007.jpg)
+[Link](https://upload.wikimedia.org/wikipedia/commons/4/4e/Pieter_Bruegel_d._%C3%84._007.jpg)
+![](../images/cal.jpg)
+
 ---
 
 Honeywell Information Systems, Inc.:
@@ -61,13 +75,6 @@ Digital Equipment Corporation (DEC):
 [Source](https://www.computerhistory.org/brochures/doc-4372956d7a072/)
 [Link](https://d1yx3ys82bpsa0.cloudfront.net/brochures/digital.pdp1.1961.102646097.pdf)
 ![](../images/pdp1.jpg)
-
-Shieldforyoureyes:
-*Front panel from a PDP-11/70. From the collection at the RCS/RI..*
-(2007)
-[Source](https://en.wikipedia.org/wiki/File:Pdp-11-70-panel.jpg)
-[Link](https://upload.wikimedia.org/wikipedia/commons/f/fe/Pdp-11-70-panel.jpg)
-![](../images/pdp1170.jpg)
 
 Morn:
 *PDP-11/20. On display at the Musée Bolo, EPFL, Lausanne..*

@@ -16,7 +16,7 @@ Each program does *one* thing only.
 > that means that each one has 0 probability of realization. If you need an
 > extension later, you can code it later - and probably do a better job than if
 > you did it now. And if someone else adds the extension, will they notice the
-> hooks you left? (C. Moore: Programming a Problem-Oriented-Language, ca. 1970)
+> hooks you left?[^pol]
 
 Do not be tempted to use all the features provided by the language, operating
 system, or hardware.
@@ -147,8 +147,7 @@ No inheritance! (Sorry C++.)
 >
 > If you have referentially transparent code, if you have pure functions---all
 > the data comes in its input arguments and everything goes out and leave no
-> state behind---it’s incredibly reusable. (J. Armstrong, quoted in P. Seibel:
-> Coders at Work, 2009.)
+> state behind---it’s incredibly reusable.[^work]
 
 Functions and modules are to be so reusable that you can copy-paste them from
 one program to another without *any* modifications. Inheritance-based programs
@@ -189,7 +188,7 @@ after.
 > arrows leading away from the box are true after the operation.
 >
 > Once [this] has been proved for each box, it follows that all assertions are
-> true during any execution of the algorithm. (D. Knuth, TAOCP vol. 1)
+> true during any execution of the algorithm.[^taocp]
 
 In practice, such
 checks are easy to add, most of the time don't catch major bugs, but when they
@@ -229,5 +228,13 @@ no more than about five.
 Modules should expose a small, mostly orthogonal set of public functions.
 
 > Write programs to work together. Write programs that handle text streams,
-> because that is a universal interface. (D. McIlroy, quoted in P. Salus: A
- Quarter Century Of UNIX, 1994.)
+> because that is a universal interface.[^quat]
+
+[^pol]: C. Moore: Programming a Problem-Oriented-Language, ca. 1970.
+
+[^work]: J. Armstrong, quoted in P. Seibel: Coders at Work, 2009.
+
+[^taocp]: D. Knuth: The Art of Computer Programming. Volume 1: Fundamental
+    Algorithms.
+
+[^quat]: D. McIlroy, quoted in P. Salus: A Quarter Century Of UNIX, 1994.
