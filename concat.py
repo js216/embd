@@ -16,8 +16,8 @@ HTML_TOP = """
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Articles on embedded Linux, STM32 development, low-level programming, and practical approaches to software productivity. Tutorials, experiments, and reflections on simplicity in computing." />
 <link rel="license" href="https://creativecommons.org/licenses/by/4.0/" />
-<title>embd.cc</title>
 <link rel="stylesheet" href="style.css">
+<title>embd.cc</title>
 </head>
 <body>
 """

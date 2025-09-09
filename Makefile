@@ -1,7 +1,7 @@
 ARTICLES_MARK := $(wildcard articles/*.md)
 ARTICLES_HTML := $(patsubst articles/%.md,html/%.html,$(ARTICLES_MARK))
 
-all: html/index.html html/style.css html/robots.txt
+all: html/index.html html/style.css html/robots.txt html/favicon.ico
 
 html/index.html: $(ARTICLES_HTML) concat.py style.css
 	python3 concat.py
@@ -10,6 +10,9 @@ html/style.css: style.css
 	cp $< $@
 
 html/robots.txt: robots.txt
+	cp $< $@
+
+html/favicon.ico: favicon.ico
 	cp $< $@
 
 html/%.html: articles/%.md template.html md2html.py
