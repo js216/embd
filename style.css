@@ -17,7 +17,7 @@ h2 {
 }
 
 h1, h2, h3, h4, h5, h6 {
-   color: #333;
+   color: #000;
 }
 
 a {
@@ -58,7 +58,7 @@ blockquote p + p {
 
 .license-footer {
    font-style: italic;
-   color: #444;
+   color: #333;
    font-size: 0.9em;
    text-align: center;
    margin-top: 40px;
@@ -84,6 +84,35 @@ blockquote p + p {
     font-size: 0.85em;
     color: #333;
     font-style: italic;
+}
+
+.site-banner {
+   display: flex;
+   align-items: center;
+   padding: 0px 20px 10px 0px;
+   font-family: sans-serif;
+   gap: 40px;
+   justify-content: space-between;
+   border-bottom: 4px dashed #333;
+}
+
+.site-banner a {
+   color: #000;
+   text-decoration: none;
+   display: flex;
+   align-items: center;
+}
+
+.logo a {
+  gap: 15px;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.site-nav {
+  display: flex;
+  gap: 30px;
+  font-style: italic;
 }
 
 .codehilite {

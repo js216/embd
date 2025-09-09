@@ -20,6 +20,14 @@ HTML_TOP = """
 <title>embd.cc</title>
 </head>
 <body>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="/favicon.ico">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="/about">About</a>
+</nav>
+</header>
 """
 
 HTML_BOTTOM = """
