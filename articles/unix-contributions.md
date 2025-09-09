@@ -2,6 +2,7 @@
 title: What Unix Contributed
 author: GPT-5 from notes by Jakob Kastelic
 date: 6 Sep 2025
+topic: Philosophy
 description: >
     An exploration of the key ideas Unix contributed to computing: small
     programs, pipes, everything as a file, portability, and simplicity. Blending

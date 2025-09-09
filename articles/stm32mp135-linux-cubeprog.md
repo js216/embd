@@ -2,6 +2,7 @@
 title: Linux on STM32MP135: Flashing via USB with STM32CubeProg
 author: Jakob Kastelic
 date: 7 Sep 2025
+topic: Linux
 description: >
     Learn how to flash Linux to the STM32MP135 evaluation board over USB using
     STM32CubeProg, without removing the SD card. Step-by-step tutorial with

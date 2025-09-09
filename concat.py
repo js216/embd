@@ -7,14 +7,13 @@ ARTICLES_DIR = "articles"
 HTML_DIR = "html"
 OUTPUT_FILE = os.path.join(HTML_DIR, "index.html")
 
-HTML_TOP = """
-<!DOCTYPE html>
+HTML_TOP = """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="author" content="Jakob Kastelic">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Articles on embedded Linux, STM32 development, low-level programming, and practical approaches to software productivity. Tutorials, experiments, and reflections on simplicity in computing." />
+<meta name="description" content="Articles on embedded Linux, STM32 development, low-level programming, and practical approaches to software productivity. Tutorials, experiments, and reflections on simplicity in computing."/>
 <link rel="license" href="https://creativecommons.org/licenses/by/4.0/" />
 <link rel="stylesheet" href="style.css">
 <title>embd.cc</title>
@@ -22,16 +21,16 @@ HTML_TOP = """
 <body>
 <header class="site-banner">
 <div class="logo">
-<a href="http://embd.cc"><img src="/favicon.ico">embd.cc</a>
+<a href="http://embd.cc"><img src="favicon.ico">embd.cc</a>
 </div>
 <nav class="site-nav">
-<a href="/about">About</a>
+<a href="archive">Archive</a>
+<a href="about">About</a>
 </nav>
 </header>
 """
 
-HTML_BOTTOM = """
-</body>
+HTML_BOTTOM = """</body>
 </html>
 """
 

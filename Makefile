@@ -2,10 +2,7 @@ ARTICLES_MARK := $(wildcard articles/*.md)
 ARTICLES_HTML := $(patsubst articles/%.md,html/%.html,$(ARTICLES_MARK))
 
 all: html/index.html html/style.css html/robots.txt html/favicon.ico \
-	html/about.html
-
-html/index.html: $(ARTICLES_HTML) concat.py style.css
-	python3 concat.py
+	html/about.html html/archive.html
 
 html/%.html: articles/%.md template.html md2html.py
 	python3 md2html.py $< template.html $@
@@ -14,7 +11,7 @@ clean:
 	rm -f html/*
 
 # Special items
-#
+
 html/style.css: style.css
 	cp $< $@
 
@@ -26,3 +23,9 @@ html/favicon.ico: favicon.ico
 
 html/about.html: about/about.html
 	cp $< $@
+
+html/index.html: $(ARTICLES_HTML) concat.py style.css
+	python3 concat.py
+
+html/archive.html: $(ARTICLES_HTML) archive.py style.css
+	python3 archive.py
