@@ -1,9 +1,9 @@
 ---
-title: Linux on STM32MP135: Default Buildroot Configuration
+title: Default Buildroot Configuration
 author: Jakob Kastelic
 date: 3 Sep 2025
 modified: 7 Sep 2025
-topic: Linux
+topic: Linux / STM32MP135
 description: >
     Step-by-step tutorial for installing a minimal Linux system on the
     STM32MP135 evaluation board using Buildroot. Learn how to configure, build,

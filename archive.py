@@ -31,7 +31,12 @@ HTML_INTRO = """<!DOCTYPE html>
 </header>
 """
 
-HTML_OUTRO = """</body>
+HTML_OUTRO = """<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+</body>
 </html>
 """
 
