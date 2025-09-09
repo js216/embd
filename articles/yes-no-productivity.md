@@ -2,9 +2,9 @@
 title: Yes/No Productivity
 author: Jakob Kastelic
 date: 24 Aug 2025
-description: Discover a simple productivity method that organizes tasks into
-"Yes" and "No" lists, helping you focus only on what truly matters to finish
-projects.
+description: >
+    Discover a simple productivity method that organizes tasks into "Yes" and
+    "No" lists, helping you focus only on what truly matters to finish projects.
 ---
 
 ![](../images/avant.jpg)

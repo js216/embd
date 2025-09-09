@@ -3,6 +3,11 @@ title: Linux on STM32MP135: Default Buildroot Configuration
 author: Jakob Kastelic
 date: 3 Sep 2025
 modified: 7 Sep 2025
+description: >
+    Step-by-step tutorial for installing a minimal Linux system on the
+    STM32MP135 evaluation board using Buildroot. Learn how to configure, build,
+    and boot Linux from an SD card, with discussion of default components like
+    U-Boot, ATF, and OP-TEE.
 ---
 
 ![](../images/vax.jpg)

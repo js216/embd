@@ -3,6 +3,11 @@ title: A Checklist of Values for Programming
 author: Jakob Kastelic
 date: 31 Aug 2025
 modified: 2 Sep 2025
+description: >
+    A practical checklist of programming values: simplicity, portability, error
+    handling, readability, testing, reusability, robustness, and clean code
+    organization. Guidelines for writing minimal, reliable, and maintainable
+    software.
 ---
 
 ![](../images/sub.jpg)
