@@ -99,10 +99,9 @@ def build_published_line(metadata: dict) -> str:
         )
 
 def inject_metadata(template: str, metadata: dict) -> str:
-    for key in ['title', 'author', 'date', 'description']:
+    for key in ['title', 'author', 'date', 'description', 'topic']:
         template = template.replace(f"${key}$", metadata.get(key, ''))
     return template
-
 
 def add_license_footer(template: str) -> str:
     license_footer = '''

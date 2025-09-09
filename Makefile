@@ -24,8 +24,8 @@ html/favicon.ico: favicon.ico
 html/about.html: about/about.html
 	cp $< $@
 
-html/index.html: $(ARTICLES_HTML) concat.py style.css
+html/index.html: $(ARTICLES_HTML) concat.py
 	python3 concat.py
 
-html/archive.html: $(ARTICLES_HTML) archive.py style.css
+html/archive.html: $(ARTICLES_HTML) archive.py
 	python3 archive.py

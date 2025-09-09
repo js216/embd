@@ -77,7 +77,8 @@ def get_articles(folder):
 # ---------- Render chronological listing ----------
 
 def render_chronological(articles):
-    lines = ["<h2>Chronological listing</h2>", "<ul>"]
+    lines = ['<div class="article-topic"></div>',
+            "<h2>Chronological listing</h2>", "<ul>"]
     for a in sorted(articles, key=lambda x: x["date_obj"], reverse=True):
         fname = a["path"].with_suffix(".html").name
         lines.append(
@@ -116,7 +117,7 @@ def render_topic_tree(tree, level=0):
 
 def render_topical(articles):
     tree = build_topic_tree(articles)
-    return "<h2>Topical listing</h2>\n" + render_topic_tree(tree)
+    return '<div class="article-topic"></div><h2>Topical listing</h2>\n' + render_topic_tree(tree)
 
 # ---------- Main ----------
 
