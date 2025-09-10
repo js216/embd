@@ -85,12 +85,12 @@ def get_averages(db_file):
 
     # Use abbreviated keys directly
     periods = {
-        'min': 60,
-        'hour': 3600,
-        'day': 86400,
+        'min': 119,
+        'hr': 3600,
+        'd': 86400,
         'week': 7*86400,
         'month': 30*86400,
-        'year': 365*86400
+        'yr': 365*86400
     }
 
     now = int(time.time())
@@ -118,7 +118,7 @@ def main():
     avgs = get_averages(db_file)
     if avgs:
         parts = [f"{k} = {v:.2f}" for k, v in avgs.items()]
-        uptime_info += "\nPM2.5: " + ", ".join(parts)
+        uptime_info += "\n\nPM2.5: " + ", ".join(parts)
 
     html = HTML_TEMPLATE.format(
         date=date_str,
