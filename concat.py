@@ -21,7 +21,7 @@ HTML_TOP = """<!DOCTYPE html>
 <body>
 <header class="site-banner">
 <div class="logo">
-<a href="http://embd.cc"><img src="favicon.ico">embd.cc</a>
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
 </div>
 <nav class="site-nav">
 <a href="archive">Archive</a>
@@ -30,17 +30,18 @@ HTML_TOP = """<!DOCTYPE html>
 </header>
 """
 
-HTML_BOTTOM = """</body>
-</html>
-"""
-
-LICENSE_FOOTER = '''
+HTML_BOTTOM = """
+<p class="archive-link">
+    Older articles: see <a href="archive">Archive.</a>
+</p>
 <footer class="license-footer">
 <p>Content licensed under
 <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
 </p>
 </footer>
-'''
+</body>
+</html>
+"""
 
 
 def parse_date(date_str):
@@ -95,16 +96,17 @@ def main():
     # Sort by date, newest first
     articles.sort(key=lambda x: x[1] or datetime.min, reverse=True)
 
+    # Keep only the latest few
+    articles = articles[:3]
+
     concatenated_body = '\n<div class="article-sep"></div>\n'.join(body for body, _ in articles)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(HTML_TOP)
         f.write(concatenated_body)
-        f.write(LICENSE_FOOTER)
         f.write(HTML_BOTTOM)
 
     print(f"Generated {OUTPUT_FILE} with {len(articles)} articles.")
 
 if __name__ == "__main__":
     main()
-

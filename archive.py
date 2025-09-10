@@ -22,7 +22,7 @@ HTML_INTRO = """<!DOCTYPE html>
 <body>
 <header class="site-banner">
 <div class="logo">
-<a href="http://embd.cc"><img src="favicon.ico">embd.cc : Archive</a>
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc : Archive</a>
 </div>
 <nav class="site-nav">
 <a href="archive">Archive</a>
@@ -85,9 +85,9 @@ def render_chronological(articles):
     lines = ['<div class="article-topic"></div>',
             "<h2>Chronological listing</h2>", "<ul>"]
     for a in sorted(articles, key=lambda x: x["date_obj"], reverse=True):
-        fname = a["path"].with_suffix(".html").name
+        fname = a["path"].with_suffix("").name
         lines.append(
-        f'<li>{a["date"]}: <a href="/{fname}">{a["title"]}</a></li>'
+        f'<li>{a["date"]}: <a href="{fname}">{a["title"]}</a></li>'
     )
     lines.append("</ul>")
     return "\n".join(lines)
@@ -109,9 +109,9 @@ def render_topic_tree(tree, level=0):
     for key, subtree in sorted(tree.items()):
         if key == "_articles":
             for a in sorted(subtree, key=lambda x: x["date_obj"], reverse=True):
-                fname = a["path"].with_suffix(".html").name
+                fname = a["path"].with_suffix("").name
                 lines.append(
-                    f'<li><a href="/{fname}">{a["title"]}</a></li>'
+                    f'<li><a href="{fname}">{a["title"]}</a></li>'
                 )
         else:
             lines.append(f"<li>{key}")

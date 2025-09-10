@@ -124,6 +124,14 @@ blockquote p + p {
    font-style: italic;
 }
 
+.archive-link {
+   margin-top: 5em;
+   display: block;
+   font-size: 0.95em;
+   color: #555;
+   font-style: italic;
+}
+
 .codehilite {
    background: #222;
    color: #f8f8f2;
