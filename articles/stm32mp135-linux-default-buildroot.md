@@ -3,7 +3,7 @@ title: Default Buildroot Configuration
 author: Jakob Kastelic
 date: 3 Sep 2025
 modified: 7 Sep 2025
-topic: Linux / STM32MP135
+topic: Linux on STM32MP135
 description: >
     Step-by-step tutorial for installing a minimal Linux system on the
     STM32MP135 evaluation board using Buildroot. Learn how to configure, build,
@@ -31,78 +31,80 @@ minimum of steps or obscure scripts. For detailed explanations, refer to the
 excellent writeup from [Bootlin.](
 https://bootlin.com/blog/building-a-linux-system-for-the-stm32mp1-basic-system/)
 
-Get a copy of Buildroot:
+1. Get a copy of Buildroot:
 
-```sh
-$ git clone https://gitlab.com/buildroot.org/buildroot.git
-$ cd buildroot
-```
+   ```sh
+   $ git clone https://gitlab.com/buildroot.org/buildroot.git
+   $ cd buildroot
+   ```
 
-As of this writing, the latest commit in this repository is
+   As of this writing, the latest commit in this repository is
 
-```sh
-$ git rev-parse HEAD
-bbb0164de08f761a3399c961700db44befff5c70
-```
+   ```sh
+   $ git rev-parse HEAD
+   bbb0164de08f761a3399c961700db44befff5c70
+   ```
 
-Find the default configuration appropriate for this board:
+2. Find the default configuration appropriate for this board:
 
-```sh
-$ make list-defconfigs | grep stm32mp135
-```
+   ```sh
+   $ make list-defconfigs | grep stm32mp135
+   ```
+   
+   This shows that `stm32mp135f_dk_defconfig` is available. Install it by calling
+   make on it:
+   
+   ```sh
+   $ make stm32mp135f_dk_defconfig
+   ```
 
-This shows that `stm32mp135f_dk_defconfig` is available. Install it by calling
-make on it:
+3. Run the build, and collect logs into a file:
 
-```sh
-$ make stm32mp135f_dk_defconfig
-```
+   ```sh
+   $ time make >log.txt 2>&1
+   ```
+   
+   On my dual-core i5-7300U laptop, this took about an hour and a half.
+   
+   Watch the build from another terminal:
+   
+   ```sh
+   $ tail -f log.txt
+   ```
 
-Run the build, and collect logs into a file:
+4. Copy the generated image to an SD card (assumed to be at `/dev/sdb`):
 
-```sh
-$ time make >log.txt 2>&1
-```
+   ```sh
+   $ sudo dd if=output/images/sdcard.img of=dev/sdb bs=1M
+   ```
 
-On my dual-core i5-7300U laptop, this took about an hour and a half.
+5. Time to run it on the evaluation board! Set it up as follows:
 
-Watch the build from another terminal:
-
-```sh
-$ tail -f log.txt
-```
-
-Copy the generated image to an SD card (assumed to be at `/dev/sdb`):
-
-```sh
-$ sudo dd if=output/images/sdcard.img of=dev/sdb bs=1M
-```
-
-Time to run it on the evaluation board! Set it up as follows:
-
-- Insert the SD card into the slot
-- Connect the USB-C port to the right of the screen (`CN12`, labelled `PWR_IN`)
-  to a powered USB hub
-- Connect the Micro USB (`CN10`, left of the screen) to a desktop computer,
-  which will enumerate as a serial port (`/dev/ttyACM0` on my computer).
-- Open a serial console (115200 baud, no parity) to listen
-
-![](../images/board.jpg)
-
-Set the DIP switches to boot from the SD card as shown in the image below. In
-this orientation, press in on the upper side of the rockers of `BOOT0` and
-`BOOT2`, and on the lower side for `BOOT1`.
-
-![](../images/buttons.jpg)
-
-Press the black reset button and if everything went right, you should see the
-kernel boot messages displayed on the serial monitor, until the login prompt
-gets displayed. Done!
-
-    Welcome to Buildroot
-    buildroot login: root
-    # uname -a
-    Linux buildroot 6.12.22 #1 SMP PREEMPT Wed Sep  3 20:23:46 PDT 2025 armv7l GNU/Linux
+   - Insert the SD card into the slot
+   - Connect the USB-C port to the right of the screen (`CN12`, labelled `PWR_IN`)
+     to a powered USB hub
+   - Connect the Micro USB (`CN10`, left of the screen) to a desktop computer,
+     which will enumerate as a serial port (`/dev/ttyACM0` on my computer).
+   - Open a serial console (115200 baud, no parity) to listen
+   
+   ![](../images/board.jpg)
+   
+   Set the DIP switches to boot from the SD card as shown in the image below. In
+   this orientation, press in on the upper side of the rockers of `BOOT0` and
+   `BOOT2`, and on the lower side for `BOOT1`.
+   
+   ![](../images/buttons.jpg)
+   
+   Press the black reset button and if everything went right, you should see the
+   kernel boot messages displayed on the serial monitor, until the login prompt
+   gets displayed. Done!
+   
+   ```
+   Welcome to Buildroot
+   buildroot login: root
+   # uname -a
+   Linux buildroot 6.12.22 #1 SMP PREEMPT Wed Sep  3 20:23:46 PDT 2025 armv7l GNU/Linux
+   ```
 
 ### Discussion
 
@@ -137,8 +139,10 @@ only to confuse everyone.
 In the next articles, we will take this "primordial mess" and cut it down to
 size. Stay tuned!
 
-::: series-box
+<div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>
-- *(This article)*
-- [Flashing via USB with STM32CubeProg](stm32mp135-linux-cubeprog)
-:::
+<ul>
+  <li><em>(This article)</em></li>
+  <li><a href="stm32mp135-linux-cubeprog">Flashing via USB with STM32CubeProg</a></li>
+</ul>
+</div>

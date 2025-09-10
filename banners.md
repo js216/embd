@@ -46,14 +46,14 @@ The Procession to Calvary
 [Link](https://upload.wikimedia.org/wikipedia/commons/4/4e/Pieter_Bruegel_d._%C3%84._007.jpg)
 ![](../images/cal.jpg)
 
----
-
 Honeywell Information Systems, Inc.:
 *Honeywell Level 68 Multics System: Focusing on Today's Interactive Processing Needs.*
 (1973)
 [Source](https://www.computerhistory.org/brochures/doc-4372956d8d8f1/)
 [Link](https://s3data.computerhistory.org/brochures/honeywell.level68.1977.102646161.pdf)
 ![](../images/lev63.jpg)
+
+---
 
 Honeywell Information Systems, Inc.:
 *U-COMP DDP-516 General Purpose I/C Digital Computer.*

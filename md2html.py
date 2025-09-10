@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
 import sys
 import re
-import markdown
 from pathlib import Path
+from markdown_it import MarkdownIt
+from mdit_py_plugins.footnote import footnote_plugin
+import hashlib
+from markdown_it.rules_block import StateBlock
+from pygments import highlight
+from pygments.lexers import get_lexer_by_name, TextLexer
+from pygments.formatters import HtmlFormatter
+
+
+formatter = HtmlFormatter(cssclass="codehilite", nowrap=False)
 
 
 def parse_args():
@@ -27,58 +36,50 @@ def extract_metadata_and_body(md_text: str):
     is_literal = False
 
     for line in yaml_text.splitlines():
-        if re.match(r'^\s*$', line):
+        if not line.strip():
             continue
-
-        if re.match(r'^\S+:', line):  # new key: value
+        if re.match(r'^\S+:', line):
             key, value = line.split(':', 1)
             key, value = key.strip(), value.strip()
-            if value in ('>', '|'):  # multi-line
+            if value in ('>', '|'):
                 metadata[key] = ""
                 is_literal = (value == '|')
             else:
                 metadata[key] = value
                 is_literal = False
-        elif key:  # continuation line
+        elif key:
             if is_literal:
                 metadata[key] += "\n" + line
             else:
                 metadata[key] += " " + line.strip()
 
-    # Collapse whitespace for folded blocks
     for k, v in metadata.items():
         metadata[k] = re.sub(r'\s+', ' ', v.strip())
 
     return metadata, md_body
 
 
-def convert_fenced_divs(md_text: str) -> str:
+def pygments_highlight(code: str, lang: str, attrs: dict) -> str:
+    """Highlight code using Pygments; fallback to plain text."""
+    try:
+        lexer = get_lexer_by_name(lang, stripall=True)
+    except Exception:
+        lexer = TextLexer(stripall=True)
+    return highlight(code, lexer, formatter)
+
+
+def convert_fenced_divs(md: MarkdownIt, md_text: str) -> str:
     """
     Convert ::: classname ... ::: into <div class="classname">...</div>.
     """
-    pattern = re.compile(
-        r':::\s*([a-zA-Z0-9_-]+)\s*\n(.*?)\n:::',
-        re.DOTALL
-    )
+    pattern = re.compile(r':::\s*([a-zA-Z0-9_-]+)\s*\n(.*?)\n:::', re.DOTALL)
 
     def repl(match):
         class_name, inner_md = match.groups()
-        inner_html = markdown.markdown(
-            inner_md,
-            extensions=['codehilite', 'fenced_code', 'footnotes'],
-            extension_configs={'codehilite': {'guess_lang': False, 'noclasses': False}}
-        )
+        inner_html = md.render(inner_md)
         return f'<div class="{class_name}">\n{inner_html}\n</div>'
 
     return pattern.sub(repl, md_text)
-
-
-def render_markdown(md_body: str) -> str:
-    return markdown.markdown(
-        md_body,
-        extensions=['codehilite', 'fenced_code', 'footnotes'],
-        extension_configs={'codehilite': {'guess_lang': False, 'noclasses': False}}
-    )
 
 
 def build_published_line(metadata: dict) -> str:
@@ -87,21 +88,22 @@ def build_published_line(metadata: dict) -> str:
             f'<div class="article-meta">'
             f'Published {metadata.get("date")}, '
             f'modified {metadata.get("modified")}. '
-            f'Written by {metadata.get("author")}.'
+            f'Written by {metadata.get("author")}.' 
             f'</div>'
         )
-    else:
-        return (
-            f'<div class="article-meta">'
-            f'Published {metadata.get("date")}. '
-            f'Written by {metadata.get("author")}.'
-            f'</div>'
-        )
+    return (
+        f'<div class="article-meta">'
+        f'Published {metadata.get("date")}. '
+        f'Written by {metadata.get("author")}.' 
+        f'</div>'
+    )
+
 
 def inject_metadata(template: str, metadata: dict) -> str:
     for key in ['title', 'author', 'date', 'description', 'topic']:
         template = template.replace(f"${key}$", metadata.get(key, ''))
     return template
+
 
 def add_license_footer(template: str) -> str:
     license_footer = '''
@@ -113,8 +115,7 @@ def add_license_footer(template: str) -> str:
 '''
     if '</body>' in template:
         return template.replace('</body>', f'{license_footer}\n</body>')
-    else:
-        return template + license_footer
+    return template + license_footer
 
 
 def main():
@@ -123,15 +124,22 @@ def main():
     md_text = md_file.read_text(encoding="utf-8")
     metadata, md_body = extract_metadata_and_body(md_text)
 
-    md_body = convert_fenced_divs(md_body)
-    html_body = render_markdown(md_body)
+    md = MarkdownIt("commonmark", {"highlight": pygments_highlight, "typographer": True})
+    md.enable(["replacements", "smartquotes"])
+    md.use(footnote_plugin)
+    md_body = convert_fenced_divs(md, md_body)
+    html_body = md.render(md_body)
+
+    # add hash prefix to footnote IDs and backrefs
+    article_hash = hashlib.md5(md_text.encode("utf-8")).hexdigest()[:8]
+    html_body = re.sub(r'\bid="fn(\d+)"', fr'id="{article_hash}-fn\1"', html_body)
+    html_body = re.sub(r'\bid="fnref(\d+)"', fr'id="{article_hash}-fnref\1"', html_body)
+    html_body = re.sub(r'href="#fn(\d+)"', fr'href="#{article_hash}-fn\1"', html_body)
+    html_body = re.sub(r'href="#fnref(\d+)"', fr'href="#{article_hash}-fnref\1"', html_body)
 
     template = template_file.read_text(encoding="utf-8")
-
-    published_line = build_published_line(metadata)
-    template = template.replace('$published$', published_line)
+    template = template.replace('$published$', build_published_line(metadata))
     template = template.replace('$body$', html_body)
-
     template = inject_metadata(template, metadata)
     template = add_license_footer(template)
 
@@ -140,3 +148,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

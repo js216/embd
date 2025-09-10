@@ -132,6 +132,13 @@ blockquote p + p {
    font-style: italic;
 }
 
+.date {
+    display: inline-block;
+    width: 7em;
+    margin-right: 0.5em;
+    white-space: nowrap;
+}
+
 .codehilite {
    background: #222;
    color: #f8f8f2;

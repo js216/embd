@@ -59,8 +59,8 @@ background for those who wanted more.
 
 The guiding principle was: be general, but not too general; portable, but not
 too portable. If you try to solve every problem in advance, you get bloat. By
-keeping it modest, Unix was more useful—and paradoxically more general and
-portable—than larger systems.
+keeping it modest, Unix was more useful---and paradoxically more general and
+portable---than larger systems.
 
 ### The 80/20 Rule
 
@@ -111,7 +111,7 @@ discipline to write only what you need.
 ### Reflections and Extensions
 
 Unix also suggests how to go further. Small, portable, self-contained programs
-can approach the kind of stability that TeX achieved—systems so refined that
+can approach the kind of stability that TeX achieved---systems so refined that
 they don't need to change.
 
 Portability itself can be modular. The Wollongong group[^wol] showed this by first

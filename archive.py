@@ -73,7 +73,7 @@ def get_articles(folder):
             continue
         meta["path"] = path
         meta["date_obj"] = parse_date(meta["date"])
-        # ✅ Ensure topic exists
+        # Ensure topic exists
         if "topic" not in meta or not meta["topic"].strip():
             meta["topic"] = "Uncategorized"
         articles.append(meta)
@@ -83,13 +83,14 @@ def get_articles(folder):
 
 def render_chronological(articles):
     lines = ['<div class="article-topic"></div>',
-            "<h2>Chronological listing</h2>", "<ul>"]
+             "<h2>Chronological listing</h2>",
+             '<div class="chronology">']
     for a in sorted(articles, key=lambda x: x["date_obj"], reverse=True):
         fname = a["path"].with_suffix("").name
         lines.append(
-        f'<li>{a["date"]}: <a href="{fname}">{a["title"]}</a></li>'
-    )
-    lines.append("</ul>")
+            f'<div><span class="date">{a["date"]}</span> <a href="{fname}">{a["title"]}</a></div>'
+        )
+    lines.append("</div>")
     return "\n".join(lines)
 
 # ---------- Render topical listing ----------
