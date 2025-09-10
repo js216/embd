@@ -21,8 +21,8 @@ html/robots.txt: robots.txt
 html/favicon.ico: favicon.ico
 	cp $< $@
 
-html/about.html: about/about.html
-	cp $< $@
+html/about.html: about.py
+	python3 about.py > $@
 
 html/index.html: $(ARTICLES_HTML) concat.py
 	python3 concat.py
