@@ -2,7 +2,7 @@
 title: A Checklist of Values for Programming
 author: Jakob Kastelic
 date: 31 Aug 2025
-modified: 2 Sep 2025
+modified: 12 Sep 2025
 topic: Philosophy
 description: >
    A practical checklist of programming values: simplicity, portability, error
@@ -233,8 +233,18 @@ no more than about five.
 
 Modules should expose a small, mostly orthogonal set of public functions.
 
+Ideally, programs should be small, cooperative, and produce their output if
+possible in the form of human and machine readable text:
+
 > Write programs to work together. Write programs that handle text streams,
 > because that is a universal interface.[^quat]
+
+In particular, there should be no unnecessary output, only what is required for
+the communicating processes to talk to each other, or upon explicit user
+request.
+
+> Generally a program should say nothing unless and until it has something to
+> say.[^tools]
 
 [^pol]: C. Moore: Programming a Problem-Oriented-Language, ca. 1970.
 
@@ -244,3 +254,6 @@ Modules should expose a small, mostly orthogonal set of public functions.
     Algorithms.
 
 [^quat]: D. McIlroy, quoted in P. Salus: A Quarter Century Of UNIX, 1994.
+
+[^tools]: B. W. Kernighan and P. J. Plauger: Software Tools, Addison-Wesley,
+    Reading, Mass., 1976.
