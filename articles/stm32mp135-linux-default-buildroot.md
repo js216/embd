@@ -1,9 +1,9 @@
 ---
-title: Default Buildroot Configuration
+title: STM32MP135 Default Buildroot Configuration
 author: Jakob Kastelic
 date: 3 Sep 2025
-modified: 7 Sep 2025
-topic: Linux on STM32MP135
+modified: 10 Sep 2025
+topic: Linux
 description: >
     Step-by-step tutorial for installing a minimal Linux system on the
     STM32MP135 evaluation board using Buildroot. Learn how to configure, build,
@@ -57,6 +57,23 @@ https://bootlin.com/blog/building-a-linux-system-for-the-stm32mp1-basic-system/)
    ```sh
    $ make stm32mp135f_dk_defconfig
    ```
+
+   Let's enable the USB mode for Arm Trusted Firmware (TF-A) so that we will be
+   able to use USB flashing in the future. Open
+
+   ```sh
+   $ make menuconfig
+   ```
+
+   Navigate under `Bootloaders --->  ARM Trusted Firmware (ATF)` and add the
+   following at the end of the "Additional ATF build variables" string:
+
+   ```
+   STM32MP_USB_PROGRAMMER=1
+   ```
+
+   Then select "OK", and "Esc" your way out of the menuconfig. Make sure to say
+   "Yes" when asked whether to save the new configuration.
 
 3. Run the build, and collect logs into a file:
 
@@ -142,7 +159,8 @@ size. Stay tuned!
 <div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>
 <ul>
-  <li><em>(This article)</em></li>
-  <li><a href="stm32mp135-linux-cubeprog">Flashing via USB with STM32CubeProg</a></li>
+  <li><em>1. This article</em></li>
+  <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
+  <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
 </ul>
 </div>

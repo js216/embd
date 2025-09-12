@@ -53,14 +53,14 @@ Honeywell Information Systems, Inc.:
 [Link](https://s3data.computerhistory.org/brochures/honeywell.level68.1977.102646161.pdf)
 ![](../images/lev63.jpg)
 
----
-
 Honeywell Information Systems, Inc.:
 *U-COMP DDP-516 General Purpose I/C Digital Computer.*
 (1966)
 [Source](https://www.computerhistory.org/brochures/doc-4372956ed1eb7/)
 [Link](https://d1yx3ys82bpsa0.cloudfront.net/brochures/honeywell.u-comp-ddp-516.102646115.pdf)
 ![](../images/red.jpg)
+
+---
 
 Honeywell Information Systems, Inc.:
 *HONEYWELL 1800-II.*

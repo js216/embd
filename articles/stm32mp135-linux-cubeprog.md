@@ -1,8 +1,8 @@
 ---
-title: Flashing via USB with STM32CubeProg
+title: STM32MP135 Flashing via USB with STM32CubeProg
 author: Jakob Kastelic
 date: 7 Sep 2025
-topic: Linux on STM32MP135
+topic: Linux
 description: >
     Learn how to flash Linux to the STM32MP135 evaluation board over USB using
     STM32CubeProg, without removing the SD card. Step-by-step tutorial with
@@ -176,8 +176,9 @@ entirely unnecessary for a large class of embedded Unix applications.
 <div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>
 <ul>
-  <li><a href="stm32mp135-linux-default-buildroot">Default Buildroot Configuration</a></li>
-  <li><em>(This article)</em></li>
+  <li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
+  <li><em>2. This article</em></li>
+  <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
 </ul>
 </div>
 

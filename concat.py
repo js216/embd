@@ -16,6 +16,7 @@ HTML_TOP = """<!DOCTYPE html>
 <meta name="description" content="Articles on embedded Linux, STM32 development, low-level programming, and practical approaches to software productivity. Tutorials, experiments, and reflections on simplicity in computing."/>
 <link rel="license" href="https://creativecommons.org/licenses/by/4.0/" />
 <link rel="stylesheet" href="style.css">
+<link rel="icon" href="favicon.ico">
 <title>embd.cc</title>
 </head>
 <body>
