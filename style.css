@@ -139,6 +139,10 @@ blockquote p + p {
     white-space: nowrap;
 }
 
+code {
+  word-break: break-all;
+}
+
 .codehilite {
    background: #222;
    color: #f8f8f2;
