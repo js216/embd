@@ -4,8 +4,8 @@ author: Jakob Kastelic
 date: 10 Sep 2025
 topic: Embedded
 description: >
-    An analysis of three bugs found so far in the NXP Kinetis ethernet driver as
-    used on the K64.
+   An analysis of three bugs found so far in the NXP Kinetis ethernet driver as
+   used on the K64.
 ---
 
 ![](../images/lev63.jpg)

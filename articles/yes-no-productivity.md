@@ -4,8 +4,8 @@ author: Jakob Kastelic
 date: 24 Aug 2025
 topic: Productivity
 description: >
-    Discover a simple productivity method that organizes tasks into "Yes" and
-    "No" lists, helping you focus only on what truly matters to finish projects.
+   Discover a simple productivity method that organizes tasks into Yes and No
+   lists, helping you focus only on what truly matters to finish projects.
 ---
 
 ![](../images/avant.jpg)

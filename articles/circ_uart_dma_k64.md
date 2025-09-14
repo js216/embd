@@ -4,10 +4,10 @@ author: Jakob Kastelic
 date: 2 Sep 2025
 topic: Embedded
 description: >
-    Learn how to set up reliable UART data reception on the NXP Kinetis K64
-    using DMA with a true circular buffer. This article compares
-    interrupt-driven UART, simple DMA, and continuous ring buffer DMA, with code
-    examples and insights from FreeRTOS development.
+   Learn how to set up reliable UART data reception on the NXP Kinetis K64 using
+   DMA with a true circular buffer. This article compares interrupt-driven UART,
+   simple DMA, and continuous ring buffer DMA, with code examples and insights
+   from FreeRTOS development.
 ---
 
 ![](../images/circ.jpg)

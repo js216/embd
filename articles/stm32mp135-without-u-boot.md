@@ -5,9 +5,9 @@ date: 11 Sep 2025
 modified: 12 Sep 2025
 topic: Linux
 description: >
-    Learn how to boot the STM32MP1 Linux kernel directly with Arm Trusted
-    Firmware (TF-A) in "Falcon mode," bypassing U-Boot. Step-by-step
-    instructions to do it manually or with Buildroot integration.
+   Learn how to boot the STM32MP1 Linux kernel directly with Arm Trusted
+   Firmware (TF-A) in Falcon mode, bypassing U-Boot. Step-by-step instructions
+   to do it manually or with Buildroot integration.
 ---
 
 ![](../images/red.jpg)

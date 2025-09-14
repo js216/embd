@@ -5,10 +5,10 @@ date: 3 Sep 2025
 modified: 10 Sep 2025
 topic: Linux
 description: >
-    Step-by-step tutorial for installing a minimal Linux system on the
-    STM32MP135 evaluation board using Buildroot. Learn how to configure, build,
-    and boot Linux from an SD card, with discussion of default components like
-    U-Boot, ATF, and OP-TEE.
+   Step-by-step tutorial for installing a minimal Linux system on the STM32MP135
+   evaluation board using Buildroot. Learn how to configure, build, and boot
+   Linux from an SD card, with discussion of default components like U-Boot,
+   ATF, and OP-TEE.
 ---
 
 ![](../images/vax.jpg)

@@ -60,14 +60,14 @@ Honeywell Information Systems, Inc.:
 [Link](https://d1yx3ys82bpsa0.cloudfront.net/brochures/honeywell.u-comp-ddp-516.102646115.pdf)
 ![](../images/red.jpg)
 
----
-
 Honeywell Information Systems, Inc.:
 *HONEYWELL 1800-II.*
 (1964)
 [Source](https://www.computerhistory.org/brochures/doc-4372956da1170/)
 [Link](https://d1yx3ys82bpsa0.cloudfront.net/brochures/honeywell.1800ii.1974.102646163.pdf)
 ![](../images/sq.jpg)
+
+---
 
 Digital Equipment Corporation (DEC):
 *Programmed Data Processor-1.*
