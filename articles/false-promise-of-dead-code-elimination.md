@@ -78,6 +78,8 @@ $ git clone git@github.com:emilk/egui.git
 $ cd egui/examples/hello_world_simple
 $ cargo run -p hello_world_simple
 $ cd && du -hs .rustup .cargo
+2.6G    .rustup
+210M    .cargo
 ```
 
 Oops! How many gigabytes of code does it take to show a couple characters and
