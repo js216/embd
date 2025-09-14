@@ -1,5 +1,5 @@
 ---
-title: Dead Code Ellimination is a False Promise
+title: Dead Code Elimination is a False Promise
 author: Jakob Kastelic
 date: 14 Sep 2025
 topic: Philosophy
