@@ -227,6 +227,7 @@ the line in some deeply embedded application, perhaps in outer space.
   <li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
   <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
   <li><em>3. This article</em></li>
+  <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
 </ul>
 </div>
 

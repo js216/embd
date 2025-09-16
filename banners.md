@@ -67,14 +67,14 @@ Honeywell Information Systems, Inc.:
 [Link](https://d1yx3ys82bpsa0.cloudfront.net/brochures/honeywell.1800ii.1974.102646163.pdf)
 ![](../images/sq.jpg)
 
----
-
 Digital Equipment Corporation (DEC):
 *Programmed Data Processor-1.*
 (1961)
 [Source](https://www.computerhistory.org/brochures/doc-4372956d7a072/)
 [Link](https://d1yx3ys82bpsa0.cloudfront.net/brochures/digital.pdp1.1961.102646097.pdf)
 ![](../images/pdp1.jpg)
+
+---
 
 Morn:
 *PDP-11/20. On display at the Musée Bolo, EPFL, Lausanne..*
