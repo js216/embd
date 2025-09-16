@@ -2,6 +2,7 @@
 title: Linux as TF-A BL33 on Qemu (No U-Boot)
 author: Jakob Kastelic
 date: 15 Sep 2025
+modified: 16 Sep 2025
 topic: Linux
 description: >
    Step-by-step guide to booting Linux directly as BL33 with Arm Trusted
@@ -83,7 +84,7 @@ instead run Linux directly. In the following section, we explain how to do that.
    `output/images`) with the suggested Qemu command line.
 
 2. Extract the DTB by modifying the Qemu command as follows (note the
-   `dumpdtb=virt.dtb`):
+   `dumpdtb=qemu.dtb`):
 
    ```
    $ qemu-system-arm -machine virt,dumpdtb=qemu.dtb -cpu cortex-a15
@@ -202,6 +203,30 @@ Unfortunately this limits the potential use cases of `ARM_LINUX_KERNEL_AS_BL33`
 to AArch64, or else to AArch32 with `SP_MIN` enabled. The Buildroot defconfig we
 have adapted in the previous section uses OP-TEE instead of `SP_MIN`, and it is
 also possible to use no BL32 at all.
+
+### Patching initramfs address
+
+In the tutorial above, we dumped the Qemu DTB and modified it just to add two
+lines into the `chosen` node. The same can be done by TF-A.
+
+The file `plat/qemu/common/qemu_bl2_setup.c` defines the function `update_dt()`
+which is used for precisely this purpose, updating the DTB with some extra
+board-specific details. (In the defconfig, it inserts PSCI nodes.)
+
+We can insert the two `chosen` lines in the middle of `update_dt()`:
+
+```
+fdt_setprop_u64(fdt, fdt_path_offset(fdt, "/chosen"),
+        "linux,initrd-start", 0x76000040);
+fdt_setprop_u64(fdt, fdt_path_offset(fdt, "/chosen"),
+        "linux,initrd-end",   0x7666e09d);
+```
+
+On recompile, there is no need to manually modify the DTB anymore.
+
+The disadvantage of this approach is that we have to patch TF-A, making our
+defconfig fragile against future changes in TF-A. It would be better to include
+that DTB compilation as a post-build script in Buildroot.
 
 ### Discussion
 
