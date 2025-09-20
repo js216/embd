@@ -2,7 +2,7 @@
 title: STM32MP135 Without U-Boot (TF-A Falcon Mode)
 author: Jakob Kastelic
 date: 11 Sep 2025
-modified: 12 Sep 2025
+modified: 18 Sep 2025
 topic: Linux
 description: >
    Learn how to boot the STM32MP1 Linux kernel directly with Arm Trusted
@@ -220,6 +220,16 @@ everything that is *not Linux*.
 The software that you do not run is software you do not have to understand,
 test, debug, maintain, and be responsible for when it breaks down ten years down
 the line in some deeply embedded application, perhaps in outer space.
+
+### Upstreaming Status
+
+19/12/2024: original Buildroot mailing list submission [(1/1)](https://lists.buildroot.org/pipermail/buildroot/2024-December/769250.html)
+
+16/12/2025: response by Arnout Vandecappelle [(link)](https://lists.buildroot.org/pipermail/buildroot/2025-May/778563.html)
+
+17/9/2025: amended submission [(v2 0/2, ](https://lists.buildroot.org/pipermail/buildroot/2025-September/786595.html)
+[1/2, ](https://lists.buildroot.org/pipermail/buildroot/2025-September/786596.html)
+[2/2)](https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html)
 
 <div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>

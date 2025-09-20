@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from markdown_it import MarkdownIt
 from mdit_py_plugins.footnote import footnote_plugin
+from mdit_py_plugins.anchors import anchors_plugin
 import hashlib
 from markdown_it.rules_block import StateBlock
 from pygments import highlight
@@ -127,6 +128,7 @@ def main():
     md = MarkdownIt("commonmark", {"highlight": pygments_highlight, "typographer": True})
     md.enable(["replacements", "smartquotes"])
     md.use(footnote_plugin)
+    md.use(anchors_plugin, min_level=1, max_level=3, permalink=False)
     md_body = convert_fenced_divs(md, md_body)
     html_body = md.render(md_body)
 

@@ -74,12 +74,12 @@ Digital Equipment Corporation (DEC):
 [Link](https://d1yx3ys82bpsa0.cloudfront.net/brochures/digital.pdp1.1961.102646097.pdf)
 ![](../images/pdp1.jpg)
 
----
-
 Morn:
 *PDP-11/20. On display at the Musée Bolo, EPFL, Lausanne..*
 (2013)
 [Source](https://en.wikipedia.org/wiki/File:Digital_PDP11-IMG_1498_cropped.jpg)
 [Link](https://upload.wikimedia.org/wikipedia/commons/5/54/Digital_PDP11-IMG_1498_cropped.jpg)
 ![](../images/pdp1120.jpg)
+
+---
 

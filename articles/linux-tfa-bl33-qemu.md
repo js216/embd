@@ -2,7 +2,7 @@
 title: Linux as TF-A BL33 on Qemu (No U-Boot)
 author: Jakob Kastelic
 date: 15 Sep 2025
-modified: 16 Sep 2025
+modified: 18 Sep 2025
 topic: Linux
 description: >
    Step-by-step guide to booting Linux directly as BL33 with Arm Trusted
@@ -12,6 +12,9 @@ description: >
 ---
 
 ![](../images/pdp1.jpg)
+
+*This is Part 4 in the series: Linux on STM32MP135. [See other
+articles.](#series-list)*
 
 With Qemu, anyone can customize the Linux boot process and run it without the
 need for custom hardware. In this article, we will adapt a Buildroot defconfig
@@ -268,6 +271,11 @@ However, the tutorial method above works without modifying Qemu or TF-A code. It
 uses an explicit DTB, as one is likely to do on a physical embedded target.
 Since it passes the initramfs using an explicit command line option, it avoids
 hard-coding it into any compiled code.
+
+### Upstreaming Status
+
+17/9/2025: first submission of the Qemu defconfig
+[(link)](https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html)
 
 <div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>
