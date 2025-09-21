@@ -1,6 +1,6 @@
 # embd.cc
 
-Articles and sources for the website [](embd.cc).
+Articles and sources for the website [embd.cc](https://embd.cc/).
 
 ### Getting started
 

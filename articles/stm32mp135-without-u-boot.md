@@ -2,7 +2,7 @@
 title: STM32MP135 Without U-Boot (TF-A Falcon Mode)
 author: Jakob Kastelic
 date: 11 Sep 2025
-modified: 18 Sep 2025
+modified: 20 Sep 2025
 topic: Linux
 description: >
    Learn how to boot the STM32MP1 Linux kernel directly with Arm Trusted
@@ -20,6 +20,10 @@ directly, without using U-Boot.[^st] I have seen the idea of omitting the
 Secondary Program Loader (SPL) referred to as "falcon mode", since it makes the
 boot process (slightly) faster. However, I am primarily interested in it as a
 way of reducing overall complexity of the software stack.
+
+In this article, we will implement this in two ways. First, we modify the files
+as needed manually. At the end of the article, we provide an alternative method:
+directly integrate the changes into Buildroot.
 
 ### Prerequisites
 
@@ -193,6 +197,44 @@ I/TC: OP-TEE version: Unknown_4.3 (gcc version 14.3.0 (Buildroot 2025.08-rc3-87-
 [    0.000000] Linux version 6.12.22 (jk@Lutien) (arm-buildroot-linux-gnueabihf-gcc.br_real (Buildroot 2025.08-rc3-87-gbbb0164de0) 14.3.0, GNU ld (GNU Binutils) 2.43.1) #1 SMP PREEMPT Wed Sep  3 20:23:46 PDT 2025
 [    0.000000] CPU: ARMv7 Processor [410fc075] revision 5 (ARMv7), cr=10c5387d
 ```
+
+### Buildroot integration
+
+Instead of following the above instructions, we can automate the build process
+by integrating it into Buildroot. To this end, I provide the GitHub repository
+[`stm32mp135_simple`](https://github.com/js216/stm32mp135_simple) that can be
+used as follows.
+
+Clone the Buildroot repository. To make the procedure reproducible, let's start
+from a fixed commit (latest at the time of this writing):
+
+```
+$ git clone https://gitlab.com/buildroot.org/buildroot.git --depth=1
+$ cd buildroot
+$ git checkout 5b6b80bfc5237ab4f4e35c081fdac1376efdd396
+```
+
+Obtain this repository with the patches we need. Copy the defconfig and the
+board-specific files into the Buildroot tree.
+
+```
+$ git clone git@github.com:js216/stm32mp135_simple.git
+$ cd buildroot # NOT stm32mp135_simple
+$ git apply ../stm32mp135_simple/patches/add_falcon.patch
+$ git apply ../stm32mp135_simple/patches/increase_fip.patch
+$ cp ../configs/stm32mp135_simple/stm32mp135f_dk_falcon_defconfig configs
+$ cp -r ../board/stm32mp135_simple/stm32mp135f-dk-falcon board/stmicroelectronics
+```
+
+Build as usual, but using the new defconfig:
+
+```
+$ make stm32mp135f_dk_falcon_defconfig
+$ make
+```
+
+Flash to the SD card and boot into the new system. You should reach the login
+prompt exactly as in the default configuration---but without involving U-Boot
 
 ### Discussion
 
