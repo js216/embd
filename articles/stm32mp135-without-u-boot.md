@@ -209,7 +209,7 @@ Clone the Buildroot repository. To make the procedure reproducible, let's start
 from a fixed commit (latest at the time of this writing):
 
 ```
-$ git clone https://gitlab.com/buildroot.org/buildroot.git --depth=1
+$ git clone https://gitlab.com/buildroot.org/buildroot.git
 $ cd buildroot
 $ git checkout 5b6b80bfc5237ab4f4e35c081fdac1376efdd396
 ```
@@ -280,6 +280,7 @@ the line in some deeply embedded application, perhaps in outer space.
   <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
   <li><em>3. This article</em></li>
   <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
+  <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
 </ul>
 </div>
 

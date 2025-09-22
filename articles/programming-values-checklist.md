@@ -196,11 +196,10 @@ after.
 > Once [this] has been proved for each box, it follows that all assertions are
 > true during any execution of the algorithm.[^taocp]
 
-In practice, such
-checks are easy to add, most of the time don't catch major bugs, but when they
-do, they are invaluable. The real payoff is that it forces one to think about
-all the possible cases the function or program may encounter during its life.
-(This knowledge is also useful when writing tests.)
+In practice, such checks are easy to add, most of the time don't catch major
+bugs, but when they do, they are invaluable. The real payoff is that it forces
+one to think about all the possible cases the function or program may encounter
+during its life.  (This knowledge is also useful when writing tests.)
 
 A function should not knowingly trigger any exceptions, interrupts, traps, what
 have you. (Probably does not apply in OS design.)

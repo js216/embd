@@ -163,5 +163,6 @@ size. Stay tuned!
   <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
   <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
   <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
+  <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
 </ul>
 </div>
