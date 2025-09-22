@@ -1,8 +1,7 @@
 ---
 title: STM32MP135 Without OP-TEE
 author: Jakob Kastelic
-date: 20 Sep 2025
-modified: 21 Sep 2025
+date: 22 Sep 2025
 topic: Linux
 description: >
 ---

@@ -1,7 +1,7 @@
 ---
 title: Action Without Clinging
 author: Jakob Kastelic
-date:
+date: 21 Sep 2025
 topic: Incoherent Thoughts
 description: >
    Detach from control and ownership. Let action flow naturally without fixation
