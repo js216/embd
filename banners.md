@@ -75,11 +75,93 @@ Digital Equipment Corporation (DEC):
 ![](../images/pdp1.jpg)
 
 Morn:
-*PDP-11/20. On display at the Musée Bolo, EPFL, Lausanne..*
+*PDP-11/20. On display at the Musée Bolo, EPFL, Lausanne.*
 (2013)
 [Source](https://en.wikipedia.org/wiki/File:Digital_PDP11-IMG_1498_cropped.jpg)
 [Link](https://upload.wikimedia.org/wikipedia/commons/5/54/Digital_PDP11-IMG_1498_cropped.jpg)
 ![](../images/pdp1120.jpg)
 
+Arcturus Photovoltain Cells:
+*New in Design, Advanced in Principle.*
+(Electronics Magazine, April 1930)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/30s/Electronics-1930-04-Original.pdf)
+![](../images/rc.jpg)
+
+Yaxley Mfg. Co.:
+*For the Most Exacting Needs of Precision Manufacturing*
+(Electronics Magazine, April 1930)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/30s/Electronics-1930-04-Original.pdf)
+![](../images/blue.jpg)
+
+Amperex Electronic Products, Inc:
+*The Ideal in a High Power Transmitting Tube*
+(Electronics Magazine, April 1940)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/40s/Electronics-1940-04.pdf)
+![](../images/tube.jpg)
+
+El-Menco Capacitors:
+*El-Menco Capacitors Hold Under Strain*
+(Electronics Magazine, March 1950)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link]()https://www.worldradiohistory.com/Archive-Electronics/50s/Electronics-1950-03.pdf
+![](../images/air.jpg)
+
+Cleveland Container Co.:
+*Cleveland Phenolic Tubes*
+(Electronics Magazine, Dec 1950)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/50s/Electronics-1950-12.pdf)
+![](../images/phen.jpg)
+
+National Company Inc.:
+*Stability Unto Infinity*
+(Electronics Magazine, Feb 1960)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/60s/60/Electronics-1960-02-05.pdf)
+![](../images/nat.jpg)
+
+Magnetic Metals Co.:
+*Here's Why Centricores are Probably the Most Consistently Uniform Cores You Can Buy*
+(Electronics Magazine, Mar 1960)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link]()https://www.worldradiohistory.com/Archive-Electronics/60s/60/Elelctronics-1960-03-04.pdf
+![](../images/cor.jpg)
+
+Raytheon Semiconductors:
+*Reliability in Semiconductors*
+(Electronics Magazine, April 1960)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/60s/60/Electronics-1960-04-01.pdf)
+![](../images/ray.jpg)
+
+General Electric:
+*Resources for the Challenge of Space*
+(Electronics Magazine, April 1960)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/60s/60/Electronics-1960-04-01.pdf)
+![](../images/space.jpg)
+
+Clevite Transistor:
+*Reliability in Volume*
+(Electronics Magazine, May 1960)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/60s/61/Elelctronics-1961-05-08.pdf)
+![](../images/tran.jpg)
+
+Lockheed Electronics Company:
+*Close-up of Maximum Reliability*
+(Electronics Magazine, Sep 1960)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/60s/62/Electronics-1962-09-07.pdf)
+![](../images/core.jpg)
+
 ---
 
+*Technology/10: Bold new inroads for the computer as the digital era gets under way*
+(Electronics Magazine, Jan 1970)
+[Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
+[Link](https://www.worldradiohistory.com/Archive-Electronics/70s/70/Electronics-1970-01-05.pdf)
+![](../images/mask.jpg)
