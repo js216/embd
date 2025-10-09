@@ -1,7 +1,7 @@
 ---
 title: Failure Is Not Personal
 author: Jakob Kastelic
-date:
+date: 3 Oct 2025
 topic: Incoherent Thoughts
 description: >
    In a probabilistic world, many attempts will fail. Detach from outcomes and

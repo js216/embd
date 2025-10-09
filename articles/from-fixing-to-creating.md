@@ -1,7 +1,7 @@
 ---
 title: From Fixing to Creating
 author: Jakob Kastelic
-date:
+date: 9 Oct 2025
 topic: Incoherent Thoughts
 description: >
    If your life is all about solving problems, you’ll need endless problems.
