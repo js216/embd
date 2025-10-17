@@ -158,10 +158,10 @@ Lockheed Electronics Company:
 [Link](https://www.worldradiohistory.com/Archive-Electronics/60s/62/Electronics-1962-09-07.pdf)
 ![](../images/core.jpg)
 
----
-
 *Technology/10: Bold new inroads for the computer as the digital era gets under way*
 (Electronics Magazine, Jan 1970)
 [Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
 [Link](https://www.worldradiohistory.com/Archive-Electronics/70s/70/Electronics-1970-01-05.pdf)
 ![](../images/mask.jpg)
+
+---

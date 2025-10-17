@@ -9,6 +9,8 @@ description: >
    programs.
 ---
 
+![](../images/mask.jpg)
+
 For the past month I had been stuck hunting down subtle bugs that happen when a
 particular sequence of commands is entered into a program. Sometimes even
 repeating the exact sequence would not be enough to reproduce the bug, since the
