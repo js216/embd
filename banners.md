@@ -164,4 +164,12 @@ Lockheed Electronics Company:
 [Link](https://www.worldradiohistory.com/Archive-Electronics/70s/70/Electronics-1970-01-05.pdf)
 ![](../images/mask.jpg)
 
+*Multnomah Falls Bridge*
+(JK, 16 Nov 2025)
+![](../images/brid.jpg)
+
 ---
+
+*Portland Japanese Garden*
+(JK, 15 Nov 2025)
+![](../images/zen.jpg)

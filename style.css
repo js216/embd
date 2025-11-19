@@ -139,6 +139,22 @@ blockquote p + p {
     white-space: nowrap;
 }
 
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    padding: 0.25em 0.8em;
+}
+
+thead tr {
+    border-bottom: 2px solid #444;
+}
+
+table tr:nth-child(odd)  { background: #ffffff; }
+table tr:nth-child(even) { background: #f0f0f0; }
+
 code {
   word-break: break-all;
 }

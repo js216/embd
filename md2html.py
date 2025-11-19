@@ -126,7 +126,7 @@ def main():
     metadata, md_body = extract_metadata_and_body(md_text)
 
     md = MarkdownIt("commonmark", {"highlight": pygments_highlight, "typographer": True})
-    md.enable(["replacements", "smartquotes"])
+    md.enable(["replacements", "smartquotes", "table"])
     md.use(footnote_plugin)
     md.use(anchors_plugin, min_level=1, max_level=3, permalink=False)
     md_body = convert_fenced_divs(md, md_body)
