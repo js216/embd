@@ -2,6 +2,7 @@
 title: Boot STM32MP135 Over UART With Python
 author: Jakob Kastelic
 date: 19 Nov 2025
+modified: 21 Nov 2025
 topic: Embedded
 description: >
   Flash and boot the STM32MP135 using its ROM UART bootloader with a minimal
@@ -21,9 +22,6 @@ by talking to the built-in ROM bootloader over UART with a couple lines of
 Python, as explained in an ST app note[^app]. The article is in three sections:
 (1) define the communication functions, (2) use them on the evaluation board,
 (3) use them on a custom board.
-
-As an example, we will use the Blink program that we develop, compile, and
-package in [this repo.](https://github.com/js216/mp135_boot/tree/main/blink_noide)
 
 ### Comm Functions
 
@@ -447,8 +445,8 @@ def down_file(fname='tf-a-stm32mp135f-dk.stm32'):
 We simply run the functions one after the other and verify that the output
 printed matches what's shown here.
 
-(As mentioned at the top, the compilation of the `blink.stm32` program is
-deferred to [this repo.](https://github.com/js216/mp135_boot/tree/main/blink_noide))
+As an example, we will use the Blink program that we develop, compile, and
+package in [this repo.](https://github.com/js216/mp135_boot/tree/main/blink_noide)
 
 ```
 >>> uart_init()
@@ -512,6 +510,9 @@ Amazingly, the exact same procedure works on any custom board, so long as it
 breaks out the UART4 pin and applies 3.3V and 1.35V power supplies in the
 correct sequence. Find the schematics and layout files for my board in
 [this repository.](https://github.com/js216/stm32mp135_test_board)
+
+Since the custom board does not use STPMIC1, the code for the blink example is
+even simpler. Find it [here.](https://github.com/js216/stm32mp135_test_board/tree/main/baremetal/blink)
 
 The UART wires (green/yellow) and the two power supplies is all that needs to be
 connected, and then the red LED (middle of the PCB) will blink. Yes, the setup
