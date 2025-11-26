@@ -1,7 +1,7 @@
 ---
 title: Limitation Is Freedom
 author: Jakob Kastelic
-date:
+date: 25 Nov 2025
 topic: Incoherent Thoughts
 description: >
    Doing less allows you to accomplish more. True productivity comes from

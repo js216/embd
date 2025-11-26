@@ -168,8 +168,6 @@ Lockheed Electronics Company:
 (JK, 16 Nov 2025)
 ![](../images/brid.jpg)
 
----
-
 *Portland Japanese Garden*
 (JK, 15 Nov 2025)
 ![](../images/zen.jpg)
