@@ -33,7 +33,7 @@ Cray Research, Inc.:
 ![](../images/vax.jpg)
 
 Shieldforyoureyes:
-*Front panel from a PDP-11/70. From the collection at the RCS/RI..*
+*Front panel from a PDP-11/70. From the collection at the RCS/RI.*
 (2007)
 [Source](https://en.wikipedia.org/wiki/File:Pdp-11-70-panel.jpg)
 [Link](https://upload.wikimedia.org/wikipedia/commons/f/fe/Pdp-11-70-panel.jpg)
@@ -171,3 +171,16 @@ Lockheed Electronics Company:
 *Portland Japanese Garden*
 (JK, 15 Nov 2025)
 ![](../images/zen.jpg)
+
+*sc*
+(JK, 4 Dec 2025)
+![](../images/sc.jpg)
+
+---
+
+Jason Scott:
+*DEC VT100 terminal at the Living Computer Museum (apparently connected to the museum's DEC PDP-11/70)*
+(2013)
+[Source](https://commons.wikimedia.org/wiki/File:DEC_VT100_terminal.jpg)
+[Link](https://upload.wikimedia.org/wikipedia/commons/9/99/DEC_VT100_terminal.jpg)
+![](../images/vt.jpg)
