@@ -6,7 +6,7 @@ topic: Linux
 description: >
 ---
 
-![](../images/zen.jpg)
+![](../images/vt.jpg)
 
 This is a record of steps I took to successfully boot Linux on my custom board
 using the STM32MP135 SoC. (Schematics, PCB design files, and code available in

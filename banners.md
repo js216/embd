@@ -176,8 +176,6 @@ Lockheed Electronics Company:
 (JK, 4 Dec 2025)
 ![](../images/sc.jpg)
 
----
-
 Jason Scott:
 *DEC VT100 terminal at the Living Computer Museum (apparently connected to the museum's DEC PDP-11/70)*
 (2013)
