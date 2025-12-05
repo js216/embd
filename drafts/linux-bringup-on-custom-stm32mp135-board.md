@@ -273,7 +273,6 @@ functioned reliably.
 Bug fixes:
 
 - Open solder mask over the JTAG connector
-- Add some big electrolytic capacitors on all power rails
 - Change U201 (NCP380HMUAJAATBG) to a fixed-current model (e.g.,
   NCP380HMU05AATBG), or else install the current-limit resistor. Better yet,
   replace it with a better switch entirely (this one, even when supposedly off,
@@ -282,6 +281,7 @@ Bug fixes:
 
 Nonbug improvements:
 
+- Add some big electrolytic capacitors on all power rails
 - Add LSE crystal (32.768 kHz)
 - Add button for BOOT selection instead of (or in addition to) DIP switch
 - Add another debug LED in a different color (say, green)

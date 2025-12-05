@@ -19,7 +19,7 @@ write files reliably. In this article, I'll walk through the hardware tweaks,
 HAL configuration, and debugging steps that helped me turn a stubborn USB
 interface into a fully working USB Mass Storage device.
 
-#### Initial attempts
+### Initial attempts
 
 I gave up trying to make the provided `CDC_Standalone` example from
 [`STM32Cube_FW_MP13_V1.2.0`](https://wiki.st.com/stm32mpu/wiki/STM32CubeMP13_Package_-_Getting_started)
@@ -48,7 +48,7 @@ The code also locks up if I select "Disable device" in Windows Device Manager.
 If I load the code with USB cable not plugged in, only the first ":" gets
 printed and then the code locks up.
 
-#### VBUS sense?
+### VBUS sense?
 
 Before the main loop we also see that `OTG_GCCFG: 0x00000000`, which means that
 both of the following are disabled:
@@ -83,7 +83,7 @@ USBx->GOTGCTL |= USB_OTG_GOTGCTL_BVALOVAL;
 }
 ```
 
-#### Interrupt storm?
+### Interrupt storm?
 
 I checked that the USB interrupt service routine (`HAL_PCD_IRQHandler()`) is
 linked by locating it in the map file (and not in the "Discarded input
@@ -119,7 +119,7 @@ cable is present when it starts executing and is then unplugged.
 If `USBSUSPM` is the only enabled OTG interrupt, then the code locks up both if
 the cable is not present initially, or if it is unplugged later.
 
-#### JTAG again
+### JTAG again
 
 Meanwhile I figured out how to get the JTAG to work mostly reliably. First,
 remember to boot with `BOOT=100`, the "Engineering debug mode", otherwise the
@@ -176,7 +176,7 @@ Better yet, we can remove the `-mthumb` and simply take interrupts to ARM mode:
 I changed the debug code at the top of `HAL_PCD_IRQHandler()` to just a print
 statement, and it prints any time the USB cable is plugged in and out. Great!
 
-#### USB Device Stack
+### USB Device Stack
 
 Now that USB interrupts are no longer freezing the whole system, we can begin
 work on integrating the ST USB Device "middleware". The initialization proceeds
@@ -226,7 +226,7 @@ As it turns out, I have forgotten to add the callbacks into `usbd_conf.c`. Once
 that was done, the USB access from the Windows computer caused an immediate Data
 Abort on the STM32MP135.
 
-#### Aligned SYSRAM memory access
+### Aligned SYSRAM memory access
 
 The aborts happen in `usbd_msc_scsi.c` in lines such as the following:
 
@@ -264,7 +264,7 @@ Make sure to repeat this several times! Search for `scsi_blk_addr` in
 Then, at last, the USB device enumerates as MSC correctly, and we can even read
 and write raw data! However, Windows is not able to format the device.
 
-#### Aligned DDR RAM memory access
+### Aligned DDR RAM memory access
 
 Now that data can be read and written to, we observe an odd pattern:
 
@@ -281,7 +281,7 @@ device format works, and we can even copy files to the mass storage device, and
 read them back. The problems is now ... read and write speeds are about 700
 kB/s.
 
-#### D+ pullup
+### D+ pullup
 
 As it happens, the USB interface on the custom board has a external, physical
 1.5K pullup on the D+ line which signals a Full-Speed device. To switch to
@@ -297,7 +297,7 @@ Device Manager. However, we can simply set
 in `USBD_LL_Init()` function (`usbd_conf.c`), and then everything works as
 before. So something must be wrong with the high-speed mode configuration.
 
-#### Cables, hubs, ports
+### Cables, hubs, ports
 
 Since removing the 1.5K pullup which was keeping the device in Full-Speed (FS)
 mode, the device does not enumerate, neither in DFU mode (with `BOOT` pins set
@@ -351,15 +351,99 @@ Clearly, the bad cable or hub or port was stopping the HS enumeration, at least
 in DFU mode. Now let's switch to `BOOT=100`, reset, and load our firmware via
 JTAG. And ... it enumerates immediately! Windows offers to format it as FAT32,
 and the file write speed is up to about 4 MB/s, and read about 2 MB/s. Great
-success! But could have first checked the cable.
+success! But could have checked the cable first.
+
+### Speed
 
 Regarding the low-ish data rates: it's probably limited by a combination of the
 slow implementations of the `usbd_msc_storage.c` backend, and the HAL driver or
-other things. (For example, changing the compiler optimization level from `-Os`
-to `-O3` brings the write speed up to 7.6 MB/s.) But for firmware flashing the
-speed is good enough. More importantly, it proves that everything is now wired
-correctly; remaining speed optimization can be done by Linux drivers.
+other things. For firmware flashing the speed is good enough. More importantly,
+it proves that everything is now wired correctly. Nonetheless, let's see if we
+can make it go faster than the 2--4 MB/s.
 
-*Note: you can find the final version of the USB test in
+Changing the compiler optimization level from `-Os` to `-O3` brings the write
+speed up to 7.6 MB/s. Windows has a built-in disk performance checker which
+shows:
+
+    C:\Users\Jkastelic> winsat disk -drive e
+    > Disk  Random 16.0 Read                       2.87 MB/s          4.5
+    > Disk  Sequential 64.0 Read                   2.91 MB/s          2.2
+    > Disk  Sequential 64.0 Write                  7.67 MB/s          2.6
+    > Average Read Time with Sequential Writes     8.566 ms          4.9
+    > Latency: 95th Percentile                     21.499 ms          4.5
+    > Latency: Maximum                             22.485 ms          7.9
+    > Average Read Time with Random Writes         9.149 ms          4.7
+
+    winsat disk -write -ran -drive e
+    > Disk  Random 16.0 Write                      7.46 MB/s
+
+Next, re-write the `STORAGE_Read` function to use 32-bit writes instead of
+forcing 8-bit accesses (as we did previously while debugging the data
+corruption). This improves the reads significantly:
+
+    > Disk  Random 16.0 Read                       9.02 MB/s          5.3
+    > Disk  Sequential 64.0 Read                   9.39 MB/s          2.8
+    > Disk  Sequential 64.0 Write                  7.71 MB/s          2.6
+    > Average Read Time with Sequential Writes     3.134 ms          6.6
+    > Latency: 95th Percentile                     8.109 ms          5.9
+    > Latency: Maximum                             9.516 ms          8.0
+    > Average Read Time with Random Writes         3.138 ms          6.5
+
+Now consider the FIFO allocation. The USB OTG core in the STM32MP135 has 4 kB
+of total FIFO. If we used all of it just for sending data back to the host, at
+the 480 MBit/s (70 MB/s) data rate, the microcontroller would fire interrupts
+or DMA requests every 67 μs. (USB devices designed for mass data transfer
+probably have larger buffers.) Currently we have
+
+```c
+HAL_PCDEx_SetRxFiFo(&hpcd, 0x200);
+HAL_PCDEx_SetTxFiFo(&hpcd, 0, 0x40);
+HAL_PCDEx_SetTxFiFo(&hpcd, 1, 0x100);
+```
+
+Let us significantly increase the buffer that sends data to the host:
+
+```c
+HAL_PCDEx_SetRxFiFo(&hpcd, 0x100);
+HAL_PCDEx_SetTxFiFo(&hpcd, 0, 0x20);
+HAL_PCDEx_SetTxFiFo(&hpcd, 1, 0x2e0);
+```
+
+Unfortunately, the read/write performance is essentially unchanged:
+
+> Disk  Random 16.0 Read                       9.89 MB/s          5.4
+> Disk  Sequential 64.0 Read                   10.28 MB/s          2.9
+> Disk  Sequential 64.0 Write                  7.59 MB/s          2.6
+> Average Read Time with Sequential Writes     3.311 ms          6.5
+> Latency: 95th Percentile                     8.236 ms          5.9
+> Latency: Maximum                             9.306 ms          8.1
+> Average Read Time with Random Writes         3.279 ms          6.5
+
+All of that was without DMA. It might be that DMA would make it faster, or at
+least unburden the CPU---but in this example, the CPU is not doing anything
+except copying the data. (CPU can actually be *faster* in copying; the point of
+DMA is to allow the CPU to do other, more interesting things while the copy is
+taking place.)
+
+### Code availability
+
+You can find the final version of the USB test in
 [this](https://github.com/js216/stm32mp135_test_board/tree/main/baremetal/usb_test)
-repository. It compiles to about 117 kB, so it fits in SYSRAM.*
+repository.
+
+It compiles to about 117 kB with `-Os` optimization, so it fits in
+SYSRAM directly. If you need more speed, `-O3` makes it compile to about 136 kB.
+That's still acceptable if we combine all of the on-chip memory into a single
+block, as shown in this excerpt from the [linker
+script](https://github.com/js216/stm32mp135_test_board/blob/main/baremetal/usb_test/stm32mp13xx_a7_sysram.ld):
+
+    MEMORY {
+          SYSRAM_BASE (rwx)   : ORIGIN = 0x2FFE0000, LENGTH = 128K
+          SRAM1_BASE (rwx)    : ORIGIN = 0x30000000, LENGTH = 16K
+          SRAM2_BASE (rwx)    : ORIGIN = 0x30004000, LENGTH = 8K
+          SRAM3_BASE (rwx)    : ORIGIN = 0x30006000, LENGTH = 8K
+          /* InternalMEM = SYSRAM + SRAM1 + SRAM2 + SRAM3 */
+          InternalMEM (rwx)   : ORIGIN = 0x2FFE0000, LENGTH = 160K
+          DDR_BASE (rwx)      : ORIGIN = 0xC0000000, LENGTH = 512M
+    }
+
