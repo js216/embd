@@ -1,7 +1,7 @@
 ---
 title: Imperfection as a Practice
 author: Jakob Kastelic
-date:
+date: 19 Dec 2025
 topic: Incoherent Thoughts
 description: >
    Perfectionism leads to tunnel vision and stalled projects. Accepting
