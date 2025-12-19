@@ -182,3 +182,7 @@ Jason Scott:
 [Source](https://commons.wikimedia.org/wiki/File:DEC_VT100_terminal.jpg)
 [Link](https://upload.wikimedia.org/wikipedia/commons/9/99/DEC_VT100_terminal.jpg)
 ![](../images/vt.jpg)
+
+*Taking off from FLL*
+(JK, 16 Dec 2025)
+![](../images/mia.jpg)

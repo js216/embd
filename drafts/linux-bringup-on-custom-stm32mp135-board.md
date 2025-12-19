@@ -268,7 +268,17 @@ transfers at High-Speed using a good USB cable and port. After these steps, the
 board enumerated correctly as an MSC device, and read/write operations
 functioned reliably.
 
-### Changes for Rev B
+### Switch to Non-Secure World
+
+*Note: read the full TrustZone story
+[here](https://embd.cc/unsecuring-stm32mp135-trustzone).*
+
+The STM32MP135 integrates the Arm TrustZone extension which partitions the
+system into two isolated security domains, the secure and non-secure worlds,
+depending on the state of the `NS` bit. On reset, it executes in the secure
+world (`NS=0`), but in normal operation, we want `NS=1`.
+
+### Board Changes for Rev B
 
 Bug fixes:
 
