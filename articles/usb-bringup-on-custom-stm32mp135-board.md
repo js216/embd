@@ -12,7 +12,7 @@ description: >
 ![](../images/zen.jpg)
 
 Getting USB up and running in bare-metal mode using the ST HAL drivers on my
-(custom STM32MP135)[https://github.com/js216/stm32mp135_test_board] board took a
+[custom STM32MP135](https://github.com/js216/stm32mp135_test_board) board took a
 couple attempts. After a few false starts with the example projects, I was able
 to make the board enumerate correctly, handle data transfers, and even read and
 write files reliably. In this article, I'll walk through the hardware tweaks,
@@ -156,7 +156,7 @@ debugger after pressing Ctrl-C:
     (gdb)
 
 Searching the forums, I found a
-(post)[https://community.st.com/t5/stm32-mpus-embedded-software-and/stm32mp1-interrupt-causes-undefined-exception-in-arm-mode-but/td-p/745347]
+[post](https://community.st.com/t5/stm32-mpus-embedded-software-and/stm32mp1-interrupt-causes-undefined-exception-in-arm-mode-but/td-p/745347)
 where user bsvi discovered that `startup_stm32mp135fxx_ca7.c` take interrupts to
 thumb mode in the `Reset_Handler()`:
 
@@ -309,8 +309,8 @@ that the USB reset is detected, the device is correctly switched to HS mode
 but it never arrives. The enumeration completes, but the device does not see any
 setup or data packets enter the FIFO, and then the device gets suspended,
 presumably because it did not reply to the host's communications. The device
-never appears in the Device Manager, or even in (USB Device Tree
-Viewer)[https://www.uwe-sieber.de/usbtreeview_e.html].
+never appears in the Device Manager, or even in [USB Device Tree
+Viewer](https://www.uwe-sieber.de/usbtreeview_e.html).
 
 With `BOOT=000`, pressing reset causes the PA13 LED to blink, and when the USB
 cable is attached, the blinking stops. But looking at the device and USB trees,
@@ -411,13 +411,13 @@ HAL_PCDEx_SetTxFiFo(&hpcd, 1, 0x2e0);
 
 Unfortunately, the read/write performance is essentially unchanged:
 
-> Disk  Random 16.0 Read                       9.89 MB/s          5.4
-> Disk  Sequential 64.0 Read                   10.28 MB/s          2.9
-> Disk  Sequential 64.0 Write                  7.59 MB/s          2.6
-> Average Read Time with Sequential Writes     3.311 ms          6.5
-> Latency: 95th Percentile                     8.236 ms          5.9
-> Latency: Maximum                             9.306 ms          8.1
-> Average Read Time with Random Writes         3.279 ms          6.5
+    > Disk  Random 16.0 Read                       9.89 MB/s          5.4
+    > Disk  Sequential 64.0 Read                   10.28 MB/s          2.9
+    > Disk  Sequential 64.0 Write                  7.59 MB/s          2.6
+    > Average Read Time with Sequential Writes     3.311 ms          6.5
+    > Latency: 95th Percentile                     8.236 ms          5.9
+    > Latency: Maximum                             9.306 ms          8.1
+    > Average Read Time with Random Writes         3.279 ms          6.5
 
 All of that was without DMA. It might be that DMA would make it faster, or at
 least unburden the CPU---but in this example, the CPU is not doing anything
