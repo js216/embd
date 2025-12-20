@@ -183,6 +183,10 @@ Jason Scott:
 [Link](https://upload.wikimedia.org/wikipedia/commons/9/99/DEC_VT100_terminal.jpg)
 ![](../images/vt.jpg)
 
+*View from Decoplage apt. 440 balcony, looking upwards.*
+(JK, 16 Dec 2025)
+![](../images/deco.jpg)
+
 *Taking off from FLL*
 (JK, 16 Dec 2025)
 ![](../images/mia.jpg)
