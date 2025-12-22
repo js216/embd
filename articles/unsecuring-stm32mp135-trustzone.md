@@ -1,9 +1,12 @@
 ---
 title: Unsecuring STM32MP135 TrustZone
 author: Jakob Kastelic
-date:
+date: 22 Dec 2025
 topic: Embedded
 description: >
+   A practical guide to disabling TrustZone protections on the STM32MP135,
+   covering secure monitor calls, SCR.NS transitions, and unsecuring DDR, GIC,
+   ETZPC, clocks, GPIOs, and peripherals for bare-metal execution.
 ---
 
 ![](../images/mia.jpg)
@@ -286,3 +289,12 @@ GPIOF->SECCFGR = 0x00000000;
 GPIOG->SECCFGR = 0x00000000;
 GPIOH->SECCFGR = 0x00000000;
 ```
+
+### State of the boot process so far
+
+With the steps above done, a program will run in the non-secure world (`NS=1`).
+However, most of the diagnostics to get there will probe secure-only registers,
+such as those used by the TZC, which will result in an immediate undefined
+instruction or similar abort.
+
+In other words, in non-secure world, you are limited to non-secure things!

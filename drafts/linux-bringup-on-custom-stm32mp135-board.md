@@ -134,6 +134,42 @@ system into two isolated security domains, the secure and non-secure worlds,
 depending on the state of the `NS` bit in the `SCR` register. Before the bit is
 flipped, we need to unsecure many parts of the SoC (DDR, DMA masters, etc).
 
+### Debug Linux early boot
+
+Since Linux is just another program, why not try and run it, now that we have
+disabled most secure-world hindrances? One thing to keep in mind is to respect
+the link address:
+
+```sh
+buildroot]> readelf -h output/build/linux-custom/vmlinux | grep Entry
+  Entry point address:               0xc0008000
+```
+
+Let's copy the binary instructions from the ELF file into something we can load
+into memory:
+
+```sh
+arm-none-eabi-objcopy -O binary \
+    output/build/linux-custom/vmlinux \
+    output/images/vmlinux.bin
+```
+
+Now we place the binary file in the same SD card image as the bootloader:
+
+```sh
+$ python3 scripts/sdimage.py build/sdcard.img build/main.stm32 build/vmlinux.bin
+
+File                      LBA      Size       Blocks
+-------------------------------------------------------
+main.stm32                128      100352     197
+vmlinux.bin               324      19111936   37329
+```
+
+Load the ~40,000 blocks from logical block address (LBA) 324 into DDR to
+location `0xC0008000`, and jump to it. If we follow along with the debug probe,
+we see that the kernel begins executing in `arch/arm/kernel/head.S` and gets
+stuck when it realizes that we did not pass it the correct boot parameters.
+
 ### Board Changes for Rev B
 
 Bug fixes:
