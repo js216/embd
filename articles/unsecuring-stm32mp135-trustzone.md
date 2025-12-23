@@ -1,7 +1,7 @@
 ---
 title: Unsecuring STM32MP135 TrustZone
 author: Jakob Kastelic
-date: 22 Dec 2025
+date: 21 Dec 2025
 topic: Embedded
 description: >
    A practical guide to disabling TrustZone protections on the STM32MP135,

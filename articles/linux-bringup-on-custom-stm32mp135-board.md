@@ -1,18 +1,21 @@
 ---
 title: Linux Bring-Up on a Custom STM32MP135 Board
 author: Jakob Kastelic
-date:
+date: 22 Dec 2025
 topic: Linux
 description: >
+   Step-by-step account of bringing up Linux on a custom STM32MP135 board,
+   covering UART, DDR, SD, USB, TrustZone, and debugging early boot issues.
+   Schematics, code, and board design available.
 ---
 
 ![](../images/vt.jpg)
 
-This is a record of steps I took to successfully boot Linux on my custom board
-using the STM32MP135 SoC. (Schematics, PCB design files, and code available in
-this [repository](https://github.com/js216/stm32mp135_test_board).) The write-up
-is in approximate chronological order, written as I go through the debugging
-steps.
+This is a record of steps I took to successfully get Linux past the early boot
+stage on my custom board using the STM32MP135 SoC. (Schematics, PCB design
+files, and code available in this
+[repository](https://github.com/js216/stm32mp135_test_board).) The write-up is
+in approximate chronological order, written as I go through the debugging steps.
 
 ### Blink
 
@@ -170,20 +173,124 @@ location `0xC0008000`, and jump to it. If we follow along with the debug probe,
 we see that the kernel begins executing in `arch/arm/kernel/head.S` and gets
 stuck when it realizes that we did not pass it the correct boot parameters.
 
-### Board Changes for Rev B
+### Provide a Device Tree Blob
 
-Bug fixes:
+Let's start with the default DTB and decompile it into the DTS:
 
-- Open solder mask over the JTAG connector
-- Change U201 (NCP380HMUAJAATBG) to a fixed-current model (e.g.,
-  NCP380HMU05AATBG), or else install the current-limit resistor. Better yet,
-  replace it with a better switch entirely (this one, even when supposedly off,
-  still reads about 2V, which may end up damaging the device in the long run).
-- Remove the 1.5K pullup on USB D+ line
+```sh
+[buildroot]> dtc -I dtb -O dts -@ \
+   output/build/linux-custom/arch/arm/boot/dts/stm32mp135f-dk.dtb > \
+   ~/temp/build/min.dts
+```
 
-Nonbug improvements:
+Now remove as much of the unnecessary peripherals from the device tree and
+compile back into a DTB:
 
-- Add some big electrolytic capacitors on all power rails
-- Add LSE crystal (32.768 kHz)
-- Add button for BOOT selection instead of (or in addition to) DIP switch
-- Add another debug LED in a different color (say, green)
+```sh
+dtc -I dts -O dtb min.dts > min.dtb
+```
+
+Next, we need to include this DTB in the SD card image:
+
+```sh
+$ python3 scripts/sdimage.py build/sdcard.img build/main.stm32 \
+    build/vmlinux.bin build/min.dtb
+
+File                      LBA      Size       Blocks
+-------------------------------------------------------
+main.stm32                128      100352     197
+vmlinux.bin               324      19111936   37329
+min.dtb                   37652    53248      105
+```
+
+Write the new image to the SD card, and boot the bootloader, and copy the kernel
+and the DTB to DDR:
+
+```
+> l 40000 324 0xc0008000
+Copying 40000 blocks from LBA 324 to DDR addr 0xC0008000 ...
+> l 105 37652 0xc2008000
+Copying 105 blocks from LBA 37652 to DDR addr 0xC2008000 ...
+> p 256 0xc2008000
+0x00000000 : d0 0d fe ed  00 00 ce 12  00 00 00 38  00 00 bc c4  ...........8....
+0x00000010 : 00 00 00 28  00 00 00 11  00 00 00 10  00 00 00 00  ...(............
+0x00000020 : 00 00 11 4e  00 00 bc 8c  00 00 00 00  00 00 00 00  ...N............
+0x00000030 : 00 00 00 00  00 00 00 00  00 00 00 01  00 00 00 00  ................
+0x00000040 : 00 00 00 03  00 00 00 04  00 00 00 00  00 00 00 01  ................
+0x00000050 : 00 00 00 03  00 00 00 04  00 00 00 0f  00 00 00 01  ................
+0x00000060 : 00 00 00 03  00 00 00 32  00 00 00 1b  53 54 4d 69  .......2....STMi
+0x00000070 : 63 72 6f 65  6c 65 63 74  72 6f 6e 69  63 73 20 53  croelectronics S
+```
+
+We can match the print against the DTB hexdump to verify that it's been written
+correctly (note the "d00dfeed" at the start of the DTB). Then issue the `j` or
+`jump` instruction, and follow along with the debugger:
+
+```
+gdb)
+69         push  {r4} // CPSR after return
+(gdb) del
+(gdb) si
+sm_smc_entry () at src/handoff.S:70
+70         push  {r3} // PC after return
+(gdb)
+sm_smc_entry () at src/handoff.S:71
+71         rfefd sp
+(gdb)
+0xc0008000 in ?? ()
+(gdb) file build/vmlinux
+Reading symbols from build/vmlinux...
+(gdb) si
+__hyp_stub_install () at arch/arm/kernel/hyp-stub.S:73
+73      arch/arm/kernel/hyp-stub.S: No such file or directory.
+(gdb) directory build/linux-custom
+Source directories searched: build/linux-custom;$cdir;$cwd
+(gdb) si
+0xc01149a4      73              store_primary_cpu_mode  r4, r5
+```
+
+Above we see the last three instructions from the bootloader, and then we need
+to switch GDB to the Linux kernel executable, and provide it the source code
+directory. Then, we see one of the first instructions from the kernel being
+executed, on line 73 of `hyp-stub.S`.
+
+Step instruction (`si`) a couple times until we reach the branch to
+`__vet_atags`. That routine is responsible to determine the validity of the `r2`
+pointer that the bootloader is supposed to point to where we copied the DTB in
+the memory. Let's see what happens:
+
+```
+__vet_atags () at arch/arm/kernel/head-common.S:44
+44              tst     r2, #0x3                        @ aligned?
+45              bne     1f
+47              ldr     r5, [r2, #0]
+49              ldr     r6, =OF_DT_MAGIC                @ is it a DTB?
+50              cmp     r5, r6
+51              beq     2f
+61      2:      ret     lr                              @ atag/dtb pointer is ok
+```
+
+Evidently the DTB pointer is good! Now we return back to the startup code and
+proceed with enabling MMU, clearing memory, etc. I got tired of single-stepping
+through `memset` and hit continue, and was amazed to find the following on the
+serial monitor:
+
+```
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 6.1.28 (jk@SRS1720) (arm-buildroot-linux-uclibcgnueabihf-gcc.br_real (Buildroot 2024.11-202-g3645e3b781-dirty) 13.3.0, GNU ld (GNU Binutils) 2.42) #1 SMP PREEMPT Thu Dec 18 17:02:40 PST 2025
+[    0.000000] CPU: ARMv7 Processor [410fc075] revision 5 (ARMv7), cr=10c5387d
+[    0.000000] CPU: div instructions available: patching division code
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+[    0.000000] OF: fdt: Machine model: STMicroelectronics STM32MP135F-DK Discovery Board
+[    0.000000] Memory policy: Data cache writealloc
+[    0.000000] cma: Reserved 64 MiB at 0xdc000000
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x00000000c0000000-0x00000000dfffffff]
+[    0.000000]   HighMem  empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x00000000c0000000-0x00000000dfffffff]
+[    0.000000] Initmem setup node 0 [mem 0x00000000c0000000-0x00000000dfffffff]
+```
+
+In other words: *IT WORKS!!!*
