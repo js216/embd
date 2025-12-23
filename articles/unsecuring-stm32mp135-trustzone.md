@@ -81,16 +81,7 @@ freeze. Here's a list of things that must be unsecured before the flip:
 - GIC distributor and CPU interface
 - ETZPC = Embedded TrustZone Protection Controller
 - Clock and reset control (RCC)
-- RTC registers
 - Pin controller / all GPIO banks
-- AHB/APB bridges, peripheral sub-matrices
-- Console UART
-- Timer source/s
-- SYSRAM / SRAM blocks
-- DMA1 / DMA2 / DMAMUX
-- DMA masters: SDMMC, ETH, USB OTG, SPI, ...
-- SCU must be enabled, coherency configured
-- Exception vectors & CPU state: SCTLR, ACTLR, Cache state, MMU state
 
 In the following sections, we will examine these one by one, showing how to
 unsecure then and how to verify they have been unsecured.

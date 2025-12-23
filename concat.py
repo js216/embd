@@ -5,7 +5,7 @@ from datetime import datetime
 
 ARTICLES_DIR = "articles"
 HTML_DIR = "html"
-ARTICLES_PER_PAGE = 3
+ARTICLES_PER_PAGE = 5
 
 HTML_TOP = """<!DOCTYPE html>
 <html lang="en">

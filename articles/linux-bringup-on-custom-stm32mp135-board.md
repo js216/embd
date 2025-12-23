@@ -72,7 +72,7 @@ mode for now, and hope that I can get the (much faster) USB mode to work.
 
 ### SD
 
-*Note: read the full USB story
+*Note: read the full SD card story
 [here](https://embd.cc/sdcard-on-bare-metal-stm32mp135).*
 
 On the STM32MP135 evaluation board, an SDMMC example reliably reads a program
