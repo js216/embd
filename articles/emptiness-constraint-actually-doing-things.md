@@ -1,6 +1,6 @@
 ---
-title: On Emptiness, Constraint, and Actually Doing Things
-author: Jakob Kastelic
+title: On Emptiness, Constraint, and Doing Things
+author: Jakob Kastelic and GPT-5
 date: 23 Dec 2025
 topic: Incoherent Thoughts
 description: >
