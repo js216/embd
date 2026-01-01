@@ -181,6 +181,7 @@ entirely unnecessary for a large class of embedded Unix applications.
   <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
   <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
   <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
+  <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
 </ul>
 </div>
 
