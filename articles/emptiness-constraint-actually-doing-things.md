@@ -2,7 +2,7 @@
 title: On Emptiness, Constraint, and Doing Things
 author: Jakob Kastelic and GPT-5
 date: 23 Dec 2025
-topic: Incoherent Thoughts
+topic: Self-Change
 description: >
    Exploring how constraint and emptiness can restore focus and productivity at
    home. Distinguishes productive vs restorative leisure, applies
