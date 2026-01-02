@@ -1,9 +1,10 @@
 ---
-title: Agent To Read Electronic Datasheets (DIY)
+title: Agent To Read Electronic Datasheets
 author: Jakob Kastelic
 date: 2 Jan 2026
 topic: Agents
 description: >
+   How to quickly put together a data extraction agent.
 ---
 
 ![](../images/pa.jpg)
