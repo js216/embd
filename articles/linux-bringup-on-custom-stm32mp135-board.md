@@ -2,6 +2,7 @@
 title: Linux Bring-Up on a Custom STM32MP135 Board
 author: Jakob Kastelic
 date: 22 Dec 2025
+modified: 2 Jan 2026
 topic: Linux
 description: >
    Step-by-step account of bringing up Linux on a custom STM32MP135 board,
@@ -297,6 +298,16 @@ serial monitor:
 ```
 
 In other words: *IT WORKS!!!*
+
+### Discussion
+
+There's an important step that had to take place before the "blink" example
+could run on the custom board: *let go of the sheer excitement*. Having worked
+on or with some kind of a Linux system for perhaps two decades, it was an almost
+surreal, mystical feeling to hold in my hands a board that I designed myself
+that is supposed to run the operating system. It's what makes engineering a
+rewarding experience, but the mental jitter of it can also interfere with
+getting things done. After all, this is just routine work!
 
 <div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>

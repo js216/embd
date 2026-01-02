@@ -194,3 +194,7 @@ Jason Scott:
 *Couperin: Concerts Royeaux*
 (First edition, Paris: Boyvin, 1722.)
 ![](../images/roy.jpg)
+
+*Palo Alto, University Avenue*
+(JK, 31 Dec 2025)
+![](../images/pa.jpg)
