@@ -1,7 +1,7 @@
 ---
 title: Let Reality Update You
 author: Jakob Kastelic
-date:
+date: 5 Jan 2026
 topic: Incoherent Thoughts
 description: >
    When your ideas clash with reality, it’s your ideas that must change. Release

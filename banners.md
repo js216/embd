@@ -198,3 +198,7 @@ Jason Scott:
 *Palo Alto, University Avenue*
 (JK, 31 Dec 2025)
 ![](../images/pa.jpg)
+
+*Rainbow over Johnson & Johnson building in Baylands park.*
+(JK, 3 Jan 2026)
+![](../images/rain.jpg)
