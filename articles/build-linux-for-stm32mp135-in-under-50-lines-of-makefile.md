@@ -1,8 +1,7 @@
 ---
 title: Build Linux for STM32MP135 in under 50 Lines of Makefile
 author: Jakob Kastelic
-date: 5 Jan 2026
-modified: 6 Jan 2026
+date: 6 Jan 2026
 topic: Linux
 description: >
    Step-by-step guide to build a minimal Linux root filesystem for the
