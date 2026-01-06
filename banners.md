@@ -202,3 +202,8 @@ Jason Scott:
 *Rainbow over Johnson & Johnson building in Baylands park.*
 (JK, 3 Jan 2026)
 ![](../images/rain.jpg)
+
+*Altair 8080b S/N 5400710K*
+[Source](https://bonuslifecomputers.com/products/altair-8800b-s-n-6500710k)
+[Link](https://bonuslifecomputers.com/cdn/shop/files/IMG_9544_1200x1200.jpg)
+![](../images/altair.jpg)

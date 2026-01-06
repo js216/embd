@@ -2,6 +2,7 @@
 title: Build Linux for STM32MP135 in under 50 Lines of Makefile
 author: Jakob Kastelic
 date: 5 Jan 2026
+modified: 6 Jan 2026
 topic: Linux
 description: >
    Step-by-step guide to build a minimal Linux root filesystem for the
@@ -31,8 +32,8 @@ this work on a [custom board](https://github.com/js216/stm32mp135_test_board).
 accessible
 [here](https://github.com/js216/stm32mp135_test_board/blob/main/Makefile).*
 
-First, we need to build the obtain and build the bootloader. Note that we need
-to enable the STPMIC1, since it is used on the eval board:
+First, we need to obtain and build the bootloader. Note that we need to enable
+the STPMIC1, since it is used on the eval board:
 
 ```sh
 git clone git@github.com:js216/stm32mp135-bootloader.git
@@ -57,6 +58,11 @@ the Device Tree Source (DTS), and the kernel configuration:
 
 ```sh
 git clone git@github.com:js216/stm32mp135_test_board.git
+
+cd linux
+git linux apply ../configs/evb/patches/linux/*.patch
+cd ..
+
 cp config/evb/linux.config linux/.config
 cp config/evb/board.dts linux/arch/arm/boot/dts/
 ```
@@ -156,15 +162,15 @@ ESR:
 
 The "root cause" of the highly complex toolchains has been identified by
 Anna-Lena Marx (inovex GmbH) in a talk[^talk] last year: the goals of SoC
-vendors and product manufacturers are not aligned. The SOC vendor wants to show
+vendors and product manufacturers are not aligned. The SoC vendor wants to show
 off all the features of their devices, and they want a Board Support Package
 (BSP) that supports several, even all, of the devices in their portfolio. They
 want a "turnkey solution" that allows an engineer to go from nothing to a
 full-featured demo in ten minutes.
 
 In contrast, a product manufacturer who wants to use embedded Linux in their
-application-specific product wants the minimal possible software stack, as close
-as possible to the upstream stable versions in order to be stable, secure, &
+application-specific product wants a minimal software stack, as close as
+possible to the upstream stable versions in order to be stable, secure, &
 maintainable. It's the difference between merely using the system, and owning
 it.
 

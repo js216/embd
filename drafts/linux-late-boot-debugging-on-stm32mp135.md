@@ -6,8 +6,7 @@ topic: Linux
 description: >
 ---
 
-![](../images/rain.jpg)
-
+![](../images/altair.jpg)
 
 *This is Part 8 in the series: Linux on STM32MP135. [See other
 articles.](#series-list)*

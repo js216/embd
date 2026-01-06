@@ -148,7 +148,7 @@ how baroque. The warning has been around for a long time:
 > development time. [...] Less clear, however, is how to assess the loss of
 > control and insight when the pile of system-supplied code gets so big that one
 > no longer knows what's going on underneath.
-
+>
 > [... As] libraries, interfaces, and tools become more complicated, they become
 > less understood and less controllable. When everything works, rich programming
 > environments can be very productive, but when they fail, there is little
