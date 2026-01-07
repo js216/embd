@@ -120,14 +120,15 @@ Indeed, why am I even writing this? I asked GPT-5 for additional failure modes
 and found more additional examples than I could hope to get from a human:
 
 > Beyond the failure modes already discussed, humans also exhibit analogues of
-> several newer LLM pathologies: conversations often suffer from instruction
-> drift, where the original goal quietly decays as social momentum takes over;
-> mode collapse, in which people fall back on a small set of safe clichés and
-> conversational templates; and reward hacking, where social approval or harmony
-> is optimized at the expense of truth or usefulness. Humans frequently overfit
-> the prompt, responding to the literal wording rather than the underlying
-> intent, and display safety overrefusal, declining to engage with reasonable
-> questions to avoid social or reputational risk. Reasoning is also marked by
-> inconsistency across turns, with contradictions going unnoticed, and by
-> temperature instability, where fatigue, emotion, or audience dramatically
-> alters the quality and style of thought from one moment to the next.
+> several newer LLM pathologies: conversations often suffer from **instruction
+> drift,** where the original goal quietly decays as social momentum takes over;
+> **mode collapse,** in which people fall back on a small set of safe clichés
+> and conversational templates; and **reward hacking,** where social approval or
+> harmony is optimized at the expense of truth or usefulness. Humans frequently
+> **overfit the prompt,** responding to the literal wording rather than the
+> underlying intent, and display **safety overrefusal,** declining to engage
+> with reasonable questions to avoid social or reputational risk. Reasoning is
+> also marked by **inconsistency across turns,** with contradictions going
+> unnoticed, and by **temperature instability,** where fatigue, emotion, or
+> audience dramatically alters the quality and style of thought from one moment
+> to the next.
