@@ -207,3 +207,10 @@ Jason Scott:
 [Source](https://bonuslifecomputers.com/products/altair-8800b-s-n-6500710k)
 [Link](https://bonuslifecomputers.com/cdn/shop/files/IMG_9544_1200x1200.jpg)
 ![](../images/altair.jpg)
+
+Kaldari:
+*Chimp Brain in a jar*
+(2008)
+[Source](https://en.wikipedia.org/wiki/File:Chimp_Brain_in_a_jar.jpg)
+[Link](https://upload.wikimedia.org/wikipedia/commons/1/14/Chimp_Brain_in_a_jar.jpg)
+![](../images/brain.jpg)
