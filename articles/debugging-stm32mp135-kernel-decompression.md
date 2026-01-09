@@ -1,7 +1,7 @@
 ---
 title: Debugging STM32MP135 Kernel Decompression
 author: Jakob Kastelic
-date:
+date: 9 Jan 2026
 topic: Linux
 description: >
    Tracing a silent STM32MP135 Linux boot hang: kernel decompression, JTAG

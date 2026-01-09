@@ -2,6 +2,7 @@
 title: USB Bring-Up on a Custom STM32MP135 Board
 author: Jakob Kastelic
 date: 4 Dec 2025
+modified: 9 Jan 2026
 topic: Embedded
 description: >
    Step-by-step guide to getting bare-metal USB working on a custom STM32MP135

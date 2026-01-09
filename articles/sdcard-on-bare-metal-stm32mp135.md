@@ -2,6 +2,7 @@
 title: SD card on bare-metal STM32MP135
 author: Jakob Kastelic
 date: 20 Dec 2025
+modified: 9 Jan 2026
 topic: Embedded
 description: >
     Debugging SDMMC failures on a custom STM32MP135 board. Timeouts, pull-ups,

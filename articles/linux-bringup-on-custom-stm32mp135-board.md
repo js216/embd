@@ -2,7 +2,7 @@
 title: Linux Bring-Up on a Custom STM32MP135 Board
 author: Jakob Kastelic
 date: 22 Dec 2025
-modified: 2 Jan 2026
+modified: 9 Jan 2026
 topic: Linux
 description: >
    Step-by-step account of bringing up Linux on a custom STM32MP135 board,
