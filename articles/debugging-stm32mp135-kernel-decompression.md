@@ -771,6 +771,7 @@ between the memory chip (`MT41K256M16TW-107:P TR`) and the SoC
 Let's check carefully what the DDR datasheet considers "upper" vs "lower":
 
 > `DQ[7:0]` Lower byte of bidirectional data bus for the x16 configuration.
+>
 > `DQ[15:8]` Upper byte of bidirectional data bus for the x16 configuration.
 
 In other words, we should have mapped `DQ[7:0]` together with the DDR signals
@@ -790,6 +791,60 @@ My confusion can be traced back to the eval board design, which similarly swaps
 the mask/strobe wires, except they also (correctly) swap the two `DQ` lanes. AI
 seems to be of little use: I can easy convince them either way regarding the
 correctness of my "semi-byte swap".
+
+### Simple software test for DDR correctness
+
+We saw above that the official ST DDR utility did not detect any problems with
+my incorrectly-wired DDR. After some prompting, Gemini 3 gave me the following
+test:
+
+```c
+void ddr_align_test(int argc, uint32_t arg1, uint32_t arg2, uint32_t arg3)
+{
+    (void)argc; (void)arg1; (void)arg2; (void)arg3;
+    uint32_t sctlr;
+
+    // 1. READ SCTLR
+    __asm__ volatile("mrc p15, 0, %0, c1, c0, 0" : "=r" (sctlr));
+    
+    // 2. DISABLE CACHE (Bit 2) AND MMU (Bit 0)
+    uint32_t sctlr_disabled = sctlr & ~((1 << 2) | (1 << 0));
+    __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r" (sctlr_disabled));
+    __asm__ volatile("isb sy"); // Instruction sync barrier
+
+    my_printf("!!! CACHE DISABLED !!! Testing raw hardware wires...\r\n");
+
+    volatile uint8_t *p8 = (volatile uint8_t *)0xc0001000;
+    
+    // Perform a partial write
+    p8[0] = 0xAA;
+    __asm__ volatile("dsb sy"); // Force pin toggle
+    
+    if (p8[0] != 0xAA) {
+        my_printf("FAILURE DETECTED: Byte 0 is 0x%02x (expected 0xAA)\r\n", p8[0]);
+    } else {
+        my_printf("SUCCESS: Byte 0 worked without cache.\r\n");
+    }
+
+    // 3. RE-ENABLE CACHE
+    __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" : : "r" (sctlr));
+    __asm__ volatile("isb sy");
+}
+```
+
+On the evaluation board, the printout is:
+
+```
+Eval board: !!! CACHE DISABLED !!! Testing raw hardware wires... 
+SUCCESS: Byte 0 worked without cache.
+```
+
+On my board:
+
+```
+!!! CACHE DISABLED !!! Testing raw hardware wires...
+FAILURE DETECTED: Byte 0 is 0x55 (expected 0xAA)
+```
 
 ### Next steps
 
