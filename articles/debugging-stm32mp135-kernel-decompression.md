@@ -787,7 +787,72 @@ But the data bits are not swapped, so this is incorrect:
     DDR:DQ[15:8] → SoC[15:8] (scrambled)
 
 My confusion can be traced back to the eval board design, which similarly swaps
-the mask/strobe wires, except they also (correctly) swap the two `DQ` lanes.
+the mask/strobe wires, except they also (correctly) swap the two `DQ` lanes. AI
+seems to be of little use: I can easy convince them either way regarding the
+correctness of my "semi-byte swap".
+
+### Next steps
+
+While the explanation in the previous section (swapped byte lanes) seems
+plausible enough to stop debugging at this point and wait for "Rev B", in the
+process I noted other possible avenues to explore:
+
+- Lower slew rate / drive strength or increase output impedance, to reduce
+  crosstalk
+- Disable data masking entirely, if DDR PHY supports it
+- Disable cache during decompression?
+- Try out slower slew-rate settings and increasing output impedance for DDR
+  controller
+- Lower DDR frequency and see if the corruption pattern is the same, worse,
+  better?
+- Experiment: Run bootloader, Run FWUTIL, Do NOT reset, Jump directly into Linux
+- Add more capacitance to the VREF nodes (1uF in parallel with the current
+  0.1uF)
+- Try to read out from DDR PHY registers the per-byte DQS delays, and per-bit DQ
+  delays, and compare with PCB geometry
+- Repeat training again and again and see if there's any variations (can I
+  detect training failures?)
+- Read out write levelling and DQS delay (read leveling) calibration results
+- My usual CPU-based DDR tests do not uncover a single bit flip, while the
+  heavily cached kernel decompressor shows huge corruption in the decompressed
+  output. How to reproduce that in my own code? Could the caches be
+  misconfigured, so they are somehow inappropriate for my PCB while being fine
+  on the eval board? Maybe caches don't do the same kind of training that DDR
+  does.
+
+### LSB swizzling
+
+Just because we found one issue with my connections, it does not mean we have
+found all of them. From the [same](https://jaycarlson.net/embedded-linux/)
+article by Jay Carlson:
+
+> Because DDR memory doesn't care about the order of the bits getting stored,
+> you can swap individual bits --- except the least-significant one if you're
+> using write-leveling --- in each byte lane with no issues.
+
+I have not been able to find any evidence of the LSB swapping restriction in ST
+literature (datasheet, reference manual, app notes). Indeed, one app note[^app]
+just says that the DDR3L connection features "two swappable bytes, and swappable
+bits in the same byte".
+
+However, the `MT41K` DDR3L datasheet includes a section on Write Leveling which
+explains what's up:
+
+> For better signal integrity, DDR3 SDRAM memory modules have adopted fly-by
+> topology for the commands, addresses, control signals, and clocks. Write
+> leveling is a scheme for the memory controller to adjust or de-skew the DQS
+> strobe (DQS, DQS#) to CK relationship at the DRAM with a simple feedback
+> feature provided by the DRAM.  Write leveling is generally used as part of the
+> initialization process, if required. For normal DRAM operation, this feature
+> must be disabled. [...]
+>
+> When write leveling is enabled, the rising edge of DQS samples CK, and the
+> prime DQ outputs the sampled CK’s status. The prime DQ for a x4 or x8
+> configuration is DQ0 with all other DQ (DQ[7:1]) driving LOW. The prime DQ for
+> a x16 configuration is DQ0 for the lower byte and DQ8 for the upper byte.
+
+So, just in case, we should make sure not to "swizzle" the two LSBs in each
+byte.
 
 <div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>
@@ -802,3 +867,6 @@ the mask/strobe wires, except they also (correctly) swap the two `DQ` lanes.
   <li><em>8. This article</em></li>
 </ul>
 </div>
+
+[^app]: Application note AN5692: DDR memory routing guidelines for STM32MP13x
+  product lines. January 2023.
