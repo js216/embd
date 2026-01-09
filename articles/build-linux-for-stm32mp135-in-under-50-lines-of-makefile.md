@@ -27,10 +27,6 @@ this work on a [custom board](https://github.com/js216/stm32mp135_test_board).
 
 ### Boot Linux on eval board
 
-*Note: the steps below can also be found in a short (< 50 lines) Makefile,
-accessible
-[here](https://github.com/js216/stm32mp135_test_board/blob/main/Makefile).*
-
 First, we need to obtain and build the bootloader. Note that we need to enable
 the STPMIC1, since it is used on the eval board:
 
@@ -126,16 +122,70 @@ Hey!: command not found
 
 That's it!
 
+### The Makefile
+
+Here's the full 49 lines:
+
+```makefile
+CONFIG_DIR := configs/custom
+CROSS_COMPILE = arm-linux-gnueabihf-
+LINUX_OPTS = ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE)
+
+all: boot config dtb kernel init root sd
+
+boot:
+	$(MAKE) -C bootloader -j$(shell nproc) CFLAGS_EXTRA=-DUSE_STPMIC1x=1
+
+patch:
+	for p in $(CONFIG_DIR)/patches/linux/*.patch; do \
+		if git -C linux apply --check ../$$p; then \
+			git -C linux apply ../$$p; \
+		fi \
+	done
+
+config:
+	cp $(CONFIG_DIR)/linux.config linux/.config
+
+dtb:
+	cp $(CONFIG_DIR)/board.dts linux/arch/arm/boot/dts/
+	$(MAKE) -C linux $(LINUX_OPTS) board.dtb
+
+kernel:
+	$(MAKE) -C linux $(LINUX_OPTS) -j$(shell nproc) zImage
+
+init:
+	mkdir -p build
+	$(CROSS_COMPILE)gcc -Os -nostdlib -static -fno-builtin \
+		-Wl,--gc-sections $(CONFIG_DIR)/init.c -o build/init
+
+root:
+	rm -rf build/rootfs.dir
+	mkdir -p build/rootfs.dir/sbin
+	cp build/init build/rootfs.dir/sbin/init
+	dd if=/dev/zero of=build/rootfs bs=1M count=10
+	mke2fs -t ext4 -F -d build/rootfs.dir build/rootfs
+
+sd:
+	python3 bootloader/scripts/sdimage.py build/sdcard.img \
+		bootloader/build/main.stm32
+		linux/arch/arm/boot/dts/board.dtb \
+		linux/arch/arm/boot/zImage \
+		--partition build/rootfs
+
+clean:
+	$(MAKE) -C linux $(LINUX_OPTS) clean
+	$(MAKE) -C bootloader clean
+	rm -rf build
+```
+
 ### Discussion
 
-The
-[Makefile](https://github.com/js216/stm32mp135_test_board/blob/main/Makefile)
-that reproduces the steps above is less than 50 lines long and creates a
-minimal, bootable SD card image in a very straightforward way: build the kernel,
-the DTB, and a userspace program (init), and package everything into a single SD
-card image. The next simplest thing to accomplish the same result is the
-"lightweight" [Buildroot](https://buildroot.org/), which needs nearly 100k lines
-of make. What could possibly be happening in all that code!?
+The Makefile that reproduces the steps above is less than 50 lines long and
+creates a minimal, bootable SD card image in a very straightforward way: build
+the kernel, the DTB, and a userspace program (init), and package everything into
+a single SD card image. The next simplest thing to accomplish the same result is
+the "lightweight" [Buildroot](https://buildroot.org/), which needs nearly 100k
+lines of make. What could possibly be happening in all that code!?
 
 The sentiment
 has been captured by the Reddit user `triffid_hunter` in a recent
