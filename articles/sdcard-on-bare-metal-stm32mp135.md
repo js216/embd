@@ -186,14 +186,13 @@ by exactly 2, and the pattern varied with each read. This behavior was not
 reproducible when filling DRAM directly with aligned 32-bit word writes, which
 always produced correct data.
 
-The root cause is that the STM32's DRAM interface and AXI bus require strict
-32-bit aligned writes. Byte-by-byte or unaligned half-word writes, as performed
-by memcpy, can trigger timing-dependent corruption in certain regions of DRAM,
-especially when interacting with uncached memory or peripheral-driven data like
-SDMMC polling reads. The SD read itself was not at fault; the static buffer
-contained the correct bytes.
+The root cause is that the DDR wiring swapped upper and lower data bytes in a
+way that only causes problems with non-32-bit data access. (The debugging
+process that led to that insight is explained in a [future
+article](https://embd.cc/debugging-stm32mp135-kernel-decompression.md).) The SD
+read itself was not at fault; the static buffer contained the correct bytes.
 
-The fix was to copy the SD block into DRAM using explicit 32-bit aligned word
-writes, constructing each word from four bytes of the static buffer. This
+The workaround was to copy the SD block into DRAM using explicit 32-bit aligned
+word writes, constructing each word from four bytes of the static buffer. This
 ensures all writes are properly aligned and word-sized, eliminating the
 intermittent errors and producing fully correct, reproducible data in DRAM.

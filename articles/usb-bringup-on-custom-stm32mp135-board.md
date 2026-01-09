@@ -273,8 +273,9 @@ Now that data can be read and written to, we observe an odd pattern:
 
 Every other byte is a bit wrong, or reshuffled. Sounds familiar? Yes, it happens
 if DDR writes are not aligned to word boundaries, as we experienced before with
-the SD card, copying it's data to DDR. (Somehow reads are not affected by this?
-ChatGPT says that AXI supports unaligned / byte reads natively, but not writes.)
+the SD card, copying it's data to DDR. (The debugging process that led to that
+insight is explained in a [future
+article](https://embd.cc/debugging-stm32mp135-kernel-decompression.md).)
 
 With the write fixed (i.e., done in correctly aligned units of 4 bytes), the
 device format works, and we can even copy files to the mass storage device, and

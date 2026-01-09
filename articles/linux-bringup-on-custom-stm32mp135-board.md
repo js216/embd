@@ -99,13 +99,13 @@ by exactly two, independent of bus width, clock edge, power supply, or signal
 integrity. The critical observation was that data read into a static buffer in
 SYSRAM was always correct, while corruption appeared only after copying that
 data into DDR using byte-wise writes such as memcpy. When DDR was written using
-explicit, 32-bit aligned word accesses, the corruption disappeared entirely. The
-root cause was therefore not the SD interface but unaligned byte and half-word
-writes to DDR, which violate the STM32MP13 DDR/AXI access requirements and can
-cause timing-dependent data corruption, especially when interacting with
-uncached memory and peripheral-driven transfers. Ensuring that all DDR writes
-are word-sized and properly aligned fully resolved the issue and restored
-correct, reproducible SD card operation on the custom board.
+explicit, 32-bit aligned word accesses, the corruption disappeared entirely.
+Ensuring that all DDR writes are word-sized and properly aligned provided a full
+workaround for the issue and restored correct, reproducible SD card operation on
+the Rev A custom board. (The issue is likely due to a mask/strobe swap in the
+DDR wiring; see
+[this](https://embd.cc/debugging-stm32mp135-kernel-decompression.md) for
+details.)
 
 ### USB
 
