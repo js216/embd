@@ -13,19 +13,41 @@ description: >
 *This is Part 8 in the series: Linux on STM32MP135. [See other
 articles.](#series-list)*
 
+My [STM32MP135 board](https://github.com/js216/stm32mp135_test_board) includes
+DDR3L RAM and initial tests shows that I can fill it up with pseudo-random data
+and read it back correctly. ST provides a DDR test
+[utility](https://github.com/STMicroelectronics/STM32DDRFW-UTIL) with a suite of
+memory tests, all of which pass. I decided to take it a step further and test
+the memory on a more intensive real-world task: "unzipping" a compressed file.
+
+### Summary
+
+The result of the decompression test was very bad: most of the file was
+uncompressed correctly, with just a few bits always wrong, and just a few of
+them only sometimes wrong. I spent two or three days tracing my way through the
+"unzip" code, instruction by instruction, to try to catch where exactly it goes
+wrong.
+
+In the end, I made an embarrassing discovery: I have partially swapped byte
+lanes. DDR3L on this SoC has two byte lanes, each consisting of {data, mask,
+strobe}. I have connected the data bits correctly, but swapped the mask & strobe
+between the two bytes. (Six high speed traces, some on inner layers—there's no
+fixing that by hand.) Had I also swapped the data bits, everything would have
+been fine; indeed, the eval board swaps all the wires, which led me astray.
+(Partially.)
+
+Sadly, AI was of no help in this instance. Given my DDR3L wiring, I can convince
+it either way: the connections are good; the connections are not good. In the
+end, only Rev B will tell for sure.
+
+### Problem statement
+
 In this article we will proceed with debugging boot of the compressed Linux
 kernel image (`zImage`) on a [custom
 board](https://github.com/js216/stm32mp135_test_board) populated with the
 STM32MP135 SoC. The starting point will be the build that runs on the
 evaluation board as described in the [previous
 article](https://embd.cc/build-linux-for-stm32mp135-in-under-50-lines-of-makefile).
-
-*Spoiler alert*: the data corruption is because of miswiring the DDR. See the
-last section of this post for details. Nevertheless, the rest of it can serve as
-a general guided tour of the debugging facilities usable with the early kernel
-boot.
-
-### Problem statement
 
 Despite booting just fine, the `zImage` gets stuck on boot on the custom board,
 without any messages printed to the UART console. Following along with the
