@@ -4,6 +4,8 @@ author: Jakob Kastelic
 date:
 topic: Linux
 description: >
+   Tracing a silent STM32MP135 Linux boot hang: kernel decompression, JTAG
+   debugging, and the DDR wiring mistake that caused deterministic corruption.
 ---
 
 ![](../images/altair.jpg)
