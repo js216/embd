@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="6 Jan 2026">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Step-by-step guide to build a minimal Linux root filesystem for the STM32MP135 including kernel and DTB build, init, and SD image setup.">
+<link rel="stylesheet" href="style.css">
+<title>Build Linux for STM32MP135 in under 50 Lines of Makefile</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Linux</div>
+<h2>Build Linux for STM32MP135 in under 50 Lines of Makefile</h2>
+<div class="article-meta">Published 6 Jan 2026, modified 9 Jan 2026. Written by Jakob Kastelic.</div>
+<p><img src="../images/rain.jpg" alt="" /></p>
+<p><em>This is Part 7 in the series: Linux on STM32MP135. <a href="#series-list">See other
+articles.</a></em></p>
+<p>In the <a href="https://embd.cc/linux-bringup-on-custom-stm32mp135-board">previous
+article</a> we took a
+<a href="https://github.com/js216/stm32mp135_test_board">custom STM32MP135 board</a> from a
+simple LED blink to passing the kernel early boot stage, printing the “Booting
+Linux” message. Now, it’s time to finish the kernel initialization all the way
+up to running our first process: the <code>init</code> process.</p>
+<p>We’ll do it in two steps. First, we make it run on the official <a href="https://www.st.com/en/evaluation-tools/stm32mp135f-dk.html">evaluation
+board</a> for the SoC.
+In a future article, we will consider what needs to be changed in order to make
+this work on a <a href="https://github.com/js216/stm32mp135_test_board">custom board</a>.</p>
+<h3 id="boot-linux-on-eval-board">Boot Linux on eval board</h3>
+<p>First, we need to obtain and build the bootloader. Note that we need to enable
+the STPMIC1, since it is used on the eval board:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:js216/stm32mp135-bootloader.git
+<span class="nb">cd</span><span class="w"> </span>stm32mp135-bootloader
+make<span class="w"> </span><span class="nv">CFLAGS_EXTRA</span><span class="o">=</span>-DUSE_STPMIC1x<span class="o">=</span><span class="m">1</span>
+<span class="nb">cd</span><span class="w"> </span>..
+</pre></div>
+</code></pre>
+<p>Next, we obtain the Linux kernel from the ST repository (contains a few
+non-standard ST-provided drivers):</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/STMicroelectronics/linux.git
+git<span class="w"> </span>checkout<span class="w"> </span>v6.1-stm32mp-r1.1
+</pre></div>
+</code></pre>
+<p>Let’s apply some patches (mainly to allow non-secure boot without
+<a href="https://embd.cc/stm32mp135-without-u-boot">U-Boot</a>,
+<a href="https://embd.cc/stm32mp135-without-optee">OPTEE</a>, or
+<a href="https://embd.cc/linux-bringup-on-custom-stm32mp135-board">TF-A</a>), and copy over
+the Device Tree Source (DTS), and the kernel configuration:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:js216/stm32mp135_test_board.git
+
+<span class="nb">cd</span><span class="w"> </span>linux
+git<span class="w"> </span>linux<span class="w"> </span>apply<span class="w"> </span>../configs/evb/patches/linux/*.patch
+<span class="nb">cd</span><span class="w"> </span>..
+
+cp<span class="w"> </span>config/evb/linux.config<span class="w"> </span>linux/.config
+cp<span class="w"> </span>config/evb/board.dts<span class="w"> </span>linux/arch/arm/boot/dts/
+</pre></div>
+</code></pre>
+<p>Now we can build the Device Tree Blob (DTB) and the kernel itself:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="nb">cd</span><span class="w"> </span>linux
+make<span class="w"> </span><span class="nv">ARCH</span><span class="o">=</span>arm<span class="w"> </span><span class="nv">CROSS_COMPILE</span><span class="o">=</span>arm-linux-gnueabihf-<span class="w"> </span>board.dtb
+make<span class="w"> </span><span class="nv">ARCH</span><span class="o">=</span>arm<span class="w"> </span><span class="nv">CROSS_COMPILE</span><span class="o">=</span>arm-linux-gnueabihf-<span class="w"> </span>zImage
+<span class="nb">cd</span><span class="w"> </span>..
+</pre></div>
+</code></pre>
+<p>Next, we need an init script. (Of course, you can also run the kernel without
+it, but be prepared for a kernel panic at the end of the boot, telling you the
+init is missing.) An init script can be essentially any program, even a “Hello,
+world!”, but if the init program quits, the kernel enters a panic again.</p>
+<p>I asked AI to write a minimal init, without any C standard library dependencies
+(find the result
+<a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">here</a>).
+Let’s compile it, making sure to tell the compiler to not link any extra code
+with it:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>arm-linux-gnueabihf-gcc<span class="w"> </span>-Os<span class="w"> </span>-nostdlib<span class="w"> </span>-static<span class="w"> </span>-fno-builtin<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>-Wl,--gc-sections<span class="w"> </span>config/init.c<span class="w"> </span>-o<span class="w"> </span>build/init
+</pre></div>
+</code></pre>
+<p>Now that we have an init program, we need a root filesystem to put it on:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>build/rootfs.dir/sbin
+cp<span class="w"> </span>build/init<span class="w"> </span>build/rootfs.dir/sbin/init
+dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/zero<span class="w"> </span><span class="nv">of</span><span class="o">=</span>build/rootfs<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>1M<span class="w"> </span><span class="nv">count</span><span class="o">=</span><span class="m">10</span>
+mke2fs<span class="w"> </span>-t<span class="w"> </span>ext4<span class="w"> </span>-F<span class="w"> </span>-d<span class="w"> </span>build/rootfs.dir<span class="w"> </span>build/rootfs
+</pre></div>
+</code></pre>
+<p>Finally, we collect all the pieces together with a simple Python script included
+in the bootloader distribution:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>python3<span class="w"> </span>bootloader/scripts/sdimage.py<span class="w"> </span>build/sdcard.img<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>bootloader/build/main.stm32<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>linux/arch/arm/boot/dts/board.dtb<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>linux/arch/arm/boot/zImage<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--partition<span class="w"> </span>build/rootfs
+</pre></div>
+</code></pre>
+<p>Write this image to the SD card and start the system, and prepare to be greeted
+by the very useless shell implemented in the minimal
+<a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">init program</a>):</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="o">[</span><span class="w">    </span><span class="m">1</span>.940577<span class="o">]</span><span class="w"> </span>Run<span class="w"> </span>/sbin/init<span class="w"> </span>as<span class="w"> </span>init<span class="w"> </span>process
+Hello,<span class="w"> </span>world!
+$<span class="w"> </span>ls
+ls:<span class="w"> </span><span class="nb">command</span><span class="w"> </span>not<span class="w"> </span>found
+$<span class="w"> </span>Hey!
+Hey!:<span class="w"> </span><span class="nb">command</span><span class="w"> </span>not<span class="w"> </span>found
+</pre></div>
+</code></pre>
+<p>That’s it!</p>
+<h3 id="the-makefile">The Makefile</h3>
+<p>Here’s the full 49 lines:</p>
+<pre><code class="language-makefile"><div class="codehilite"><pre><span></span><span class="nv">CONFIG_DIR</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span>configs/custom
+<span class="nv">CROSS_COMPILE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>arm-linux-gnueabihf-
+<span class="nv">LINUX_OPTS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ARCH</span><span class="o">=</span>arm<span class="w"> </span><span class="nv">CROSS_COMPILE</span><span class="o">=</span><span class="k">$(</span>CROSS_COMPILE<span class="k">)</span>
+
+<span class="nf">all</span><span class="o">:</span><span class="w"> </span><span class="n">boot</span> <span class="n">config</span> <span class="n">dtb</span> <span class="n">kernel</span> <span class="n">init</span> <span class="n">root</span> <span class="n">sd</span>
+
+<span class="nf">boot</span><span class="o">:</span>
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>bootloader<span class="w"> </span>-j<span class="k">$(</span>shell<span class="w"> </span>nproc<span class="k">)</span><span class="w"> </span><span class="nv">CFLAGS_EXTRA</span><span class="o">=</span>-DUSE_STPMIC1x<span class="o">=</span><span class="m">1</span>
+
+<span class="nf">patch</span><span class="o">:</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span>p<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/patches/linux/*.patch<span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="se">\</span>
+<span class="cp">		if git -C linux apply --check ../$$p; then \</span>
+<span class="cp">			git -C linux apply ../$$p; \</span>
+<span class="cp">		fi \</span>
+<span class="cp">	done</span>
+
+<span class="nf">config</span><span class="o">:</span>
+<span class="w">	</span>cp<span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/linux.config<span class="w"> </span>linux/.config
+
+<span class="nf">dtb</span><span class="o">:</span>
+<span class="w">	</span>cp<span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/board.dts<span class="w"> </span>linux/arch/arm/boot/dts/
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>linux<span class="w"> </span><span class="k">$(</span>LINUX_OPTS<span class="k">)</span><span class="w"> </span>board.dtb
+
+<span class="nf">kernel</span><span class="o">:</span>
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>linux<span class="w"> </span><span class="k">$(</span>LINUX_OPTS<span class="k">)</span><span class="w"> </span>-j<span class="k">$(</span>shell<span class="w"> </span>nproc<span class="k">)</span><span class="w"> </span>zImage
+
+<span class="nf">init</span><span class="o">:</span>
+<span class="w">	</span>mkdir<span class="w"> </span>-p<span class="w"> </span>build
+<span class="w">	</span><span class="k">$(</span>CROSS_COMPILE<span class="k">)</span>gcc<span class="w"> </span>-Os<span class="w"> </span>-nostdlib<span class="w"> </span>-static<span class="w"> </span>-fno-builtin<span class="w"> </span><span class="se">\</span>
+<span class="w">		</span>-Wl,--gc-sections<span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/init.c<span class="w"> </span>-o<span class="w"> </span>build/init
+
+<span class="nf">root</span><span class="o">:</span>
+<span class="w">	</span>rm<span class="w"> </span>-rf<span class="w"> </span>build/rootfs.dir
+<span class="w">	</span>mkdir<span class="w"> </span>-p<span class="w"> </span>build/rootfs.dir/sbin
+<span class="w">	</span>cp<span class="w"> </span>build/init<span class="w"> </span>build/rootfs.dir/sbin/init
+<span class="w">	</span>dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/zero<span class="w"> </span><span class="nv">of</span><span class="o">=</span>build/rootfs<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>1M<span class="w"> </span><span class="nv">count</span><span class="o">=</span><span class="m">10</span>
+<span class="w">	</span>mke2fs<span class="w"> </span>-t<span class="w"> </span>ext4<span class="w"> </span>-F<span class="w"> </span>-d<span class="w"> </span>build/rootfs.dir<span class="w"> </span>build/rootfs
+
+<span class="nf">sd</span><span class="o">:</span>
+<span class="w">	</span>python3<span class="w"> </span>bootloader/scripts/sdimage.py<span class="w"> </span>build/sdcard.img<span class="w"> </span><span class="se">\</span>
+<span class="w">		</span>bootloader/build/main.stm32
+<span class="w">		</span>linux/arch/arm/boot/dts/board.dtb<span class="w"> </span><span class="se">\</span>
+<span class="w">		</span>linux/arch/arm/boot/zImage<span class="w"> </span><span class="se">\</span>
+<span class="w">		</span>--partition<span class="w"> </span>build/rootfs
+
+<span class="nf">clean</span><span class="o">:</span>
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>linux<span class="w"> </span><span class="k">$(</span>LINUX_OPTS<span class="k">)</span><span class="w"> </span>clean
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>bootloader<span class="w"> </span>clean
+<span class="w">	</span>rm<span class="w"> </span>-rf<span class="w"> </span>build
+</pre></div>
+</code></pre>
+<h3 id="discussion">Discussion</h3>
+<p>The Makefile that reproduces the steps above is less than 50 lines long and
+creates a minimal, bootable SD card image in a very straightforward way: build
+the kernel, the DTB, and a userspace program (init), and package everything into
+a single SD card image. The next simplest thing to accomplish the same result is
+the “lightweight” <a href="https://buildroot.org/">Buildroot</a>, which needs nearly 100k
+lines of make. What could possibly be happening in all that code!?</p>
+<p>The sentiment
+has been captured by the Reddit user <code>triffid_hunter</code> in a recent
+<a href="https://www.reddit.com/r/embedded/comments/1pqg3ty/embedded_systems_are_really_hard_to_learn">comment</a>:</p>
+<blockquote>
+<p>I find that the hardest part about embedded is the horrendously obtuse
+manufacturer-provided toolchains.</p>
+<p>If I can find a way to ditch them and switch to gcc+Makefile+basic C
+libraries, that’s the first thing I’ll do.</p>
+</blockquote>
+<p>Buildroot is a relatively clean solution to the problem of supporting a huge
+number of packages on a wide variety of boards, but most of that complexity is
+not needed for a single-board project. (Yocto is an even more complex system,
+which we won’t cover here—its simplicity for the user comes at the cost of
+massive implementation complexity.) From my point of view, all these hundreds of
+thousands of lines of code are simply “accidental complexity” as articulated by
+ESR:</p>
+<blockquote>
+<p>Accidental complexity happens because someone didn’t find the simplest way to
+implement a specified set of features. Accidental complexity can be
+eliminated by good design, or good redesign.<sup class="footnote-ref"><a href="#d343fcde-fn1" id="d343fcde-fnref1">[1]</a></sup></p>
+</blockquote>
+<p>The “root cause” of the highly complex toolchains has been identified by
+Anna-Lena Marx (inovex GmbH) in a talk<sup class="footnote-ref"><a href="#d343fcde-fn2" id="d343fcde-fnref2">[2]</a></sup> last year: the goals of SoC
+vendors and product manufacturers are not aligned. The SoC vendor wants to show
+off all the features of their devices, and they want a Board Support Package
+(BSP) that supports several, even all, of the devices in their portfolio. They
+want a “turnkey solution” that allows an engineer to go from nothing to a
+full-featured demo in ten minutes.</p>
+<p>In contrast, a product manufacturer who wants to use embedded Linux in their
+application-specific product wants a minimal software stack, as close as
+possible to the upstream stable versions in order to be stable, secure, &amp;
+maintainable. It’s the difference between merely using the system, and owning
+it.</p>
+<p>From the product side, I can concur that the SoC BSPs can be a nightmare to work
+with! They are simple to get started with, being a packaged “turnkey solution”,
+but require a massive amount of work to unpeel all the abstraction layers that
+the SoC vendor found necessary to support their entire ecosystem of devices. ST,
+being perhaps the most “hacker friendly” vendor, likely has the cleanest, most
+“upstreamed” offering, and still there’s loads of cruft that must be removed
+before getting to something workable.</p>
+<p>I would like a world where SoC vendors ship their product with simple,
+straightforward <em>documentation</em>, rather than monolithic code examples. Give me
+the smallest possible building blocks and tell me how to connect them together
+to accomplish something, rather than give the huge all-in-one example code that
+can take many tens of hours to pull apart and reassemble. In other words, I
+expect a Linux distribution to approach to the ideal of <a href="https://embd.cc/unix-contributions">Unix
+philosophy</a> much more closely, all the more
+so in an embedded, resource-constrained, highly reliable application.</p>
+<div class="series-box">
+<h3 id="series-list">All Articles in This Series</h3>
+<ul>
+  <li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
+  <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
+  <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
+  <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
+  <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
+  <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
+  <li><em>7. This article</em></li>
+</ul>
+</div>
+<hr class="footnotes-sep" />
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="d343fcde-fn1" class="footnote-item"><p>Eric S. Raymond: The Art of Unix Programming. Addison-Wesley, 2004. <a href="#d343fcde-fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="d343fcde-fn2" class="footnote-item"><p>Anna-Lena Marx (inovex GmbH): <em>Your Vendor’s BSP Is Probably Not Built
+for Product Longevity</em>. Yocto Project Summit, December 2025. Quoted on
+1/5/2026 from <a href="https://marx.engineer/content/talks/2025_Yocto-Summit_Your-Vendors-BSP-Is-Probably-Not-Built-For-Product-Longevity.pdf">this URL</a> <a href="#d343fcde-fnref2" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+
+</div>
+
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+
+</body>
+</html>

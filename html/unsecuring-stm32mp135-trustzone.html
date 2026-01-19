@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="21 Dec 2025">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A practical guide to disabling TrustZone protections on the STM32MP135, covering secure monitor calls, SCR.NS transitions, and unsecuring DDR, GIC, ETZPC, clocks, GPIOs, and peripherals for bare-metal execution.">
+<link rel="stylesheet" href="style.css">
+<title>Unsecuring STM32MP135 TrustZone</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Embedded</div>
+<h2>Unsecuring STM32MP135 TrustZone</h2>
+<div class="article-meta">Published 21 Dec 2025. Written by Jakob Kastelic.</div>
+<p><img src="../images/mia.jpg" alt="" /></p>
+<p>The STM32MP135 integrates the Arm TrustZone extension which partitions the
+system into two isolated security domains, the secure and non-secure worlds,
+depending on the state of the <code>NS</code> bit. On reset, it executes in the secure
+world (<code>NS=0</code>), but in normal operation, we want <code>NS=1</code>.</p>
+<p>In this article, we explain how to execute the world transitions in a bare-metal
+environment. See <a href="https://embd.cc/stm32mp135-without-optee">this article</a> to
+learn how to do it in the context of Arm Trusted Firmware (TF-A) and Linux.</p>
+<h3 id="change-worlds-with-smc-handler">Change worlds with SMC handler</h3>
+<p>The <code>NS</code> bit is only supposed to be flipped in the Secure Monitor handler,
+invoked with the <code>smc</code> instruction. Thus a minimum handler might look as follows
+(assumes the return address is passed in via <code>r3</code>):</p>
+<pre><code class="language-asm"><div class="codehilite"><pre><span></span><span class="na">.align</span><span class="w"> </span><span class="mi">2</span>
+<span class="nl">sm_smc_entry:</span>
+<span class="w">   </span><span class="nf">mrc</span><span class="w"> </span><span class="no">p15</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="c1">// read SCR</span>
+<span class="w">   </span><span class="nf">orr</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="c1">#SCR_NS</span>
+<span class="w">   </span><span class="nf">mcr</span><span class="w"> </span><span class="no">p15</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="c1">// write SCR</span>
+<span class="w">   </span><span class="nf">mov</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="mi">#0</span>
+
+<span class="w">   </span><span class="nf">mov</span><span class="w"> </span><span class="no">r4</span><span class="p">,</span><span class="w"> </span><span class="c1">#(CPSR_MODE_SVC | CPSR_I | CPSR_F)</span>
+<span class="w">   </span><span class="nf">push</span><span class="w">  </span><span class="p">{</span><span class="no">r4</span><span class="p">}</span><span class="w"> </span><span class="c1">// CPSR after return</span>
+<span class="w">   </span><span class="nf">push</span><span class="w">  </span><span class="p">{</span><span class="no">r3</span><span class="p">}</span><span class="w"> </span><span class="c1">// PC after return</span>
+<span class="w">   </span><span class="nf">rfefd</span><span class="w"> </span><span class="no">sp</span>
+</pre></div>
+</code></pre>
+<p>We see that the <code>NS</code> bit lives in the <code>SCR</code> register, and that there is a
+special syntax to access that register. To exit from the SMC handler, we push
+the desired exception state (SVC mode with IRQ and FIQ disabled) on the stack
+together with the return address, and then exit with <code>rfefd sp</code>.</p>
+<h3 id="installing-the-smc-handler">Installing the SMC handler</h3>
+<p>Before we can call <code>smc</code>, we should create the exception table. If the SMC is
+the only exception we care about, a minimal table might look as follows:</p>
+<pre><code class="language-asm"><div class="codehilite"><pre><span></span><span class="na">.align</span><span class="w"> </span><span class="mi">5</span>
+<span class="nl">sm_vect_table:</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Reset</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Undefined instruction</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="no">sm_smc_entry</span><span class="w"> </span><span class="c1">// Secure monitor call</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Prefetch abort</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Data abort</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Reserved</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// IRQ</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// FIQ</span>
+</pre></div>
+</code></pre>
+<p>Then, sometime before calling <code>smc</code>, install it in the <code>MVBAR</code> register as
+follows:</p>
+<pre><code class="language-asm"><div class="codehilite"><pre><span></span><span class="nf">ldr</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="err">=</span><span class="no">sm_vect_table</span>
+<span class="nf">mcr</span><span class="w"> </span><span class="no">p15</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">c12</span><span class="p">,</span><span class="w"> </span><span class="no">c0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="c1">// MVBAR</span>
+</pre></div>
+</code></pre>
+<h3 id="unsecuring-the-system">Unsecuring the system</h3>
+<p>The system and peripherals must be set up with access allowed from the
+non-secure world before we flip the <code>NS</code> bit, otherwise the system will just
+freeze. Here’s a list of things that must be unsecured before the flip:</p>
+<ul>
+<li>DDR unsecured via the TZC-400 firewall</li>
+<li>GIC distributor and CPU interface</li>
+<li>ETZPC = Embedded TrustZone Protection Controller</li>
+<li>Clock and reset control (RCC)</li>
+<li>Pin controller / all GPIO banks</li>
+</ul>
+<p>In the following sections, we will examine these one by one, showing how to
+unsecure then and how to verify they have been unsecured.</p>
+<h3 id="unsecure-ddr-with-tzc-400">Unsecure DDR with TZC-400</h3>
+<p>Let’s configure the TZC to allow DDR <code>Region0</code> R/W non-secure access for all
+IDs. While we can use the TZC to partition the RAM into several regions, we will
+use <code>Region0</code> only which is always enabled. (The region implicitly covers the
+entire address space.)</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">TZC</span><span class="o">-&gt;</span><span class="n">GATE_KEEPER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">TZC</span><span class="o">-&gt;</span><span class="n">REG_ID_ACCESSO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xFFFFFFFF</span><span class="p">;</span>
+<span class="n">TZC</span><span class="o">-&gt;</span><span class="n">REG_ATTRIBUTESO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xC0000001</span><span class="p">;</span>
+<span class="n">TZC</span><span class="o">-&gt;</span><span class="n">GATE_KEEPER</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="mi">1U</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>First, the “gate keeper” is disabled so that we can modify the configuration.
+Then, we set the access bits to all ones, so that that each NSAID gets both
+write and read permission. Next, we set the attributes so that secure global
+write and read are enabled, and the filter is enabled for the region. Finally,
+we “close” the gate keeper so that the configuration is active.</p>
+<p>To verify that the configuration worked, we print out all the fields from the
+TZC struct defined in the CMSIS Device Peripheral Access Layer Header File
+(<code>stm32mp135fxx_ca7.h</code>):</p>
+<pre><code>[TZC dump] begin
+  BUILD_CONFIG     = 0x00001F08
+  ACTION           = 0x00000000
+  GATE_KEEPER      = 0x00010001
+  SPECULATION_CTRL = 0x00000000
+  REG_BASE_LOWO    = 0x00000000
+  REG_BASE_HIGHO   = 0x00000000
+  REG_TOP_LOWO     = 0xFFFFFFFF
+  REG_TOP_HIGHO    = 0x00000000
+  REG_ATTRIBUTESO  = 0xC0000001
+  REG_ID_ACCESSO   = 0xFFFFFFFF
+[TZC dump] end
+</code></pre>
+<p>Of course, we will not be able to verify that the configuration actually works
+till we unsecure everything else on the list. Then, we will switch the CPU to
+nonsecure world and verify that read and write from DDR succeeds.</p>
+<h3 id="gic-distributor">GIC distributor</h3>
+<p>The Generic Interrupt Controller is split into two parts: the Distributor (GICD)
+takes care of the global IRQ configuration, while the CPU interface (GICC) does
+the per-CPU IRQ delivery. In TrustZone, there are two interrupt groups:</p>
+<ul>
+<li>Group 0 corresponds to the Secure world</li>
+<li>Group 1 corresponds to the Non-Secure world</li>
+</ul>
+<p>Now we go step by step, enabling non-secure access to/from interrupts. First we
+configure the interrupts themselves as non-secure:</p>
+<p>Allow both Group 0 and 1 interrupts to be forwarded from the GICD to the CPU
+interfaces. The GICD control register (<code>GICD_CTLR</code>) is included in the CMSIS
+file <code>core_ca.h</code> in the <code>GICDistributor_Type</code> struct:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">CTLR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x03U</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>Just before switching to non-secure world, we will disable all interrupts, mark
+them as non-pending, and move to Group 1 (non-secure):</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">num_reg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">num_reg</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">ICENABLER</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffffffff</span><span class="p">;</span>
+<span class="w">  </span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">ICPENDR</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffffffff</span><span class="p">;</span>
+<span class="w">  </span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">IGROUPR</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffffffff</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<h3 id="gic-cpu-interface">GIC CPU interface</h3>
+<p>In the CPU interface control register, enable Group 1 signaling:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GICInterface</span><span class="o">-&gt;</span><span class="n">CTLR</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="mh">0x03U</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>Priority masking: allow all priority levels to pass through:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GICInterface</span><span class="o">-&gt;</span><span class="n">PMR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xFFU</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>Now we can dump all the GICC registers after handoff:</p>
+<pre><code><div class="codehilite"><pre><span></span>[GICC dump] begin
+  CTLR    = 0x00000003
+  PMR     = 0x000000F8
+  BPR     = 0x00000002
+  IAR     = 0x000003FF
+  EOIR    = 0x00000000
+  RPR     = 0x000000FF
+  HPPIR   = 0x000003FF
+  ABPR    = 0x00000003
+  AIAR    = 0x000003FF
+  AEOIR   = 0x00000000
+  AHPPIR  = 0x000003FF
+  STATUSR = 0x00000000
+  APR[0]   = 0x00000000
+  APR[1]   = 0x00000000
+  APR[2]   = 0x00000000
+  APR[3]   = 0x00000000
+  NSAPR[0] = 0x00000000
+  NSAPR[1] = 0x00000000
+  NSAPR[2] = 0x00000000
+  NSAPR[3] = 0x00000000
+  IIDR    = 0x0102143B
+  DIR     = 0x00000000
+[GICC dump] end
+</pre></div>
+</code></pre>
+<p>This means:</p>
+<ul>
+<li><code>CTLR</code> enables Group 0 and 1 interrupts</li>
+<li><code>PMR</code> sets <code>PRIORITY[4:0] = 0b11111</code>, which allows all non-secure interrupts
+to be signaled</li>
+<li><code>BPR</code> controls how the 8-bit interrupt priority field is split into a group
+priority field</li>
+<li><code>IAR</code> shows <code>CPUID = 0</code>, and <code>INTERRUPT_ID</code> = 1023, which indicates a
+“Spurious interrupt ID” (no pending interrupt at the CPU interface)</li>
+<li><code>EOIR</code>: <code>CPUID = 0</code>, end-of-interrupt ID = 0, i.e. no interrupt being
+completed</li>
+<li><code>RPR</code>: <code>PRIORITY[4:0] = 0b11111</code>, current running priority on the CPU
+interface indicates no active interrupt</li>
+</ul>
+<h3 id="etzpc--enhanced-trustzone-protection-controller">ETZPC = Enhanced TrustZone Protection Controller</h3>
+<p>Now we open access to all peripherals protected by ETZPC. Luckily the ST HAL
+includes a function to open the entire ETZPC to non-secure access:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">__HAL_RCC_ETZPC_CLK_ENABLE</span><span class="p">();</span>
+
+<span class="c1">// unsecure SYSRAM</span>
+<span class="n">LL_ETZPC_SetSecureSysRamSize</span><span class="p">(</span><span class="n">ETZPC</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+
+<span class="c1">// unsecure peripherals</span>
+<span class="n">LL_ETZPC_Set_All_PeriphProtection</span><span class="p">(</span><span class="n">ETZPC</span><span class="p">,</span>
+<span class="w">     </span><span class="n">LL_ETZPC_PERIPH_PROTECTION_READ_WRITE_NONSECURE</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>Let’s print out the ETZPC registers after running this:</p>
+<pre><code><div class="codehilite"><pre><span></span>[ETZPC dump] begin
+  TZMA0_SIZE       = 0x8000000D
+  TZMA1_SIZE       = 0x00000000
+  DECPROT0         = 0xFFFFFFFF
+  DECPROT1         = 0xFFFFFFFF
+  DECPROT2         = 0xFFFFFFFF
+  DECPROT3         = 0xFFFFFFFF
+  DECPROT4         = 0x00000000
+  DECPROT5         = 0x00000000
+  DECPROT_LOCK0    = 0x00000000
+  DECPROT_LOCK1    = 0x00000000
+  DECPROT_LOCK2    = 0x00000000
+  HWCFGR           = 0x00004002
+  IP_VER           = 0x00000020
+  ID               = 0x00100061
+  SID              = 0xA3C5DD01
+[ETZPC dump] end
+</pre></div>
+</code></pre>
+<p>This means that SYSRAM and ETZPC are fully non-secure.</p>
+<h3 id="clock-and-reset-control-rcc">Clock and reset control (RCC)</h3>
+<p>Through the RCC secure configuration register (<code>RCC_SECCFGR</code>), we may configure
+various clocks to be either secure or non-secure. Easy enough to unsecure:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">RCC</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<h3 id="pin-controller--all-gpio-banks">Pin controller / all GPIO banks</h3>
+<p>Likewise, after enabling the GPIOs, we need to allow non-secure access to them:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GPIOA</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOB</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOC</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOD</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOE</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOF</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOG</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOH</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<h3 id="state-of-the-boot-process-so-far">State of the boot process so far</h3>
+<p>With the steps above done, a program will run in the non-secure world (<code>NS=1</code>).
+However, most of the diagnostics to get there will probe secure-only registers,
+such as those used by the TZC, which will result in an immediate undefined
+instruction or similar abort.</p>
+<p>In other words, in non-secure world, you are limited to non-secure things!</p>
+
+</div>
+
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+
+</body>
+</html>

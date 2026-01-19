@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="4 Dec 2025">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Step-by-step guide to getting bare-metal USB working on a custom STM32MP135 board, including hardware fixes, HAL configuration, and debugging USB enumeration issues.">
+<link rel="stylesheet" href="style.css">
+<title>USB Bring-Up on a Custom STM32MP135 Board</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Embedded</div>
+<h2>USB Bring-Up on a Custom STM32MP135 Board</h2>
+<div class="article-meta">Published 4 Dec 2025, modified 9 Jan 2026. Written by Jakob Kastelic.</div>
+<p><img src="../images/zen.jpg" alt="" /></p>
+<p>Getting USB up and running in bare-metal mode using the ST HAL drivers on my
+<a href="https://github.com/js216/stm32mp135_test_board">custom STM32MP135</a> board took a
+couple attempts. After a few false starts with the example projects, I was able
+to make the board enumerate correctly, handle data transfers, and even read and
+write files reliably. In this article, I’ll walk through the hardware tweaks,
+HAL configuration, and debugging steps that helped me turn a stubborn USB
+interface into a fully working USB Mass Storage device.</p>
+<h3 id="initial-attempts">Initial attempts</h3>
+<p>I gave up trying to make the provided <code>CDC_Standalone</code> example from
+<a href="https://wiki.st.com/stm32mpu/wiki/STM32CubeMP13_Package_-_Getting_started"><code>STM32Cube_FW_MP13_V1.2.0</code></a>
+to work on the eval board, let alone the custom board. Instead, let’s get USB to
+work step by step.</p>
+<p>First, the <code>VDD3V3_USBHS</code> must not be powered on when <code>VDDA1V8_REG</code> is not
+present. For that, we have the switch U201 (NCP380), but the board unfortunately
+uses the adjustable-current version of the switch w/o the adjustment resistor
+present, so the USBHS circuitry is disabled. So we first have to solder a
+resistor (I had 39k + 10k at hand) to enable power to the USB circuit.</p>
+<p>With that fix, if I reset the device with <code>BOOT=000</code> (so PA13 LED blinks), then
+plug the USB cable, then the LED stops blinking and the device manager shows
+<code>DFU in FS Mode @Device ID /0x501, @Revision ID /0x1003</code> as it should—so the
+hardware works, we just need to fix the code. (Without the added resistor,
+Windows was not able to enumerate the device and the Device Manager shows it as
+<code>Unknown USB Device (Device Descriptor Request Failed)</code>.)</p>
+<p>In the <code>main()</code> function, I blink LED and print “:” on UART4 every second after
+starting the USB using <code>MX_USB_OTG_HS_PCD_Init()</code> and <code>HAL_PCD_Start();</code>
+functions. If I load the code with the USB cable plugged in, the “:” signs get
+printed every second as they should, and also the LED blinks. If I unplug the
+USB cable, then the printing and blinking stops—the code appears locked up.
+The code also locks up if I select “Disable device” in Windows Device Manager.
+If I load the code with USB cable not plugged in, only the first “:” gets
+printed and then the code locks up.</p>
+<h3 id="vbus-sense">VBUS sense?</h3>
+<p>Before the main loop we also see that <code>OTG_GCCFG: 0x00000000</code>, which means that
+both of the following are disabled:</p>
+<ul>
+<li>IDEN: USB ID detection enable</li>
+<li>VBDEN: USB VBUS detection enable</li>
+</ul>
+<p>Note that the hardware has a permanent 1.5K pullup (up to +3.3V) on D+, so the
+USB driver does not need VBUS sensing. (The board is externally powered, so
+removing the cable would not unpower the core or the USB PHY.) We explicitly
+disable sensing VBUS in <code>MX_USB_OTG_HS_PCD_Init()</code>, where we create the
+structure passed to <code>HAL_PCD_Init()</code> with the following line:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">hpcd_USB_OTG_HS</span><span class="p">.</span><span class="n">Init</span><span class="p">.</span><span class="n">vbus_sensing_enable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DISABLE</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>With that request, the driver function <code>USB_DevInit()</code> clears the enable for
+VBUS sensing in the <code>GCCFG</code> register:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cfg</span><span class="p">.</span><span class="n">vbus_sensing_enable</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0U</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="n">USBx_DEVICE</span><span class="o">-&gt;</span><span class="n">DCTL</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">USB_OTG_DCTL_SDIS</span><span class="p">;</span>
+
+<span class="cm">/* Deactivate VBUS Sensing B */</span>
+<span class="n">USBx</span><span class="o">-&gt;</span><span class="n">GCCFG</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="o">~</span><span class="n">USB_OTG_GCCFG_VBDEN</span><span class="p">;</span>
+
+<span class="cm">/* B-peripheral session valid override enable */</span>
+<span class="n">USBx</span><span class="o">-&gt;</span><span class="n">GOTGCTL</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">USB_OTG_GOTGCTL_BVALOEN</span><span class="p">;</span>
+<span class="n">USBx</span><span class="o">-&gt;</span><span class="n">GOTGCTL</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">USB_OTG_GOTGCTL_BVALOVAL</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<h3 id="interrupt-storm">Interrupt storm?</h3>
+<p>I checked that the USB interrupt service routine (<code>HAL_PCD_IRQHandler()</code>) is
+linked by locating it in the map file (and not in the “Discarded input
+sections”!). Just before the main loop, we print <code>OTG_GAHBCFG: 0x00000001</code>,
+showing that OTG USB interrupts are unmasked, and <code>OTG_GINTMSK: 0x803C3810</code>,
+which means the following interrupts are enabled:</p>
+<ul>
+<li>Bit 4: RXFLVLM: Receive FIFO non-empty mask</li>
+<li>Bit 11: USBSUSPM: USB suspend mask</li>
+<li>Bit 12: USBRST: USB reset mask</li>
+<li>Bit 13: ENUMDNEM: Enumeration done mask</li>
+<li>Bit 18: IEPINT: IN endpoints interrupt mask</li>
+<li>Bit 19: OEPINT: OUT endpoints interrupt mask</li>
+<li>Bit 20: IISOIXFRM: Incomplete isochronous IN transfer mask</li>
+<li>Bit 21: IISOOXFRM: Incomplete isochronous OUT transfer mask</li>
+<li>Bit 31: WUIM: Resume/remote wake-up detected interrupt mask</li>
+</ul>
+<p>If we <code>IRQ_Disable(OTG_IRQn)</code> before the main loop, than “Disable device” and
+“Enable device” do not cause the core lockup. So, we just need to find out which
+of the OTG USB interrupts exactly are not correctly handled, one by one.</p>
+<p>If we enable just <code>USBSUSPM</code>, the locked happens. If we allow all the interrupts
+that HAL enables, and then disable <code>USBSUSPM</code>, the lockup does <em>not</em> happen.</p>
+<p>If we enable <code>USBRST</code> only, lockup does not happen. If we in addition add
+<code>ENUMDNEM</code>, still no lockup. Add <code>IEPINT</code>, no lockup. Add <code>OEPINT</code>, no lockup.
+Add <code>IISOIXFRM</code>, <code>PXFRM_IISOOXFRM</code>, and <code>WUIM</code>: no lockup.</p>
+<p>If <code>USBRST</code> is the only enabled OTG interrupt, then the code locks up if the
+cable is not plugged in when it starts executing, but it does not lock up if the
+cable is present when it starts executing and is then unplugged.</p>
+<p>If <code>USBSUSPM</code> is the only enabled OTG interrupt, then the code locks up both if
+the cable is not present initially, or if it is unplugged later.</p>
+<h3 id="jtag-again">JTAG again</h3>
+<p>Meanwhile I figured out how to get the JTAG to work mostly reliably. First,
+remember to boot with <code>BOOT=100</code>, the “Engineering debug mode”, otherwise the
+JTAG is disabled. Then, the procedure is</p>
+<ol>
+<li>Turn the 1.35V supply off and on again.</li>
+<li>Press the reset button on the PCB.</li>
+<li>Open <code>JLinkGDBServer.exe</code></li>
+<li>Call <code>arm-none-eabi-gdb -q -x load.gdb</code></li>
+</ol>
+<p>The <code>load.gdb</code> file is as follows:</p>
+<pre><code>set confirm off
+set pagination off
+file build/main.elf
+target remote localhost:2330
+monitor reset
+monitor flash device=STM32MP135F
+load build/main.elf
+monitor go
+break main
+step
+</code></pre>
+<p>Loaded with the debugger, the program runs as before, and once USB “Disable
+device” is clicked from the Windows Device Manager, the following appears on the
+debugger after pressing Ctrl-C:</p>
+<pre><code>Program received signal SIGTRAP, Trace/breakpoint trap.
+0x2ffe0104 in Vectors () at drivers/startup_stm32mp135fxx_ca7.c:444
+444       __asm__ volatile(
+(gdb) bt
+#0  0x2ffe0104 in Vectors () at drivers/startup_stm32mp135fxx_ca7.c:444
+Backtrace stopped: previous frame identical to this frame (corrupt stack?)
+(gdb)
+</code></pre>
+<p>Searching the forums, I found a
+<a href="https://community.st.com/t5/stm32-mpus-embedded-software-and/stm32mp1-interrupt-causes-undefined-exception-in-arm-mode-but/td-p/745347">post</a>
+where user bsvi discovered that <code>startup_stm32mp135fxx_ca7.c</code> take interrupts to
+thumb mode in the <code>Reset_Handler()</code>:</p>
+<pre><code>/* Set TE bit to take exceptions in Thumb mode */
+&quot;ORR R0, R0, #(0x1 &lt;&lt; 30) \n&quot;
+</code></pre>
+<p>If the vector table is aligned and encoded as ARM mode, the of course it cannot
+work. Adding <code>-mthumb</code> and the interrupt immediately fired as was able to
+confirm via a flashing LED at the top of the <code>HAL_PCD_IRQHandler()</code>. Stopping
+the debugger there (Ctrl-C) confirmed that the code was executing there.</p>
+<p>Better yet, we can remove the <code>-mthumb</code> and simply take interrupts to ARM mode:</p>
+<pre><code>/* TE = 0, exceptions enter ARM mode */
+&quot;BIC R0, R0, #(1 &lt;&lt; 30) \n&quot;
+</code></pre>
+<p>I changed the debug code at the top of <code>HAL_PCD_IRQHandler()</code> to just a print
+statement, and it prints any time the USB cable is plugged in and out. Great!</p>
+<h3 id="usb-device-stack">USB Device Stack</h3>
+<p>Now that USB interrupts are no longer freezing the whole system, we can begin
+work on integrating the ST USB Device “middleware”. The initialization proceeds
+as the following approximate sequence of function calls:</p>
+<pre><code>MX_USB_Device_Init (usb_device.c)
+   USBD_Init (usbd_core.c)
+      USBD_LL_Init (usb_conf.c)
+         HAL_PCD_Init (usbd_conf.c)
+         HAL_PCDEx_SetRxFiFo (stm32mp13xx_hal_pcd_ex.c)
+         HAL_PCDEx_SetTxFiFo (stm32mp13xx_hal_pcd_ex.c)
+   USBD_RegisterClass (usbd_core.c)
+   USBD_CDC_RegisterInterface (usbd_cdc.c)
+   USBD_Start (usbd_core.c)
+      USBD_LL_Start (usbd_conf.c)
+         HAL_PCD_Start (stm32mp13xx_hal_pcd.c)
+            USB_DevConnect (stm32mp13xx_ll_usb.c)
+         USBD_Get_USB_Status (usbd_conf.c)
+</code></pre>
+<p>The example above is for a CDC-class application, but here we’re interested in a
+mass-storage class device (MSC). The USB files divide into four types:</p>
+<ul>
+<li>HAL drivers: <code>stm32mp13xx_ll_usb.c</code>, <code>stm32mp13xx_hal_pcd.c</code>,
+<code>stm32mp13xx_hal_pcd_ex.c</code></li>
+<li>USB device core: <code>usbd_core.c</code>, <code>usbd_ctlreq.h</code>, <code>usbd_ioreq.c</code></li>
+<li>USB class: <code>usbd_msc.c</code>, <code>usbd_msc_bot.c</code>, <code>usbd_msc_data.c</code>,
+<code>usbd_msc_scsi.c</code></li>
+<li>app-specific: <code>usb_device.c</code>, <code>usbd_conf.c</code>, <code>usbd_desc.c</code>, <code>usbd_msc_storage.c</code></li>
+</ul>
+<p>An example of how the ST drivers are used for MSC class is provided in
+<a href="https://github.com/4ms/stm32mp1-baremetal/tree/master/examples/usb_msc_device">this</a>
+repository.</p>
+<p>For testing, we call the following from the main function:</p>
+<pre><code>USBD_Init(&amp;USBD_Device, &amp;MSC_Desc, 0);
+USBD_RegisterClass(&amp;USBD_Device, USBD_MSC_CLASS);
+USBD_MSC_RegisterStorage(&amp;USBD_Device, &amp;USBD_MSC_fops);
+USBD_Start(&amp;USBD_Device);
+</code></pre>
+<p>The functions complete, and then the main loop is active, blinking LED and
+printing to UART. The debug print in <code>HAL_PCD_IRQHandler</code> shows that the IRQ is
+called a couple times, but after a few seconds, the Windows Device Manager shows
+<code>Unknown USB Device (Device Descriptor Request Failed)</code>.</p>
+<p>As it turns out, I have forgotten to add the callbacks into <code>usbd_conf.c</code>. Once
+that was done, the USB access from the Windows computer caused an immediate Data
+Abort on the STM32MP135.</p>
+<h3 id="aligned-sysram-memory-access">Aligned SYSRAM memory access</h3>
+<p>The aborts happen in <code>usbd_msc_scsi.c</code> in lines such as the following:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">hmsc</span><span class="o">-&gt;</span><span class="n">scsi_blk_addr</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="p">((</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">24</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
+<span class="w">    </span><span class="p">((</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
+<span class="w">    </span><span class="p">((</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
+<span class="w">    </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">params</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>
+
+<span class="n">hmsc</span><span class="o">-&gt;</span><span class="n">scsi_blk_len</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="p">((</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
+<span class="w">    </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">params</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+</pre></div>
+</code></pre>
+<p>As it happens, with some optimizations (I’m using <code>-Os</code> to make the whole
+program fit in SYSRAM!) the compiler optimizes the byte access into a misaligned
+32-bit access. Forcing a <code>volatile</code> cast fixes the problem, as follows:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">hmsc</span><span class="o">-&gt;</span><span class="n">scsi_blk_addr</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="p">(((</span><span class="kt">uint32_t</span><span class="p">)((</span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="p">)</span><span class="n">params</span><span class="p">)[</span><span class="mi">2</span><span class="p">])</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">24</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
+<span class="w">    </span><span class="p">(((</span><span class="kt">uint32_t</span><span class="p">)((</span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="p">)</span><span class="n">params</span><span class="p">)[</span><span class="mi">3</span><span class="p">])</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
+<span class="w">    </span><span class="p">(((</span><span class="kt">uint32_t</span><span class="p">)((</span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="p">)</span><span class="n">params</span><span class="p">)[</span><span class="mi">4</span><span class="p">])</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w">  </span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
+<span class="w">    </span><span class="p">((</span><span class="kt">uint32_t</span><span class="p">)((</span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="p">)</span><span class="n">params</span><span class="p">)[</span><span class="mi">5</span><span class="p">]);</span>
+
+<span class="n">hmsc</span><span class="o">-&gt;</span><span class="n">scsi_blk_len</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="p">(((</span><span class="kt">uint32_t</span><span class="p">)((</span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="p">)</span><span class="n">params</span><span class="p">)[</span><span class="mi">7</span><span class="p">])</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w">  </span><span class="mi">8</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
+<span class="w">    </span><span class="p">((</span><span class="kt">uint32_t</span><span class="p">)((</span><span class="k">volatile</span><span class="w"> </span><span class="kt">uint8_t</span><span class="o">*</span><span class="p">)</span><span class="n">params</span><span class="p">)[</span><span class="mi">8</span><span class="p">]);</span>
+</pre></div>
+</code></pre>
+<p>Make sure to repeat this several times! Search for <code>scsi_blk_addr</code> in
+<code>usbd_msc_scsi.c</code> until you’ve cast all of them correctly.</p>
+<p>Then, at last, the USB device enumerates as MSC correctly, and we can even read
+and write raw data! However, Windows is not able to format the device.</p>
+<h3 id="aligned-ddr-ram-memory-access">Aligned DDR RAM memory access</h3>
+<p>Now that data can be read and written to, we observe an odd pattern:</p>
+<pre><code>WRITE: eb 3c 90 6d 6b 66 73 2e 66 61
+READ:  eb 00 90 3c 6b 6d 73 66 66 2e
+</code></pre>
+<p>Every other byte is a bit wrong, or reshuffled. Sounds familiar? Yes, it happens
+if DDR writes are not aligned to word boundaries, as we experienced before with
+the SD card, copying it’s data to DDR. (The debugging process that led to that
+insight is explained in a <a href="https://embd.cc/debugging-stm32mp135-kernel-decompression.md">future
+article</a>.)</p>
+<p>With the write fixed (i.e., done in correctly aligned units of 4 bytes), the
+device format works, and we can even copy files to the mass storage device, and
+read them back. The problems is now … read and write speeds are about 700
+kB/s.</p>
+<h3 id="d-pullup">D+ pullup</h3>
+<p>As it happens, the USB interface on the custom board has a external, physical
+1.5K pullup on the D+ line which signals a Full-Speed device. To switch to
+High-Speed mode, the device needs to be able to have the pullup present
+initially, but then switch it off. Indeed, Device Manager shows that the device
+enumerated as a Full-Speed device, hence the low data rates.</p>
+<p>Removing the resistor, the device does not enumerate, or appear at all in the
+Device Manager. However, we can simply set</p>
+<pre><code>hpcd_USB_OTG_HS.Init.speed = PCD_SPEED_FULL;
+</code></pre>
+<p>in <code>USBD_LL_Init()</code> function (<code>usbd_conf.c</code>), and then everything works as
+before. So something must be wrong with the high-speed mode configuration.</p>
+<h3 id="cables-hubs-ports">Cables, hubs, ports</h3>
+<p>Since removing the 1.5K pullup which was keeping the device in Full-Speed (FS)
+mode, the device does not enumerate, neither in DFU mode (with <code>BOOT</code> pins set
+to <code>000</code>), nor using my test firmware (unless I request FS mode directly).</p>
+<p>Inserting print statements or debug breakpoints in USB interrupt handler we see
+that the USB reset is detected, the device is correctly switched to HS mode
+(<code>speed=0</code>), the Rx/Tx FIFOs are large enough, the <code>RXFLVL</code> interrupt is enabled
+but it never arrives. The enumeration completes, but the device does not see any
+setup or data packets enter the FIFO, and then the device gets suspended,
+presumably because it did not reply to the host’s communications. The device
+never appears in the Device Manager, or even in <a href="https://www.uwe-sieber.de/usbtreeview_e.html">USB Device Tree
+Viewer</a>.</p>
+<p>With <code>BOOT=000</code>, pressing reset causes the PA13 LED to blink, and when the USB
+cable is attached, the blinking stops. But looking at the device and USB trees,
+nothing happens. Even the <code>STM32_Programmer_CLI -l usb</code> does not see anything:</p>
+<pre><code>      -------------------------------------------------------------------
+                       STM32CubeProgrammer v2.18.0
+      -------------------------------------------------------------------
+
+=====  DFU Interface   =====
+
+No STM32 device in DFU mode connecte
+</code></pre>
+<p>Now a different USB cable was found, connected to a different hub/port. Again
+<code>BOOT=000</code>, press reset, PA13 LED blinks, and the new cable is connected, and
+the blinking stops. Immediately the Device Manager and the USB Device Tree
+Viewer report <code>DFU in FS Mode @Device ID /0x501, @Revision ID /0x1003</code>, so the
+device enumerated. (About the “FS”: I think that’s just a cached name, since the
+USB Tree also says that “Device Connection Speed  : High-Speed”.) And CubeProg:</p>
+<pre><code>      -------------------------------------------------------------------
+                       STM32CubeProgrammer v2.18.0
+      -------------------------------------------------------------------
+
+=====  DFU Interface   =====
+
+Total number of available STM32 device in DFU mode: 1
+
+  Device Index           : USB1
+  USB Bus Number         : 001
+  USB Address Number     : 005
+  Product ID             : DFU in HS Mode @Device ID /0x501, @Revision ID /0x1003
+  Serial number          : 001E00263133511332303636
+  Firmware version       : 0x0110
+  Device ID              : 0x0501
+</code></pre>
+<p>Clearly, the bad cable or hub or port was stopping the HS enumeration, at least
+in DFU mode. Now let’s switch to <code>BOOT=100</code>, reset, and load our firmware via
+JTAG. And … it enumerates immediately! Windows offers to format it as FAT32,
+and the file write speed is up to about 4 MB/s, and read about 2 MB/s. Great
+success! But could have checked the cable first.</p>
+<h3 id="speed">Speed</h3>
+<p>Regarding the low-ish data rates: it’s probably limited by a combination of the
+slow implementations of the <code>usbd_msc_storage.c</code> backend, and the HAL driver or
+other things. For firmware flashing the speed is good enough. More importantly,
+it proves that everything is now wired correctly. Nonetheless, let’s see if we
+can make it go faster than the 2–4 MB/s.</p>
+<p>Changing the compiler optimization level from <code>-Os</code> to <code>-O3</code> brings the write
+speed up to 7.6 MB/s. Windows has a built-in disk performance checker which
+shows:</p>
+<pre><code>C:\Users\Jkastelic&gt; winsat disk -drive e
+&gt; Disk  Random 16.0 Read                       2.87 MB/s          4.5
+&gt; Disk  Sequential 64.0 Read                   2.91 MB/s          2.2
+&gt; Disk  Sequential 64.0 Write                  7.67 MB/s          2.6
+&gt; Average Read Time with Sequential Writes     8.566 ms          4.9
+&gt; Latency: 95th Percentile                     21.499 ms          4.5
+&gt; Latency: Maximum                             22.485 ms          7.9
+&gt; Average Read Time with Random Writes         9.149 ms          4.7
+
+winsat disk -write -ran -drive e
+&gt; Disk  Random 16.0 Write                      7.46 MB/s
+</code></pre>
+<p>Next, re-write the <code>STORAGE_Read</code> function to use 32-bit writes instead of
+forcing 8-bit accesses (as we did previously while debugging the data
+corruption). This improves the reads significantly:</p>
+<pre><code>&gt; Disk  Random 16.0 Read                       9.02 MB/s          5.3
+&gt; Disk  Sequential 64.0 Read                   9.39 MB/s          2.8
+&gt; Disk  Sequential 64.0 Write                  7.71 MB/s          2.6
+&gt; Average Read Time with Sequential Writes     3.134 ms          6.6
+&gt; Latency: 95th Percentile                     8.109 ms          5.9
+&gt; Latency: Maximum                             9.516 ms          8.0
+&gt; Average Read Time with Random Writes         3.138 ms          6.5
+</code></pre>
+<p>Now consider the FIFO allocation. The USB OTG core in the STM32MP135 has 4 kB
+of total FIFO. If we used all of it just for sending data back to the host, at
+the 480 MBit/s (70 MB/s) data rate, the microcontroller would fire interrupts
+or DMA requests every 67 μs. (USB devices designed for mass data transfer
+probably have larger buffers.) Currently we have</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">HAL_PCDEx_SetRxFiFo</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hpcd</span><span class="p">,</span><span class="w"> </span><span class="mh">0x200</span><span class="p">);</span>
+<span class="n">HAL_PCDEx_SetTxFiFo</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hpcd</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mh">0x40</span><span class="p">);</span>
+<span class="n">HAL_PCDEx_SetTxFiFo</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hpcd</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mh">0x100</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>Let us significantly increase the buffer that sends data to the host:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">HAL_PCDEx_SetRxFiFo</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hpcd</span><span class="p">,</span><span class="w"> </span><span class="mh">0x100</span><span class="p">);</span>
+<span class="n">HAL_PCDEx_SetTxFiFo</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hpcd</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mh">0x20</span><span class="p">);</span>
+<span class="n">HAL_PCDEx_SetTxFiFo</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hpcd</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mh">0x2e0</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>Unfortunately, the read/write performance is essentially unchanged:</p>
+<pre><code>&gt; Disk  Random 16.0 Read                       9.89 MB/s          5.4
+&gt; Disk  Sequential 64.0 Read                   10.28 MB/s          2.9
+&gt; Disk  Sequential 64.0 Write                  7.59 MB/s          2.6
+&gt; Average Read Time with Sequential Writes     3.311 ms          6.5
+&gt; Latency: 95th Percentile                     8.236 ms          5.9
+&gt; Latency: Maximum                             9.306 ms          8.1
+&gt; Average Read Time with Random Writes         3.279 ms          6.5
+</code></pre>
+<p>All of that was without DMA. It might be that DMA would make it faster, or at
+least unburden the CPU—but in this example, the CPU is not doing anything
+except copying the data. (CPU can actually be <em>faster</em> in copying; the point of
+DMA is to allow the CPU to do other, more interesting things while the copy is
+taking place.)</p>
+<h3 id="code-availability">Code availability</h3>
+<p>You can find the final version of the USB test in
+<a href="https://github.com/js216/stm32mp135_test_board/tree/main/baremetal/usb_test">this</a>
+repository.</p>
+<p>It compiles to about 117 kB with <code>-Os</code> optimization, so it fits in
+SYSRAM directly. If you need more speed, <code>-O3</code> makes it compile to about 136 kB.
+That’s still acceptable if we combine all of the on-chip memory into a single
+block, as shown in this excerpt from the <a href="https://github.com/js216/stm32mp135_test_board/blob/main/baremetal/usb_test/stm32mp13xx_a7_sysram.ld">linker
+script</a>:</p>
+<pre><code>MEMORY {
+      SYSRAM_BASE (rwx)   : ORIGIN = 0x2FFE0000, LENGTH = 128K
+      SRAM1_BASE (rwx)    : ORIGIN = 0x30000000, LENGTH = 16K
+      SRAM2_BASE (rwx)    : ORIGIN = 0x30004000, LENGTH = 8K
+      SRAM3_BASE (rwx)    : ORIGIN = 0x30006000, LENGTH = 8K
+      /* InternalMEM = SYSRAM + SRAM1 + SRAM2 + SRAM3 */
+      InternalMEM (rwx)   : ORIGIN = 0x2FFE0000, LENGTH = 160K
+      DDR_BASE (rwx)      : ORIGIN = 0xC0000000, LENGTH = 512M
+}
+</code></pre>
+
+</div>
+
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+
+</body>
+</html>

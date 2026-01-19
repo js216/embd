@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="10 Sep 2025">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="An analysis of three bugs found so far in the NXP Kinetis ethernet driver as used on the K64.">
+<link rel="stylesheet" href="style.css">
+<title>Bugs in NXP Kinetis Ethernet Driver</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Embedded</div>
+<h2>Bugs in NXP Kinetis Ethernet Driver</h2>
+<div class="article-meta">Published 10 Sep 2025. Written by Jakob Kastelic.</div>
+<p><img src="../images/lev63.jpg" alt="" /></p>
+<p>The SDK<sup class="footnote-ref"><a href="#d22b0ac5-fn1" id="d22b0ac5-fnref1">[1]</a></sup> drivers provided by NXP for use on the Kinetis K64 platform are
+extensive, well-tested and … not perfect. This article shows three bugs found
+in the ethernet driver. Note that none of this is original content; I merely put
+it together here for my future reference.</p>
+<h3 id="forgetting-to-check-for-zero-length-buffers">Forgetting to check for zero-length buffers</h3>
+<p>I have only seen this bug happen once in two years and have not found a way to
+reproduce it at will. So the analysis below may or may not be correct.</p>
+<p>The symptom was that the firmware froze upon triggering the assertion in
+<code>lwip/port/enet_ethernetif_kinetis.c</code>:</p>
+<blockquote>
+<p>“Buffer returned by <code>ENET_GetRxFrame()</code> doesn’t match any RX buffer descriptor”</p>
+</blockquote>
+<p>After some Googling I found <a href="https://community.nxp.com/t5/i-MX-RT-Crossover-MCUs/Ethernet-RX-assertion/m-p/1625123">this forum
+thread,</a>
+which suggests, in a roundabout way, that there is a missing check in
+<code>fsl_enet.c</code>. We have to add following to <code>ENET_GetRxFrame()</code>:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">curBuffDescrip</span><span class="o">-&gt;</span><span class="n">length</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0U</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="cm">/* Set LAST bit manually to let following drop error frame</span>
+<span class="cm">       operation drop this abnormal BD.</span>
+<span class="cm">    */</span>
+<span class="w">    </span><span class="n">curBuffDescrip</span><span class="o">-&gt;</span><span class="n">control</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">ENET_BUFFDESCRIPTOR_RX_LAST_MASK</span><span class="p">;</span>
+<span class="w">    </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kStatus_ENET_RxFrameError</span><span class="p">;</span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>The NXP engineer on the forum explains: “I didn’t use this logic because I never
+meet this corner case and consider it a redundant operation.” I was curious if
+this “corner case” every happens, so I added a breakpoint, which got triggered
+after about two days of constant testing.</p>
+<p>ChatGPT seems to think this check is necessary (but then again, I seem to be
+able to convince it of just about anything I do or do not believe in):</p>
+<blockquote>
+<p>If you omit the check and DMA ever delivers a BD with <code>length == 0</code>: Your code
+will think it’s still in the middle of assembling a frame. It will not see the
+<code>LAST</code> bit yet, so it will happily advance to the next BD. That means the
+logic walks into an inconsistent state: <code>rxBuffer</code> may point to nothing, your
+<code>rxFrame</code> bookkeeping goes out of sync, and later you’ll crash on a buffer
+underrun, invalid pointer, or corrupted frame queue.</p>
+</blockquote>
+<p>It remains to be seen if this check was behind my original crash, and if the
+body of the if statement is appropriate to handle the condition of unexpected
+zero-length buffer descriptor.</p>
+<p><em>Credit: User pjanco first reported the error, while AbnerWang posted the
+solution.</em>
+<a href="https://community.nxp.com/t5/i-MX-RT-Crossover-MCUs/Ethernet-RX-assertion/m-p/1625123">[source]</a></p>
+<h3 id="incorrect-memory-deallocation">Incorrect memory deallocation</h3>
+<p>In <code>fsl_enet.c</code>, the function <code>ENET_GetRxFrame()</code> tries to deallocate the
+pointer of the receive buffer:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">index</span><span class="o">--</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0U</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">handle</span><span class="o">-&gt;</span><span class="n">rxBuffFree</span><span class="p">(</span><span class="n">base</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">rxFrame</span><span class="o">-&gt;</span><span class="n">rxBuffArray</span><span class="p">[</span><span class="n">index</span><span class="p">].</span><span class="n">buffer</span><span class="p">,</span>
+<span class="w">        </span><span class="n">handle</span><span class="o">-&gt;</span><span class="n">userData</span><span class="p">,</span><span class="w"> </span><span class="n">ringId</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>First need to unpack some definitions to understand what the above means.</p>
+<ol>
+<li>
+<p>If we dig into the <code>rxBuffFree()</code> function, we discover it in the file
+<code>lwip/port/enet_ethernetif_kinetis.c</code>. The buffer to be deallocated is passed
+as a pointer <code>void * buffer</code>, and freed</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">((</span><span class="n">rx_buffer_t</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">buffer</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">ethernetif</span><span class="o">-&gt;</span><span class="n">RxDataBuff</span><span class="p">;</span>
+<span class="n">ethernetif</span><span class="o">-&gt;</span><span class="n">RxPbufs</span><span class="p">[</span><span class="n">idx</span><span class="p">].</span><span class="n">buffer_used</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+</li>
+<li>
+<p>Next, what are <code>rxFrame</code> and <code>rxBuffArray</code>? The first one is of type
+<code>enet_rx_frame_struct_t</code>, which is defined in <code>fsl_enet.h</code>:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">_enet_rx_frame_struct</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">enet_buffer_struct_t</span><span class="w"> </span><span class="o">*</span><span class="n">rxBuffArray</span><span class="p">;</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="p">}</span><span class="w"> </span><span class="n">enet_rx_frame_struct_t</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>This allows us to see what is the type of <code>rxBuffArray</code>:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">_enet_buffer_struct</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">buffer</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">length</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="n">enet_buffer_struct_t</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+</li>
+<li>
+<p>Finally, what is <code>ethernetif-&gt;RxDataBuff</code>? We find it declared in
+<code>lwip/port/enet_ethernetif_kinetis.c</code> as the static array in the function
+<code>ethernetif0_init()</code>:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">SDK_ALIGN</span><span class="p">(</span><span class="k">static</span><span class="w"> </span><span class="n">rx_buffer_t</span><span class="w"> </span><span class="n">rxDataBuff_0</span><span class="p">[</span><span class="n">ENET_RXBUFF_NUM</span><span class="p">],</span>
+<span class="w">    </span><span class="n">FSL_ENET_BUFF_ALIGNMENT</span><span class="p">);</span>
+<span class="n">ethernetif_0</span><span class="p">.</span><span class="n">RxDataBuff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="p">(</span><span class="n">rxDataBuff_0</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+</pre></div>
+</code></pre>
+<p>More precisely, <code>RxDataBuff</code> is a pointer to the first element of this array.
+This pointer therefore has the type <code>rx_buffer_t*</code>.</p>
+<p>That type itself is declared at the top of the same file as an aligned
+version of a <code>uint8_t</code> buffer:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="n">rx_buffer_t</span><span class="p">[</span><span class="n">SDK_SIZEALIGN</span><span class="p">(</span><span class="n">ENET_RXBUFF_SIZE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">FSL_ENET_BUFF_ALIGNMENT</span><span class="p">)];</span>
+</pre></div>
+</code></pre>
+</li>
+</ol>
+<p>Now we can take a step back and think whether the <code>idx</code> calculation would be
+best done with the buffer itself, or a pointer to it. The calculation subtracts
+the following:</p>
+<ul>
+<li>
+<p><code>rxFrame-&gt;rxBuffArray[index].buffer</code>, of type <code>void*</code>, is a pointer to the
+memory location that stores the ethernet frame.</p>
+</li>
+<li>
+<p><code>ethernetif-&gt;RxDataBuff</code>, of type <code>rx_buffer_t*</code></p>
+</li>
+</ul>
+<p>The corrected code should pass the buffer pointer stored in .buffer, not the
+address of the .buffer field (omit the <code>&amp;</code>):</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">handle</span><span class="o">-&gt;</span><span class="n">rxBuffFree</span><span class="p">(</span><span class="n">base</span><span class="p">,</span><span class="w"> </span><span class="n">rxFrame</span><span class="o">-&gt;</span><span class="n">rxBuffArray</span><span class="p">[</span><span class="n">index</span><span class="p">].</span><span class="n">buffer</span><span class="p">,</span>
+<span class="w">    </span><span class="n">handle</span><span class="o">-&gt;</span><span class="n">userData</span><span class="p">,</span><span class="w"> </span><span class="n">ringId</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p><em>Credit: This bug was found by KC on 7/31/2024.</em></p>
+<h3 id="buffers-not-zero-initialized">Buffers not zero-initialized</h3>
+<p>Another bug in <code>ethernetif0_init()</code> in <code>enet_ethernetif_kinetis.c</code>: the ethernet
+buffer descriptor structs are declared static:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">AT_NONCACHEABLE_SECTION_ALIGN</span><span class="p">(</span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="n">enet_rx_bd_struct_t</span><span class="w"> </span><span class="n">rxBuffDescrip_0</span><span class="p">[</span><span class="n">ENET_RXBD_NUM</span><span class="p">],</span>
+<span class="w">    </span><span class="n">FSL_ENET_BUFF_ALIGNMENT</span><span class="p">);</span>
+<span class="n">AT_NONCACHEABLE_SECTION_ALIGN</span><span class="p">(</span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="n">enet_tx_bd_struct_t</span><span class="w"> </span><span class="n">txBuffDescrip_0</span><span class="p">[</span><span class="n">ENET_TXBD_NUM</span><span class="p">],</span>
+<span class="w">    </span><span class="n">FSL_ENET_BUFF_ALIGNMENT</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>The assumption is that since they are declared <code>static</code>, the descriptors will be
+zero-initialized at system startup. However, the macro
+<code>AT_NONCACHEABLE_SECTION_ALIGN</code> potentially places these descriptor in a special
+section that can bypass the zero-initialization, depending on the startup code
+and linker script.</p>
+<p>In that case, we need to manually zero out these buffers. I put the following at
+the top of <code>ethernetif_enet_init()</code> in <code>enet_ethernetif_kinetis.c</code>:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="c1">// Buffer descriptors must be initialized to zero</span>
+<span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ethernetif</span><span class="o">-&gt;</span><span class="n">RxBuffDescrip</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mh">0x00</span><span class="p">,</span><span class="w"> </span><span class="n">ENET_RXBD_NUM</span><span class="o">*</span><span class="k">sizeof</span><span class="p">(</span><span class="n">ethernetif</span><span class="o">-&gt;</span><span class="n">RxBuffDescrip</span><span class="p">[</span><span class="mi">0</span><span class="p">]));</span>
+<span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ethernetif</span><span class="o">-&gt;</span><span class="n">TxBuffDescrip</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mh">0x00</span><span class="p">,</span><span class="w"> </span><span class="n">ENET_TXBD_NUM</span><span class="o">*</span><span class="k">sizeof</span><span class="p">(</span><span class="n">ethernetif</span><span class="o">-&gt;</span><span class="n">TxBuffDescrip</span><span class="p">[</span><span class="mi">0</span><span class="p">]));</span>
+</pre></div>
+</code></pre>
+<p><em>Credit: This bug was also found by KC.</em></p>
+<hr class="footnotes-sep" />
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="d22b0ac5-fn1" class="footnote-item"><p>I am using SDK version 2.11.0 for the MK64FN1M0xxx12. <a href="#d22b0ac5-fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+
+</div>
+
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+
+</body>
+</html>

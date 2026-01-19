@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="GPT-5 from notes by Jakob Kastelic">
+<meta name="date" content="6 Sep 2025">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="An exploration of the key ideas Unix contributed to computing: small programs, pipes, everything as a file, portability, and simplicity. Blending history and commentary, this essay shows how Unix’s philosophy shaped durable, teachable, and powerful systems.">
+<link rel="stylesheet" href="style.css">
+<title>What Unix Contributed</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Philosophy</div>
+<h2>What Unix Contributed</h2>
+<div class="article-meta">Published 6 Sep 2025. Written by GPT-5 from notes by Jakob Kastelic.</div>
+<p><img src="../images/pdp1170.jpg" alt="" /></p>
+<p>Unix was built on a handful of ideas that turned out to be both powerful and
+practical. The following discussion blends established Unix facts with
+interpretive commentary; it does not claim to describe any single historical
+Unix precisely.</p>
+<h3 id="programs-and-the-shell">Programs and the Shell</h3>
+<p>The shell runs commands as programs. There’s no special class of built-ins; if
+you want a new command, you write a program. By default, programs read from
+standard input and write to standard output, unless redirected.</p>
+<p>Most commands are small filters for text streams. They do one job, and they work
+together naturally. Connecting them with pipes lets you build bigger tools out
+of simpler ones.</p>
+<h3 id="the-file-system-abstraction">The File System Abstraction</h3>
+<p>Everything is a file: user data, programs, directories, and even devices.
+Directories form a tree; each entry points to an inode, which knows where the
+data blocks live. Devices show up as files too.</p>
+<p>This means that I/O and storage use the same calls: open, close, read, write.
+That’s the interface for everything. Executables and data files are stored in
+the same way, reinforcing the idea that a single abstraction suffices.</p>
+<h3 id="processes-and-the-kernel">Processes and the Kernel</h3>
+<p>The kernel is deliberately small. It multiplexes I/O and leaves the rest to user
+programs. Even init, the first process, is just a program: it opens terminals,
+prints the login message, and starts shells in a loop.</p>
+<p>Processes come from the fork/exec pair. One process copies itself, then overlays
+the copy with another program. The idea is simple, and it works.</p>
+<p>System calls are invoked by a trap instruction, wrapped in library functions so
+programs don’t depend directly on kernel details. Programs stay independent, and
+the operating system can change underneath.</p>
+<h3 id="small-understandable-portable">Small, Understandable, Portable</h3>
+<p>Unix was small enough that one person could understand the whole thing. That
+made it easier to modify, port, and teach. The manuals were short, consistent,
+and focused on usage, not internals. A second volume provided tutorials and
+background for those who wanted more.</p>
+<p>The guiding principle was: be general, but not too general; portable, but not
+too portable. If you try to solve every problem in advance, you get bloat. By
+keeping it modest, Unix was more useful—and paradoxically more general and
+portable—than larger systems.</p>
+<h3 id="the-8020-rule">The 80/20 Rule</h3>
+<p>Some parts were machine-specific, usually device drivers or bits of assembly.
+But not many. Most code was reusable, and the exceptions were small. An array of
+function pointers mapped device numbers to driver routines; that was about as
+complex as it got. For example, a character device<sup class="footnote-ref"><a href="#f17e21ef-fn1" id="f17e21ef-fnref1">[1]</a></sup> driver needs to
+expose the following functions:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">extern</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">cdevsw</span>
+<span class="p">{</span>
+<span class="w">	</span><span class="kt">int</span><span class="w">	</span><span class="p">(</span><span class="o">*</span><span class="n">d_open</span><span class="p">)();</span>
+<span class="w">	</span><span class="kt">int</span><span class="w">	</span><span class="p">(</span><span class="o">*</span><span class="n">d_close</span><span class="p">)();</span>
+<span class="w">	</span><span class="kt">int</span><span class="w">	</span><span class="p">(</span><span class="o">*</span><span class="n">d_read</span><span class="p">)();</span>
+<span class="w">	</span><span class="kt">int</span><span class="w">	</span><span class="p">(</span><span class="o">*</span><span class="n">d_write</span><span class="p">)();</span>
+<span class="w">	</span><span class="kt">int</span><span class="w">	</span><span class="p">(</span><span class="o">*</span><span class="n">d_ioctl</span><span class="p">)();</span>
+<span class="w">	</span><span class="kt">int</span><span class="w">	</span><span class="p">(</span><span class="o">*</span><span class="n">d_stop</span><span class="p">)();</span>
+<span class="w">	</span><span class="k">struct</span><span class="w"> </span><span class="nc">tty</span><span class="w"> </span><span class="o">*</span><span class="n">d_ttys</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="n">cdevsw</span><span class="p">[];</span>
+</pre></div>
+</code></pre>
+<p>The 80/20 rule applied everywhere: make most of the system simple and portable,
+accept a little complexity when it really pays off. Code was meant to be 80%
+reusable, not 100%, which avoided the kind of rigidity seen in later systems.</p>
+<h3 id="self-hosting-and-accessible">Self-Hosting and Accessible</h3>
+<p>Unix came with all its own sources and tools. It was self-hosting, and people
+could read, study, and change the code. The system included what you needed, and
+nothing more. No useless programs, no dead code, and very little irrelevant
+platform-specific clutter.</p>
+<p>The philosophy was to write programs you would actually use, not ones meant to
+satisfy a standard or some hypothetical future need.</p>
+<h3 id="simplicity-above-all">Simplicity Above All</h3>
+<p>The enduring lesson of Unix is that simplicity beats complexity. Interfaces were
+orthogonal, text was the universal medium, and programs were small and
+self-contained. Each one did one thing, and did it well.</p>
+<p>That philosophy proved more important than any single feature. It made Unix
+portable, teachable, and durable. It showed that you don’t need a committee or a
+grand design to build something powerful. You need clarity, restraint, and the
+discipline to write only what you need.</p>
+<h3 id="reflections-and-extensions">Reflections and Extensions</h3>
+<p>Unix also suggests how to go further. Small, portable, self-contained programs
+can approach the kind of stability that TeX achieved—systems so refined that
+they don’t need to change.</p>
+<p>Portability itself can be modular. The Wollongong group<sup class="footnote-ref"><a href="#f17e21ef-fn2" id="f17e21ef-fnref2">[2]</a></sup> showed this by first
+porting Unix piece by piece to an Interdata 7/32, running it alongside the host
+system, and then replacing the host functions with assembly routines. That
+approach points toward kernels that are more modular, where pieces like fork and
+exec could be reused without bringing along a whole scheduler.</p>
+<p>Device drivers can also be simplified. One idea is to treat them as user
+processes whose IDs match their device numbers. They would implement the usual
+open, read, and write interfaces, but otherwise behave like ordinary programs:
+start and stop freely, hold their own memory, receive signals. The kernel would
+not “manage” them, yet the familiar Unix file interface would still apply.</p>
+<p>The same lesson holds today. Artificial intelligence can sometimes repair or
+adapt programs automatically, but only if the systems are small and
+self-contained. Large, tangled software offers no foothold. Unix worked because
+it avoided dead code, avoided over-abstraction, and made each interface simple
+enough to understand and replace.</p>
+<p>Finally, Unix showed that the way forward can’t be too innovative. <em>If “the way”
+is too radical, no one will follow it.</em><sup class="footnote-ref"><a href="#f17e21ef-fn3" id="f17e21ef-fnref3">[3]</a></sup> The genius of Unix was that it was
+just radical enough.</p>
+<hr class="footnotes-sep" />
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="f17e21ef-fn1" class="footnote-item"><p>From version 7 Unix, found in
+<a href="https://www.tuhs.org/cgi-bin/utree.pl?file=V7/usr/sys/h/conf.h"><code>/usr/sys/h/conf.h</code></a>. <a href="#f17e21ef-fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="f17e21ef-fn2" class="footnote-item"><p>Juris Reinfelds: <a href="https://www.tuhs.org/Archive/Distributions/Other/Interdata/uow103747.pdf"><em>The First Port of
+Unix.</em></a>
+Department of Computing Science, The University of Wollongong. See also
+Richard Miller: <a href="http://bitsavers.informatik.uni-stuttgart.de/bits/Interdata/32bit/unix/univWollongong_v6/miller.pdf"><em>The First Unix
+Port.</em></a>
+Miller Research Ltd. (Both documents undated. Why don’t people date all
+their documents!?) <a href="#f17e21ef-fnref2" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="f17e21ef-fn3" class="footnote-item"><p>Still looking for the source of this quote … <a href="#f17e21ef-fnref3" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+
+</div>
+
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+
+</body>
+</html>

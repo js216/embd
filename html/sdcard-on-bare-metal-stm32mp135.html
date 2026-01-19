@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="20 Dec 2025">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Debugging SDMMC failures on a custom STM32MP135 board. Timeouts, pull-ups, voltage checks, and a surprising root cause involving unaligned DDR writes and AXI requirements.">
+<link rel="stylesheet" href="style.css">
+<title>SD card on bare-metal STM32MP135</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Embedded</div>
+<h2>SD card on bare-metal STM32MP135</h2>
+<div class="article-meta">Published 20 Dec 2025, modified 9 Jan 2026. Written by Jakob Kastelic.</div>
+<p><img src="../images/deco.jpg" alt="" /></p>
+<p>This article presents my step-by-step debug process for getting the SD card to
+work reliably on my <a href="https://github.com/js216/stm32mp135_test_board">custom
+board</a> integrating the
+STM32MP135.</p>
+<h3 id="test-program">Test program</h3>
+<p>For the evaluation board, I prepared a <a href="https://github.com/js216/mp135_boot/tree/main/sd_to_ddr">simple
+example</a> that reads a
+program (blink) from SD card to DDR, and passes control to the program. The LED
+blinks, everything is fine.</p>
+<p>On the custom board, I simplified the example so it just tests that DDR and SD
+card can be written to and read from. The SD initialization fails as follows.
+In file <code>stm32mp13xx_hal_sd.c</code>, the function <code>HAL_SD_Init</code> calls
+<code>HAL_SD_GetCardStatus</code> which calls <code>SD_SendSDStatus</code>. There, the error flag
+<code>SDMMC_FLAG_DTIMEOUT</code> is detected, i.e. timeout when trying to get data.</p>
+<h3 id="wiring">Wiring</h3>
+<p>The custom board connections from MCU to SD card pins are as follows:</p>
+<pre><code>PC10/SDMMC1_D2 (B13) → 1 DAT2
+PC11/SDMMC1_D3 (C14) → 2 DAT3/CD
+PD2/SDMMC1_CMD (A15) → 3 CMD with 10k pullup to +3.3V
++3.3V → 4 VDD
+PC12/SDMMC1_CK (B15) → 5 CLK
+GND → 6 VSS
+PC8/SDMMC_D0 (D14) → 7 DAT0
+PC9/SDMMC_D1 (A16) → 8 DAT1
+PI7 (U16) uSD_DETECT → 9 DET_B with 100K pullup to +3.3V
+(nc) → 10 DET_A
+</code></pre>
+<p>Since the failure happens soon after switching the card into 1.8V mode, I need
+to verify the voltages. On the evaluation board, <code>VDD_SD</code> is 3.3V on boot, and
+when the SD program is running, it lowers it to 2.9V. I modified the code to
+leave it at 3.3V, and it worked also: the code read data from SD card correctly.
+On my custom board, <code>VDD_SD</code> is tied to 3.3V directly. (SD cards should accept
+abything from 2.7V to 3.6V.) Thus, the SD card voltage should be okay.</p>
+<p>The other voltage to check is the one powering the SoC domain for the SDMMC
+controller. The eval board shows that both <code>VDDSD1</code> and <code>VDDSD2</code> are tied to
+<code>VDD</code>—the same <code>VDD</code> as the rest of the SoC. We can measure that easily via
+CN14 pin 13, and it measures 3.3V. On the custom board, these are tied to 3.3V
+directly.</p>
+<p>On the eval board, I looked at the <code>SDMMC1_CK</code> line (about 1.56 MHz),
+<code>SDMMC1_CMD</code>, and the data lines with a scope probe and I saw 3V logic signals,
+so it does not seem that 1.8V logic is used.</p>
+<h3 id="debug-prints">Debug prints</h3>
+<p>Adding lots of print statements to <code>SD_PowerON</code>, we get the following when
+running on the custom board:</p>
+<pre><code>CMD0: Go Idle State...
+CMD0 result = 0x00000000
+CMD8: Send Interface Condition...
+CMD8 result = 0x00000000
+CMD8 OK -&gt; CardVersion = V2.x
+CMD55: APP_CMD (arg=0)
+CMD55 result = 0x00000000
+ACMD41 loop...
+Loop 0
+  CMD55...
+  CMD55 result = 0x00000000
+  ACMD41...
+  ACMD41 result = 0x00000000
+  R3 Response = 0x41FF8000
+  ValidVoltage = 0
+Loop 1
+  CMD55...
+  CMD55 result = 0x00000000
+  ACMD41...
+  ACMD41 result = 0x00000000
+  R3 Response = 0xC1FF8000
+  ValidVoltage = 1
+ACMD41 success: OCR=0xC1FF8000
+Card reports High Capacity (SDHC/SDXC)
+SD_PowerON: SUCCESS
+</code></pre>
+<p>Followed by the same <code>HAL_SD_ERROR_DATA_TIMEOUT</code> error from <code>SD_SendSDStatus</code>.
+Let’s instrument the latter function with prints also. Here’s what we get:</p>
+<pre><code>--- SD_SendSDStatus BEGIN ---
+Initial RESP1 = 0x00000900
+CMD16: Set Block Length = 64...
+CMD16 result = 0x00000000
+CMD55: APP_CMD (arg=RCA&lt;&lt;16) = 0xAAAA0000
+CMD55 result = 0x00000000
+Configuring DPSM: len=64, block=64B
+ACMD13: Send SD Status...
+ACMD13 result = 0x00000000
+Waiting for data...
+ERROR: SDMMC_FLAG_DTIMEOUT detected!
+</code></pre>
+<h4>Pullups?</h4>
+<p>The SD card initialization was inherited from the evaluation board, where
+all the signals are passed through the <code>EMIF06-MSD02N16</code> ESD protection chip,
+which also features built-in pullups.</p>
+<p>In <code>HAL_SD_MspInit</code>, we can enable internal pullups on the data lines going to
+the SD card. In that case, we get the following printout from the instrumented
+version of <code>SD_SendSDStatus</code>:</p>
+<pre><code>--- SD_SendSDStatus BEGIN ---
+Initial RESP1 = 0x00000900
+CMD16: Set Block Length = 64...
+CMD16 result = 0x00000000
+CMD55: APP_CMD (arg=RCA&lt;&lt;16) = 0xAAAA0000
+CMD55 result = 0x00000000
+Configuring DPSM: len=64, block=64B
+ACMD13: Send SD Status...
+ACMD13 result = 0x00000000
+Waiting for data...
+RXFIFOHF set — reading 8 words...
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000004
+  FIFO -&gt; 0x00900004
+  FIFO -&gt; 0x001A050F
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000100
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000000
+RXFIFOHF set — reading 8 words...
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000000
+  FIFO -&gt; 0x00000000
+Data-end flag set, reading remaining FIFO...
+Clearing static DATA flags
+--- SD_SendSDStatus SUCCESS ---
+</code></pre>
+<p>After that, reading from the SD card was possible—but about half of the bytes
+read were slightly corrupted.</p>
+<h4>Data corruption</h4>
+<p>Suspecting that there is something wrong with the 4-bit data transfers, I
+switched to <code>SDMMC_BUS_WIDE_1B</code> and confirmed with a scope probe that there is
+no data on DAT1,2,3, only on DAT0. But data corruption is still there. The clock
+speed is only about 1.56 MHz, which seems to rule out signal integrity issues.</p>
+<p>I tried a different power supply for the 3.3V supply, and still the same issue.
+I added 330uF capacitors on all three power rails (1.25V, 1.35V, 3.3V, althought
+1.25V and 1.35V are connected together), and still no improvement. (The PCB
+already has a 10U capacitor next to the SD card VDD pin.)</p>
+<p>Changing the <code>ClockEdge</code> of the <code>SDHandle.Init</code> does not fix it. Nor did setting
+<code>PIO_Init_Structure.Speed</code> to <code>GPIO_SPEED_FREQ_VERY_HIGH</code>.</p>
+<p>Interestingly the corruption affects only every other byte, and if it is
+corrupted, it’s always just off by 2 (i.e., only bit number 1 is affected).</p>
+<p>Adding the external 3.3V 10k pullup on DAT0 (when running in <code>SDMMC_BUS_WIDE_1B</code>
+mode) did not fux the corruption either. At any rate, scope traces show very
+clean data and clock waveforms (as is to be expected at such a low frequency).</p>
+<h4>Aligned writes to RAM!</h4>
+<p>The test function used <code>HAL_SD_ReadBlocks</code> to write directly into DRAM. If
+instead I wrote to a static buffer in SYSRAM, it works just fine.</p>
+<p>So reading data from the SD card into a static buffer worked perfectly, but
+copying that data into DRAM using a byte-wise method like memcpy caused
+intermittent corruption. Only every other byte was sometimes wrong, always off
+by exactly 2, and the pattern varied with each read. This behavior was not
+reproducible when filling DRAM directly with aligned 32-bit word writes, which
+always produced correct data.</p>
+<p>The root cause is that the DDR wiring swapped upper and lower data bytes in a
+way that only causes problems with non-32-bit data access. (The debugging
+process that led to that insight is explained in a <a href="https://embd.cc/debugging-stm32mp135-kernel-decompression.md">future
+article</a>.) The SD
+read itself was not at fault; the static buffer contained the correct bytes.</p>
+<p>The workaround was to copy the SD block into DRAM using explicit 32-bit aligned
+word writes, constructing each word from four bytes of the static buffer. This
+ensures all writes are properly aligned and word-sized, eliminating the
+intermittent errors and producing fully correct, reproducible data in DRAM.</p>
+
+</div>
+
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+
+</body>
+</html>

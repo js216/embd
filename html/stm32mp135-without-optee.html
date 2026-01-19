@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="26 Sep 2025">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Learn how to run Linux on the STM32MP135 without OP-TEE. This guide explains removing secure monitor calls, configuring the kernel, and replacing SCMI clocks for a fully non-secure setup.">
+<link rel="stylesheet" href="style.css">
+<title>STM32MP135 Without OP-TEE</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Linux</div>
+<h2>STM32MP135 Without OP-TEE</h2>
+<div class="article-meta">Published 26 Sep 2025. Written by Jakob Kastelic.</div>
+<p><img src="../images/pdp1120.jpg" alt="" /></p>
+<p><em>This is Part 5 in the series: Linux on STM32MP135. <a href="#series-list">See other
+articles.</a></em></p>
+<p>Arm chips, such as the STM32MP135, implementing the TrustZone extension divide
+the execution into two worlds: a normal, non-secure world inhabited by the
+application operating system, and a secure world serviced by a secure OS such as
+OP-TEE. The ST wiki<sup class="footnote-ref"><a href="#836d8114-fn1" id="836d8114-fnref1">[1]</a></sup> assures us that OP-TEE is required on all STM32MP1
+produces “due to the hardware architecture”. It is our purpose in this article
+to show that that is not the case: <em>OP-TEE is in fact entirely optional</em>.</p>
+<p>The only mechanism to enter the “secure world” is via the <code>SMC</code> instruction
+(secure monitor call). This is analogous to how user-space applications invoke
+kernel system calls via the <code>SVC</code> (supervisor call) instruction to enter
+privileged mode. So long as the kernel does not issue the <code>SMC</code> instruction, the
+secure world need never be entered. Thus, we can restate our purpose as removing
+all secure monitor calls from the kernel configuration.</p>
+<p>The present article is somewhat more involved than the preceding ones in the
+series. For this reason I offer the <a href="#quick-start">“Quick Start”</a> version, where
+the required modifications to kernel drivers are offered as patches to apply to
+a particular version. For those interested, the <a href="#theory">“Theory”</a> section fill
+in the details. As in other articles, we conclude with a brief discussion.</p>
+<h3 id="quick-start">Quick Start</h3>
+<p>Start by cloning Buildroot as above. However, this time we check out a different
+sequence of patches and board files:</p>
+<pre><code><div class="codehilite"><pre><span></span>$ git clone https://gitlab.com/buildroot.org/buildroot.git
+$ git clone git@github.com:js216/stm32mp135_simple.git
+
+$ cd buildroot
+$ git checkout 3645e3b781be5cedbb0e667caa70455444ce4552
+
+$ git apply ../stm32mp135_simple/patches/add_falcon.patch
+$ cp ../stm32mp135_simple/configs/stm32mp135f_dk_nonsecure_defconfig configs
+$ cp -r ../stm32mp135_simple/board/stm32mp135f-dk-nonsecure board/stmicroelectronics
+</pre></div>
+</code></pre>
+<p>Now build:</p>
+<pre><code><div class="codehilite"><pre><span></span>$ make stm32mp135f_dk_nonsecure_defconfig
+$ make
+</pre></div>
+</code></pre>
+<p>Write the generated image to the SD card (either directly with a tool such as
+<code>dd</code>, or using the STM32CubeProg as explained
+<a href="stm32mp135-linux-cubeprog">here</a>). Watch it boot up without U-Boot, and without
+OP-TEE.</p>
+<h3 id="theory">Theory</h3>
+<p>To understand the modifications we are about to do in the next section, we need
+to take a closer look at the boot process from TF-A to OP-TEE to Linux. In
+particular, we need to explain how secure monitor calls (SMC) calls work; the
+use of secure interrupts (<code>FIQ</code>) in OP-TEE; and explain how SCMI clocks work</p>
+<h4>Boot process from TF-A to OP-TEE to Linux</h4>
+<p>When Arm Trusted Firmware (TF-A) is done with its own initialization, it loads
+several images into memory. In the STM32MP1 case, these are defined in the
+array <code>bl2_mem_params_desc</code> in file
+<code>plat/st/stm32mp1/plat_bl2_mem_params_desc.c</code>, and include the following:</p>
+<ul>
+<li>
+<p><code>FW_CONFIG_ID</code>: firmware config, which is mostly just the information on
+TrustZone memory regions that is used by TF-A itself</p>
+</li>
+<li>
+<p><code>BL32_IMAGE_ID</code>: the OP-TEE executable</p>
+</li>
+<li>
+<p><code>BL32_EXTRA1_IMAGE_ID</code>, <code>BL32_EXTRA2_IMAGE_ID</code>, and <code>TOS_FW_CONFIG_ID</code>: some
+stuff needed by OP-TEE</p>
+</li>
+<li>
+<p><code>BL33_IMAGE_ID</code>: the non-trusted bootloader (U-Boot) or directly Linux itself,
+if operating in the “falcon mode”</p>
+</li>
+<li>
+<p><code>HW_CONFIG_ID</code>: the Device Tree Blob (DTB) used by U-Boot or Linux, whichever
+is run as “BL33”</p>
+</li>
+</ul>
+<p>Just before passing control to OP-TEE, the TF-A prints a couple messages in the
+<code>bl2_main()</code> function (<code>bl2/bl2_main.c</code>), and then runs <code>bl2_run_next_image</code>
+(<code>bl2/aarch32/bl2_run_next_image.S</code>). There, we disable MMU, put the OP-TEE
+entry address into the link register (either <code>lr</code> or <code>lr_svc</code>), load the <code>SPSR</code>
+register, and then do an “exception return” to atomically change the program
+counter to the link register value, and restore the Current Program Status
+Register (<code>CPSR</code>) from the Saved Program Status Register (<code>SPSR</code>).</p>
+<h4>How do secure monitor calls (SMC) work?</h4>
+<p>The ARMv7-A architecture provides optional TrustZone extension, which are
+implemented on the STM32MP135 chips (as well as the virtualisation
+extension). In this scheme, the processor is at all times executing in one of
+two “worlds”, either the secure or the non-secure one.</p>
+<p>The <code>NS</code> bit of the
+<a href="https://developer.arm.com/documentation/ddi0406/c/System-Level-Architecture/System-Control-Registers-in-a-VMSA-implementation/VMSA-System-control-registers-descriptions--in-register-order/SCR--Secure-Configuration-Register--Security-Extensions?lang=en"><code>SCR</code></a>
+register defines which world we’re currently in. If <code>NS=1</code>, we are in non-secure
+world, otherwise we’re in the secure world. The one exception to this is that
+when the processor is running in
+<a href="https://developer.arm.com/documentation/ddi0406/c/System-Level-Architecture/The-System-Level-Programmers--Model/ARM-processor-modes-and-ARM-core-registers/ARM-processor-modes?lang=en#CIHGHDGI">Monitor mode</a>;
+in that case, the code is executing the secure world and <code>SCR.NS</code> merely
+indicates which world the processor was in before entering the Monitor mode.
+(The current processor mode is given by the <code>M</code> bits of the
+<a href="https://developer.arm.com/documentation/ddi0406/c/System-Level-Architecture/The-System-Level-Programmers--Model/ARM-processor-modes-and-ARM-core-registers/Program-Status-Registers--PSRs-?lang=en#CIHBFGJG"><code>CPSR</code></a>
+register.)</p>
+<p>The processor starts execution in the secure world. How do we transition to the
+non-secure world? Outside of Monitor mode, Arm does not recommend direct
+manipulation of the <code>SCR.NS</code> bit to change from the secure world to the
+non-secure world or vice versa. Instead, the right way is to first change into
+Monitor mode, flip the <code>SCR.NS</code> bit, and leave monitor mode. To enter Monitor
+mode, execute the <code>SMC</code> instruction. This triggers the SMC exception, and the
+processor begins executing the SMC handler.</p>
+<p>The location of the SMC handler has to be previously stored in the
+<a href="https://developer.arm.com/documentation/ddi0406/c/System-Level-Architecture/System-Control-Registers-in-a-VMSA-implementation/VMSA-System-control-registers-descriptions--in-register-order/MVBAR--Monitor-Vector-Base-Address-Register--Security-Extensions"><code>MVBAR</code> register</a>.
+The initial setup required is as follows:</p>
+<ol>
+<li>
+<p>Write a SMC handler. As an example, consult OP-TEE source code, which
+provides the handler <code>sm_smc_entry</code>, defined in <code>core/arch/arm/sm/sm_a32.S</code>.</p>
+</li>
+<li>
+<p>Create a vector table for monitor mode. As specified in the
+<a href="https://developer.arm.com/documentation/ddi0406/b/System-Level-Architecture/The-System-Level-Programmers--Model/Exceptions/Exception-vectors-and-the-exception-base-address?lang=en">Arm architecture</a>
+manual, the monitor vector table has eight entries:</p>
+<ol>
+<li>Unused</li>
+<li>Unused</li>
+<li>Secure Monitor Call (SMC) handler</li>
+<li>Prefetch Abort handler</li>
+<li>Data Abort handler</li>
+<li>Unused</li>
+<li><code>IRQ</code> interrupt handler</li>
+<li><code>FIQ</code> interrupt handler</li>
+</ol>
+<p>Obviously entry number 3 has to point to the SMC handler defined previously.
+For example, OP-TEE defines the following vector table in
+<code>core/arch/arm/sm/sm_a32.S</code>:</p>
+<pre><code>LOCAL_FUNC sm_vect_table , :, align=32
+UNWIND(	.cantunwind)
+	b	.		/* Reset			*/
+	b	.		/* Undefined instruction	*/
+	b	sm_smc_entry	/* Secure monitor call		*/
+	b	.		/* Prefetch abort		*/
+	b	.		/* Data abort			*/
+	b	.		/* Reserved			*/
+	b	.		/* IRQ				*/
+	b	sm_fiq_entry	/* FIQ				*/
+END_FUNC sm_vect_table
+</code></pre>
+<p>We see only the SMC and <code>FIQ</code> handlers are installed, since OP-TEE setup
+disables all other Monitor-mode interrupts and exceptions.</p>
+</li>
+<li>
+<p>Install the vector table to the <code>MVBAR</code> register. The OP-TEE source code
+defines the following macros in <code>out/core/include/generated/arm32_sysreg.h</code>:</p>
+<pre><code>/* Monitor Vector Base Address Register */
+static inline __noprof uint32_t read_mvbar(void)
+{
+	uint32_t v;
+
+	asm volatile (&quot;mrc p15, 0, %0, c12, c0, 1&quot; : &quot;=r&quot;  (v));
+
+	return v;
+}
+
+/* Monitor Vector Base Address Register */
+static inline __noprof void write_mvbar(uint32_t v)
+{
+	asm volatile (&quot;mcr p15, 0, %0, c12, c0, 1&quot; : : &quot;r&quot;  (v));
+}
+</code></pre>
+<p>This merely follows the Arm manual on how to access the
+<a href="https://developer.arm.com/documentation/ddi0406/c/System-Level-Architecture/System-Control-Registers-in-a-VMSA-implementation/VMSA-System-control-registers-descriptions--in-register-order/MVBAR--Monitor-Vector-Base-Address-Register--Security-Extensions"><code>MVBAR</code> register</a>.</p>
+</li>
+</ol>
+<p>With this setup in place, to transition from the secure world to the non-secure
+world, the steps are as follows:</p>
+<ol>
+<li>
+<p>Place the arguments to the SMC handler into registers <code>r0</code> through <code>r4</code> (or
+as many as are needed by the handler), and execute the SMC instruction. For
+example, just before passing control to the non-secure world, OP-TEE
+<code>reset_primary</code> function (called from the <code>_start</code> function) does the
+following:</p>
+<pre><code>mov	r4, #0
+mov	r3, r6
+mov	r2, r7
+mov	r1, #0
+mov	r0, #TEESMC_OPTEED_RETURN_ENTRY_DONE
+smc	#0
+</code></pre>
+</li>
+<li>
+<p>This puts the processor into Monitor mode, and it begins execution at the
+previously-installed SMC handler. The handler stores secure-mode registers
+into some memory location for future use, then sets the <code>SCR.NS</code> bit:</p>
+<pre><code>read_scr r0
+orr	r0, r0, #(SCR_NS | SCR_FIQ) /* Set NS and FIQ bit in SCR */
+write_scr r0
+</code></pre>
+<p>This also sets the <code>SCR.FIQ</code> bit, which means that <code>FIQ</code> interrupts are also
+taken to Monitor mode. In this way, OP-TEE assigns <code>IRQ</code> interrupts to the
+non-secure world, and <code>FIQ</code> interrupts to the secure-world. Of course, this
+means that the Monitor-mode vector table needs a <code>FIQ</code> handler (as mentioned
+in passing above), and the system interrupt handler (GIC on STM32MP135) needs
+to be configured to pass “secure” interrupts as <code>FIQ</code>.</p>
+</li>
+<li>
+<p>After adjusting the stack pointer and restoring the non-secure register
+values from the stack, the SMC handler returns:</p>
+<pre><code>add	sp, sp, #(SM_CTX_NSEC + SM_NSEC_CTX_R0)
+pop	{r0-r7}
+rfefd	sp!
+</code></pre>
+<p>The return location and processor mode is stored on the stack and
+automatically retrieved by the <code>rfefd sp!</code> instruction. Of course this means
+they have to be previously stored in the right place on the stack; see
+<code>sm_smc_entry</code> source code for details.</p>
+</li>
+</ol>
+<h4>Secure interrupts in OP-TEE</h4>
+<p>As mentioned above, OP-TEE code, before returning to non-secure mode, enables
+the <code>SCR.FIQ</code> bit, which means that <code>FIQ</code> interrupts get taken to Monitor mode,
+serviced by the <code>FIQ</code> handler that is installed in the Monitor-mode vector table
+(the table address is stored in the <code>MVBAR</code> register).</p>
+<p>As mentioned above, an arbitrary number of system interrupts may be passed as a
+<code>FIQ</code> to the processor core. OP-TEE handles these interrupts in <code>itr_handle()</code>
+(defined in <code>core/kernel/interrupt.c</code>). The individual interrupt handlers are
+stored in a linked list, which <code>itr_handle()</code> traverses until it finds a handler
+whose interrupt number (<code>h-&gt;it</code>) matches the given interrupt.</p>
+<p>For example, the handler for the <code>TZC</code> interrupt (TrustZone memory protection)
+is defined in <code>core/arch/arm/plat-stm32mp1/plat_tzc400.c</code>, as the
+<code>tzc_it_handler()</code> function.</p>
+<h4>How do SCMI clocks work?</h4>
+<p>In general, to configure clocks, Linux uses the
+<a href="https://www.kernel.org/doc/Documentation/clk.txt">Common Clock Framework</a>. Each
+clock needs to define some common operations, such as <code>enable()</code>, <code>disable()</code>,
+<code>set_rate()</code>, and so on, as relevant to each particular clock.</p>
+<p>Since in the ST-recommended scheme the clock configuration is done entirely in
+the secure world, the STM32MP135 clock drivers
+(<code>drivers/clk/stm32/clk-strm32mp13.c</code>) make use of the SCMI clock driver
+(<code>drivers/clk/clk/scmi.c</code>). The latter provides a translation from the common
+clock functions to SCMI functions. For example, <code>enable()</code> is implemented as
+follows:</p>
+<pre><code>static int scmi_clk_enable(struct clk_hw *hw)
+{
+	struct scmi_clk *clk = to_scmi_clk(hw);
+	return scmi_proto_clk_ops-&gt;enable(clk-&gt;ph, clk-&gt;id);
+}
+</code></pre>
+<p>This is just a wrapper around the SCMI clock enable function, as found in the
+<code>scmi_proto_clk_ops</code> structure (which contains all the SCMI-protocol clock
+operations).</p>
+<p>At Linux boot, when the SCMI clock driver is being “probed”, it asks OP-TEE
+about the number of supported clocks, and then retrieves information about each
+one in sequence. Thus it acquires a list of clocks, with a header file defining
+the sequential ID numbers (<code>include/dt-bindings/clock/stm32mp13-clks.h</code>):</p>
+<pre><code>/* SCMI clock identifiers */
+#define CK_SCMI_HSE		0
+#define CK_SCMI_HSI		1
+#define CK_SCMI_CSI		2
+#define CK_SCMI_LSE		3
+#define CK_SCMI_LSI		4
+#define CK_SCMI_HSE_DIV2	5
+#define CK_SCMI_PLL2_Q		6
+#define CK_SCMI_PLL2_R		7
+#define CK_SCMI_PLL3_P		8
+#define CK_SCMI_PLL3_Q		9
+#define CK_SCMI_PLL3_R		10
+#define CK_SCMI_PLL4_P		11
+#define CK_SCMI_PLL4_Q		12
+#define CK_SCMI_PLL4_R		13
+#define CK_SCMI_MPU		14
+#define CK_SCMI_AXI		15
+#define CK_SCMI_MLAHB		16
+#define CK_SCMI_CKPER		17
+#define CK_SCMI_PCLK1		18
+#define CK_SCMI_PCLK2		19
+#define CK_SCMI_PCLK3		20
+#define CK_SCMI_PCLK4		21
+#define CK_SCMI_PCLK5		22
+#define CK_SCMI_PCLK6		23
+#define CK_SCMI_CKTIMG1		24
+#define CK_SCMI_CKTIMG2		25
+#define CK_SCMI_CKTIMG3		26
+#define CK_SCMI_RTC		27
+#define CK_SCMI_RTCAPB		28
+</code></pre>
+<p>(There must be some way to ensure that the same sequential number is used in
+Linux as in OP-TEE, or else the clocks would get confused. Presumably the same
+header file is used in Linux as in OP-TEE.)</p>
+<p>The SCMI clock numbers are then used in device trees. For example, in
+<code>core/arch/arm/dts/stm32mp131.dtsi</code>, we see some of these constants being used:</p>
+<pre><code>rcc: rcc@50000000 {
+	compatible = &quot;st,stm32mp13-rcc&quot;, &quot;syscon&quot;;
+	reg = &lt;0x50000000 0x1000&gt;;
+	#clock-cells = &lt;1&gt;;
+	#reset-cells = &lt;1&gt;;
+	clock-names = &quot;hse&quot;, &quot;hsi&quot;, &quot;csi&quot;, &quot;lse&quot;, &quot;lsi&quot;;
+	clocks = &lt;&amp;scmi_clk CK_SCMI_HSE&gt;,
+		 &lt;&amp;scmi_clk CK_SCMI_HSI&gt;,
+		 &lt;&amp;scmi_clk CK_SCMI_CSI&gt;,
+		 &lt;&amp;scmi_clk CK_SCMI_LSE&gt;,
+		 &lt;&amp;scmi_clk CK_SCMI_LSI&gt;;
+};
+</code></pre>
+<p>Thus, when the driver compatible with <code>&quot;st,stm32mp13-rcc&quot;</code> (implemented in
+<code>drivers/clk/stm32/clk-stm32mp13.c</code>) needs to refer to its <code>&quot;hse&quot;</code> clock, it
+calls the <code>scmi_clk</code> and gives it the <code>CK_SCMI_HSE</code> parameter. Recall that
+<code>scmi_clk</code> is defined in the same <code>DTSI</code> file, under <code>firmware</code> / <code>scmi</code>:</p>
+<pre><code>scmi_clk: protocol@14 {
+	reg = &lt;0x14&gt;;
+	#clock-cells = &lt;1&gt;;
+};
+</code></pre>
+<p>There are some SCMI clocks, however, which are used by the <code>&quot;st,stm32mp13-rcc&quot;</code>
+driver, which are not listed in the device tree. For example, in
+<code>drivers/clk/stm32/clk-stm32mp13.c</code> we find many definitions such as the
+following:</p>
+<pre><code>static const char * const sdmmc12_src[] = {
+	&quot;ck_axi&quot;, &quot;pll3_r&quot;, &quot;pll4_p&quot;, &quot;ck_hsi&quot;
+};
+</code></pre>
+<p>Here <code>ck_axi</code>, <code>pll3_r</code>, etc., refer to SCMI clocks, but these are not mentioned
+in the device tree. How can the kernel find them? The way it works is that
+during SCMI clock driver initialization, the driver registers these clocks (and
+others as per the listing from the <code>stm32mp13-clks.h</code> header file above). When,
+later, the <code>&quot;st,stm32mp13-rcc&quot;</code> driver is being initialized, it is able to refer
+to these clocks simply by their name.</p>
+<p>This means that the SCMI driver needs to be probed before the <code>RCC</code> driver. To
+ensure this, note the following part of the device tree:</p>
+<pre><code>rcc: rcc@50000000 {
+    ...
+	clocks = &lt;&amp;scmi_clk CK_SCMI_HSE&gt;,
+		 &lt;&amp;scmi_clk CK_SCMI_HSI&gt;,
+		 &lt;&amp;scmi_clk CK_SCMI_CSI&gt;,
+		 &lt;&amp;scmi_clk CK_SCMI_LSE&gt;,
+		 &lt;&amp;scmi_clk CK_SCMI_LSI&gt;;
+};
+</code></pre>
+<p>The reference to SCMI clocks here does not mean that these particular clocks
+(<code>HSE,</code> <code>HSI,</code> <code>CSI,</code> <code>LSE,</code> <code>LSI)</code> are used by the <code>RCC</code> driver. Rather, it
+ensures that the SCMI clock driver is a dependency of the <code>RCC</code> driver, and gets
+initialized first. It would have been much nicer if the device tree <code>RCC</code> node
+listed all the clocks that are used by <code>RCC</code> rather than just referring to them
+by their name string (such as <code>&quot;pll3_r&quot;</code>), but that’s the way ST implemented
+things. In particular, this means that if we unset the <code>CONFIG_COMMON_CLK_SCMI</code>
+entry in the kernel configuration, the kernel will no longer boot, without
+printing any error message at all; the <code>RCC</code> driver will fail to work properly
+since it can no longer refer to many of the clocks it needs by their name
+string.</p>
+<p>There is no need to understand SCMI clocks further, so long as we can replace
+them all with “real” clocks, with registers under direct control of the <code>RCC</code>
+driver from the Linux kernel.</p>
+<h3 id="discussion">Discussion</h3>
+<p>STM32MP135 presents an SDK that is, to my mind, overly complicated. To port the
+setup from the evaluation board to a new board requires the understanding of
+three bootloaders (ROM, TF-A, U-Boot), two operating systems (Linux, OP-TEE),
+and a stack of other software. Most of this arose out of a desire to simplify
+the process; for example, U-Boot aims to be the one universal bootloader in
+embedded systems, so as to not have to learn a new one for each platform. But
+the ironic end result is that after piling on so many “simplifications”, the net
+result is more complicated than having none of them.</p>
+<p>The claim that OP-TEE is mandatory probably arises out of a desire to avoid
+having to maintain two separate development branches, a secure and a non-secure
+one. This must be even more so considering the need to support the GUI-based
+configuration utilities (STM32Cube), or the Yocto-based distributions.</p>
+<p>However, as a developer I would prefer to be offered a minimal working
+configuration where OP-TEE would be an “opt-in” configuration, rather than
+tightly bundling it in with the kernel. Many (most?) applications do not call
+for secure-world services; these get included only due to the large cost of
+<em>removing</em> it from the provided SDKs.</p>
+<h3 id="upstreaming-status">Upstreaming Status</h3>
+<p>09/26/2025: I have made the modifications available in the repository
+<a href="https://github.com/js216/stm32mp135_simple"><code>stm32mp135_simple</code></a>, as mentioned
+in the quick tutorial above. I do not at present have the intention of
+upstreaming it, since it would involve a lot of effort updating it to the latest
+version of Buildroot (or TF-A and Linux), only to watch it become obsolete again
+during the upstreaming process.</p>
+<div class="series-box">
+<h3 id="series-list">All Articles in This Series</h3>
+<ul>
+  <li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
+  <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
+  <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
+  <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
+  <li><em>5. This article</em></li>
+  <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
+  <li><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">7. Build Linux for STM32MP135 in under 50 Lines of Makefile</a></li>
+</ul>
+</div>
+<hr class="footnotes-sep" />
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="836d8114-fn1" class="footnote-item"><p>ST wiki: <a href="https://wiki.st.com/stm32mpu/wiki/How_to_disable_OP-TEE_secure_services">How to disable OP-TEE secure
+services</a> <a href="#836d8114-fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+
+</div>
+
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+
+</body>
+</html>
