@@ -1,5 +1,6 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/irfdtikk/public_html/
-    - /bin/cp -R . $DEPLOYPATH
+    - /bin/cp -R html/*.html $DEPLOYPATH
+    - /bin/cp -R images/*.jpg $DEPLOYPATH/images
 
