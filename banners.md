@@ -214,3 +214,7 @@ Kaldari:
 [Source](https://en.wikipedia.org/wiki/File:Chimp_Brain_in_a_jar.jpg)
 [Link](https://upload.wikimedia.org/wikipedia/commons/1/14/Chimp_Brain_in_a_jar.jpg)
 ![](../images/brain.jpg)
+
+*LCD works on the Rev A STM32MP135 board.*
+(JK, 19 Jan 2026)
+![](../images/lcd.jpg)

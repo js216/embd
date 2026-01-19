@@ -1,10 +1,10 @@
 ---
 title: Masks Are Replaceable
 author: Jakob Kastelic
-date:
+date: 17 Jan 2026
 topic: Incoherent Thoughts
 description: >
-   We’re never stuck with the same identity forever. Each role can be shed and
+   We're never stuck with the same identity forever. Each role can be shed and
    regrown.
 ---
 
