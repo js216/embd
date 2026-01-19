@@ -80,7 +80,6 @@ def format_uptime():
 
 def get_averages(db_file):
     if not os.path.exists(db_file):
-        print(f"Database '{db_file}' does not exist.")
         return {}
 
     # Use abbreviated keys directly
@@ -121,8 +120,8 @@ def main():
         uptime_info += "\n\nPM2.5: " + ", ".join(parts)
 
     html = HTML_TEMPLATE.format(
-        date=date_str,
-        uptime_info=uptime_info
+        date="",#date_str,
+        uptime_info="",#uptime_info
     )
 
     print(html)
