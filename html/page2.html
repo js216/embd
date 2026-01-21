@@ -22,6 +22,237 @@
 </header>
 
 <div class="article">
+<div class="article-topic">Linux</div>
+<h2><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">Build Linux for STM32MP135 in under 50 Lines of Makefile</a></h2>
+<div class="article-meta">Published 6 Jan 2026, modified 9 Jan 2026. Written by Jakob Kastelic.</div>
+<p><img alt="" src="../images/rain.jpg"/></p>
+<p><em>This is Part 7 in the series: Linux on STM32MP135. <a href="#series-list">See other
+articles.</a></em></p>
+<p>In the <a href="https://embd.cc/linux-bringup-on-custom-stm32mp135-board">previous
+article</a> we took a
+<a href="https://github.com/js216/stm32mp135_test_board">custom STM32MP135 board</a> from a
+simple LED blink to passing the kernel early boot stage, printing the “Booting
+Linux” message. Now, it’s time to finish the kernel initialization all the way
+up to running our first process: the <code>init</code> process.</p>
+<p>We’ll do it in two steps. First, we make it run on the official <a href="https://www.st.com/en/evaluation-tools/stm32mp135f-dk.html">evaluation
+board</a> for the SoC.
+In a future article, we will consider what needs to be changed in order to make
+this work on a <a href="https://github.com/js216/stm32mp135_test_board">custom board</a>.</p>
+<h3 id="boot-linux-on-eval-board">Boot Linux on eval board</h3>
+<p>First, we need to obtain and build the bootloader. Note that we need to enable
+the STPMIC1, since it is used on the eval board:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:js216/stm32mp135-bootloader.git
+<span class="nb">cd</span><span class="w"> </span>stm32mp135-bootloader
+make<span class="w"> </span><span class="nv">CFLAGS_EXTRA</span><span class="o">=</span>-DUSE_STPMIC1x<span class="o">=</span><span class="m">1</span>
+<span class="nb">cd</span><span class="w"> </span>..
+</pre></div>
+</code></pre>
+<p>Next, we obtain the Linux kernel from the ST repository (contains a few
+non-standard ST-provided drivers):</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/STMicroelectronics/linux.git
+git<span class="w"> </span>checkout<span class="w"> </span>v6.1-stm32mp-r1.1
+</pre></div>
+</code></pre>
+<p>Let’s apply some patches (mainly to allow non-secure boot without
+<a href="https://embd.cc/stm32mp135-without-u-boot">U-Boot</a>,
+<a href="https://embd.cc/stm32mp135-without-optee">OPTEE</a>, or
+<a href="https://embd.cc/linux-bringup-on-custom-stm32mp135-board">TF-A</a>), and copy over
+the Device Tree Source (DTS), and the kernel configuration:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:js216/stm32mp135_test_board.git
+
+<span class="nb">cd</span><span class="w"> </span>linux
+git<span class="w"> </span>linux<span class="w"> </span>apply<span class="w"> </span>../configs/evb/patches/linux/*.patch
+<span class="nb">cd</span><span class="w"> </span>..
+
+cp<span class="w"> </span>config/evb/linux.config<span class="w"> </span>linux/.config
+cp<span class="w"> </span>config/evb/board.dts<span class="w"> </span>linux/arch/arm/boot/dts/
+</pre></div>
+</code></pre>
+<p>Now we can build the Device Tree Blob (DTB) and the kernel itself:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="nb">cd</span><span class="w"> </span>linux
+make<span class="w"> </span><span class="nv">ARCH</span><span class="o">=</span>arm<span class="w"> </span><span class="nv">CROSS_COMPILE</span><span class="o">=</span>arm-linux-gnueabihf-<span class="w"> </span>board.dtb
+make<span class="w"> </span><span class="nv">ARCH</span><span class="o">=</span>arm<span class="w"> </span><span class="nv">CROSS_COMPILE</span><span class="o">=</span>arm-linux-gnueabihf-<span class="w"> </span>zImage
+<span class="nb">cd</span><span class="w"> </span>..
+</pre></div>
+</code></pre>
+<p>Next, we need an init script. (Of course, you can also run the kernel without
+it, but be prepared for a kernel panic at the end of the boot, telling you the
+init is missing.) An init script can be essentially any program, even a “Hello,
+world!”, but if the init program quits, the kernel enters a panic again.</p>
+<p>I asked AI to write a minimal init, without any C standard library dependencies
+(find the result
+<a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">here</a>).
+Let’s compile it, making sure to tell the compiler to not link any extra code
+with it:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>arm-linux-gnueabihf-gcc<span class="w"> </span>-Os<span class="w"> </span>-nostdlib<span class="w"> </span>-static<span class="w"> </span>-fno-builtin<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>-Wl,--gc-sections<span class="w"> </span>config/init.c<span class="w"> </span>-o<span class="w"> </span>build/init
+</pre></div>
+</code></pre>
+<p>Now that we have an init program, we need a root filesystem to put it on:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>build/rootfs.dir/sbin
+cp<span class="w"> </span>build/init<span class="w"> </span>build/rootfs.dir/sbin/init
+dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/zero<span class="w"> </span><span class="nv">of</span><span class="o">=</span>build/rootfs<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>1M<span class="w"> </span><span class="nv">count</span><span class="o">=</span><span class="m">10</span>
+mke2fs<span class="w"> </span>-t<span class="w"> </span>ext4<span class="w"> </span>-F<span class="w"> </span>-d<span class="w"> </span>build/rootfs.dir<span class="w"> </span>build/rootfs
+</pre></div>
+</code></pre>
+<p>Finally, we collect all the pieces together with a simple Python script included
+in the bootloader distribution:</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>python3<span class="w"> </span>bootloader/scripts/sdimage.py<span class="w"> </span>build/sdcard.img<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>bootloader/build/main.stm32<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>linux/arch/arm/boot/dts/board.dtb<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>linux/arch/arm/boot/zImage<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>--partition<span class="w"> </span>build/rootfs
+</pre></div>
+</code></pre>
+<p>Write this image to the SD card and start the system, and prepare to be greeted
+by the very useless shell implemented in the minimal
+<a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">init program</a>):</p>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="o">[</span><span class="w">    </span><span class="m">1</span>.940577<span class="o">]</span><span class="w"> </span>Run<span class="w"> </span>/sbin/init<span class="w"> </span>as<span class="w"> </span>init<span class="w"> </span>process
+Hello,<span class="w"> </span>world!
+$<span class="w"> </span>ls
+ls:<span class="w"> </span><span class="nb">command</span><span class="w"> </span>not<span class="w"> </span>found
+$<span class="w"> </span>Hey!
+Hey!:<span class="w"> </span><span class="nb">command</span><span class="w"> </span>not<span class="w"> </span>found
+</pre></div>
+</code></pre>
+<p>That’s it!</p>
+<h3 id="the-makefile">The Makefile</h3>
+<p>Here’s the full 49 lines:</p>
+<pre><code class="language-makefile"><div class="codehilite"><pre><span></span><span class="nv">CONFIG_DIR</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span>configs/custom
+<span class="nv">CROSS_COMPILE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>arm-linux-gnueabihf-
+<span class="nv">LINUX_OPTS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ARCH</span><span class="o">=</span>arm<span class="w"> </span><span class="nv">CROSS_COMPILE</span><span class="o">=</span><span class="k">$(</span>CROSS_COMPILE<span class="k">)</span>
+
+<span class="nf">all</span><span class="o">:</span><span class="w"> </span><span class="n">boot</span> <span class="n">config</span> <span class="n">dtb</span> <span class="n">kernel</span> <span class="n">init</span> <span class="n">root</span> <span class="n">sd</span>
+
+<span class="nf">boot</span><span class="o">:</span>
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>bootloader<span class="w"> </span>-j<span class="k">$(</span>shell<span class="w"> </span>nproc<span class="k">)</span><span class="w"> </span><span class="nv">CFLAGS_EXTRA</span><span class="o">=</span>-DUSE_STPMIC1x<span class="o">=</span><span class="m">1</span>
+
+<span class="nf">patch</span><span class="o">:</span>
+<span class="w">	</span><span class="k">for</span><span class="w"> </span>p<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/patches/linux/*.patch<span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="se">\</span>
+<span class="cp">		if git -C linux apply --check ../$$p; then \</span>
+<span class="cp">			git -C linux apply ../$$p; \</span>
+<span class="cp">		fi \</span>
+<span class="cp">	done</span>
+
+<span class="nf">config</span><span class="o">:</span>
+<span class="w">	</span>cp<span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/linux.config<span class="w"> </span>linux/.config
+
+<span class="nf">dtb</span><span class="o">:</span>
+<span class="w">	</span>cp<span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/board.dts<span class="w"> </span>linux/arch/arm/boot/dts/
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>linux<span class="w"> </span><span class="k">$(</span>LINUX_OPTS<span class="k">)</span><span class="w"> </span>board.dtb
+
+<span class="nf">kernel</span><span class="o">:</span>
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>linux<span class="w"> </span><span class="k">$(</span>LINUX_OPTS<span class="k">)</span><span class="w"> </span>-j<span class="k">$(</span>shell<span class="w"> </span>nproc<span class="k">)</span><span class="w"> </span>zImage
+
+<span class="nf">init</span><span class="o">:</span>
+<span class="w">	</span>mkdir<span class="w"> </span>-p<span class="w"> </span>build
+<span class="w">	</span><span class="k">$(</span>CROSS_COMPILE<span class="k">)</span>gcc<span class="w"> </span>-Os<span class="w"> </span>-nostdlib<span class="w"> </span>-static<span class="w"> </span>-fno-builtin<span class="w"> </span><span class="se">\</span>
+<span class="w">		</span>-Wl,--gc-sections<span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/init.c<span class="w"> </span>-o<span class="w"> </span>build/init
+
+<span class="nf">root</span><span class="o">:</span>
+<span class="w">	</span>rm<span class="w"> </span>-rf<span class="w"> </span>build/rootfs.dir
+<span class="w">	</span>mkdir<span class="w"> </span>-p<span class="w"> </span>build/rootfs.dir/sbin
+<span class="w">	</span>cp<span class="w"> </span>build/init<span class="w"> </span>build/rootfs.dir/sbin/init
+<span class="w">	</span>dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/zero<span class="w"> </span><span class="nv">of</span><span class="o">=</span>build/rootfs<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>1M<span class="w"> </span><span class="nv">count</span><span class="o">=</span><span class="m">10</span>
+<span class="w">	</span>mke2fs<span class="w"> </span>-t<span class="w"> </span>ext4<span class="w"> </span>-F<span class="w"> </span>-d<span class="w"> </span>build/rootfs.dir<span class="w"> </span>build/rootfs
+
+<span class="nf">sd</span><span class="o">:</span>
+<span class="w">	</span>python3<span class="w"> </span>bootloader/scripts/sdimage.py<span class="w"> </span>build/sdcard.img<span class="w"> </span><span class="se">\</span>
+<span class="w">		</span>bootloader/build/main.stm32
+<span class="w">		</span>linux/arch/arm/boot/dts/board.dtb<span class="w"> </span><span class="se">\</span>
+<span class="w">		</span>linux/arch/arm/boot/zImage<span class="w"> </span><span class="se">\</span>
+<span class="w">		</span>--partition<span class="w"> </span>build/rootfs
+
+<span class="nf">clean</span><span class="o">:</span>
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>linux<span class="w"> </span><span class="k">$(</span>LINUX_OPTS<span class="k">)</span><span class="w"> </span>clean
+<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>bootloader<span class="w"> </span>clean
+<span class="w">	</span>rm<span class="w"> </span>-rf<span class="w"> </span>build
+</pre></div>
+</code></pre>
+<h3 id="discussion">Discussion</h3>
+<p>The Makefile that reproduces the steps above is less than 50 lines long and
+creates a minimal, bootable SD card image in a very straightforward way: build
+the kernel, the DTB, and a userspace program (init), and package everything into
+a single SD card image. The next simplest thing to accomplish the same result is
+the “lightweight” <a href="https://buildroot.org/">Buildroot</a>, which needs nearly 100k
+lines of make. What could possibly be happening in all that code!?</p>
+<p>The sentiment
+has been captured by the Reddit user <code>triffid_hunter</code> in a recent
+<a href="https://www.reddit.com/r/embedded/comments/1pqg3ty/embedded_systems_are_really_hard_to_learn">comment</a>:</p>
+<blockquote>
+<p>I find that the hardest part about embedded is the horrendously obtuse
+manufacturer-provided toolchains.</p>
+<p>If I can find a way to ditch them and switch to gcc+Makefile+basic C
+libraries, that’s the first thing I’ll do.</p>
+</blockquote>
+<p>Buildroot is a relatively clean solution to the problem of supporting a huge
+number of packages on a wide variety of boards, but most of that complexity is
+not needed for a single-board project. (Yocto is an even more complex system,
+which we won’t cover here—its simplicity for the user comes at the cost of
+massive implementation complexity.) From my point of view, all these hundreds of
+thousands of lines of code are simply “accidental complexity” as articulated by
+ESR:</p>
+<blockquote>
+<p>Accidental complexity happens because someone didn’t find the simplest way to
+implement a specified set of features. Accidental complexity can be
+eliminated by good design, or good redesign.<sup class="footnote-ref"><a href="#d343fcde-fn1" id="d343fcde-fnref1">[1]</a></sup></p>
+</blockquote>
+<p>The “root cause” of the highly complex toolchains has been identified by
+Anna-Lena Marx (inovex GmbH) in a talk<sup class="footnote-ref"><a href="#d343fcde-fn2" id="d343fcde-fnref2">[2]</a></sup> last year: the goals of SoC
+vendors and product manufacturers are not aligned. The SoC vendor wants to show
+off all the features of their devices, and they want a Board Support Package
+(BSP) that supports several, even all, of the devices in their portfolio. They
+want a “turnkey solution” that allows an engineer to go from nothing to a
+full-featured demo in ten minutes.</p>
+<p>In contrast, a product manufacturer who wants to use embedded Linux in their
+application-specific product wants a minimal software stack, as close as
+possible to the upstream stable versions in order to be stable, secure, &amp;
+maintainable. It’s the difference between merely using the system, and owning
+it.</p>
+<p>From the product side, I can concur that the SoC BSPs can be a nightmare to work
+with! They are simple to get started with, being a packaged “turnkey solution”,
+but require a massive amount of work to unpeel all the abstraction layers that
+the SoC vendor found necessary to support their entire ecosystem of devices. ST,
+being perhaps the most “hacker friendly” vendor, likely has the cleanest, most
+“upstreamed” offering, and still there’s loads of cruft that must be removed
+before getting to something workable.</p>
+<p>I would like a world where SoC vendors ship their product with simple,
+straightforward <em>documentation</em>, rather than monolithic code examples. Give me
+the smallest possible building blocks and tell me how to connect them together
+to accomplish something, rather than give the huge all-in-one example code that
+can take many tens of hours to pull apart and reassemble. In other words, I
+expect a Linux distribution to approach to the ideal of <a href="https://embd.cc/unix-contributions">Unix
+philosophy</a> much more closely, all the more
+so in an embedded, resource-constrained, highly reliable application.</p>
+<div class="series-box">
+<h3 id="series-list">All Articles in This Series</h3>
+<ul>
+<li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
+<li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
+<li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
+<li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
+<li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
+<li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
+<li><em>7. This article</em></li>
+</ul>
+</div>
+<hr class="footnotes-sep"/>
+<section class="footnotes">
+<ol class="footnotes-list">
+<li class="footnote-item" id="d343fcde-fn1"><p>Eric S. Raymond: The Art of Unix Programming. Addison-Wesley, 2004. <a class="footnote-backref" href="#d343fcde-fnref1">↩︎</a></p>
+</li>
+<li class="footnote-item" id="d343fcde-fn2"><p>Anna-Lena Marx (inovex GmbH): <em>Your Vendor’s BSP Is Probably Not Built
+for Product Longevity</em>. Yocto Project Summit, December 2025. Quoted on
+1/5/2026 from <a href="https://marx.engineer/content/talks/2025_Yocto-Summit_Your-Vendors-BSP-Is-Probably-Not-Built-For-Product-Longevity.pdf">this URL</a> <a class="footnote-backref" href="#d343fcde-fnref2">↩︎</a></p>
+</li>
+</ol>
+</section>
+</div>
+
+
+<div class="article-sep"></div>
+
+<div class="article">
 <div class="article-topic">Incoherent Thoughts</div>
 <h2><a href="let-reality-update-you">Let Reality Update You</a></h2>
 <div class="article-meta">Published 5 Jan 2026. Written by Jakob Kastelic.</div>
@@ -578,247 +809,6 @@ getting things done. After all, this is just routine work!</p>
 <li><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">7. Build Linux for STM32MP135 in under 50 Lines of Makefile</a></li>
 </ul>
 </div>
-</div>
-
-
-<div class="article-sep"></div>
-
-<div class="article">
-<div class="article-topic">Embedded</div>
-<h2><a href="unsecuring-stm32mp135-trustzone">Unsecuring STM32MP135 TrustZone</a></h2>
-<div class="article-meta">Published 21 Dec 2025. Written by Jakob Kastelic.</div>
-<p><img alt="" src="../images/mia.jpg"/></p>
-<p>The STM32MP135 integrates the Arm TrustZone extension which partitions the
-system into two isolated security domains, the secure and non-secure worlds,
-depending on the state of the <code>NS</code> bit. On reset, it executes in the secure
-world (<code>NS=0</code>), but in normal operation, we want <code>NS=1</code>.</p>
-<p>In this article, we explain how to execute the world transitions in a bare-metal
-environment. See <a href="https://embd.cc/stm32mp135-without-optee">this article</a> to
-learn how to do it in the context of Arm Trusted Firmware (TF-A) and Linux.</p>
-<h3 id="change-worlds-with-smc-handler">Change worlds with SMC handler</h3>
-<p>The <code>NS</code> bit is only supposed to be flipped in the Secure Monitor handler,
-invoked with the <code>smc</code> instruction. Thus a minimum handler might look as follows
-(assumes the return address is passed in via <code>r3</code>):</p>
-<pre><code class="language-asm"><div class="codehilite"><pre><span></span><span class="na">.align</span><span class="w"> </span><span class="mi">2</span>
-<span class="nl">sm_smc_entry:</span>
-<span class="w">   </span><span class="nf">mrc</span><span class="w"> </span><span class="no">p15</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="c1">// read SCR</span>
-<span class="w">   </span><span class="nf">orr</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="c1">#SCR_NS</span>
-<span class="w">   </span><span class="nf">mcr</span><span class="w"> </span><span class="no">p15</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="c1">// write SCR</span>
-<span class="w">   </span><span class="nf">mov</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="mi">#0</span>
-
-<span class="w">   </span><span class="nf">mov</span><span class="w"> </span><span class="no">r4</span><span class="p">,</span><span class="w"> </span><span class="c1">#(CPSR_MODE_SVC | CPSR_I | CPSR_F)</span>
-<span class="w">   </span><span class="nf">push</span><span class="w">  </span><span class="p">{</span><span class="no">r4</span><span class="p">}</span><span class="w"> </span><span class="c1">// CPSR after return</span>
-<span class="w">   </span><span class="nf">push</span><span class="w">  </span><span class="p">{</span><span class="no">r3</span><span class="p">}</span><span class="w"> </span><span class="c1">// PC after return</span>
-<span class="w">   </span><span class="nf">rfefd</span><span class="w"> </span><span class="no">sp</span>
-</pre></div>
-</code></pre>
-<p>We see that the <code>NS</code> bit lives in the <code>SCR</code> register, and that there is a
-special syntax to access that register. To exit from the SMC handler, we push
-the desired exception state (SVC mode with IRQ and FIQ disabled) on the stack
-together with the return address, and then exit with <code>rfefd sp</code>.</p>
-<h3 id="installing-the-smc-handler">Installing the SMC handler</h3>
-<p>Before we can call <code>smc</code>, we should create the exception table. If the SMC is
-the only exception we care about, a minimal table might look as follows:</p>
-<pre><code class="language-asm"><div class="codehilite"><pre><span></span><span class="na">.align</span><span class="w"> </span><span class="mi">5</span>
-<span class="nl">sm_vect_table:</span>
-<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Reset</span>
-<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Undefined instruction</span>
-<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="no">sm_smc_entry</span><span class="w"> </span><span class="c1">// Secure monitor call</span>
-<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Prefetch abort</span>
-<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Data abort</span>
-<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Reserved</span>
-<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// IRQ</span>
-<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// FIQ</span>
-</pre></div>
-</code></pre>
-<p>Then, sometime before calling <code>smc</code>, install it in the <code>MVBAR</code> register as
-follows:</p>
-<pre><code class="language-asm"><div class="codehilite"><pre><span></span><span class="nf">ldr</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="err">=</span><span class="no">sm_vect_table</span>
-<span class="nf">mcr</span><span class="w"> </span><span class="no">p15</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">c12</span><span class="p">,</span><span class="w"> </span><span class="no">c0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="c1">// MVBAR</span>
-</pre></div>
-</code></pre>
-<h3 id="unsecuring-the-system">Unsecuring the system</h3>
-<p>The system and peripherals must be set up with access allowed from the
-non-secure world before we flip the <code>NS</code> bit, otherwise the system will just
-freeze. Here’s a list of things that must be unsecured before the flip:</p>
-<ul>
-<li>DDR unsecured via the TZC-400 firewall</li>
-<li>GIC distributor and CPU interface</li>
-<li>ETZPC = Embedded TrustZone Protection Controller</li>
-<li>Clock and reset control (RCC)</li>
-<li>Pin controller / all GPIO banks</li>
-</ul>
-<p>In the following sections, we will examine these one by one, showing how to
-unsecure then and how to verify they have been unsecured.</p>
-<h3 id="unsecure-ddr-with-tzc-400">Unsecure DDR with TZC-400</h3>
-<p>Let’s configure the TZC to allow DDR <code>Region0</code> R/W non-secure access for all
-IDs. While we can use the TZC to partition the RAM into several regions, we will
-use <code>Region0</code> only which is always enabled. (The region implicitly covers the
-entire address space.)</p>
-<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">TZC</span><span class="o">-&gt;</span><span class="n">GATE_KEEPER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="n">TZC</span><span class="o">-&gt;</span><span class="n">REG_ID_ACCESSO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xFFFFFFFF</span><span class="p">;</span>
-<span class="n">TZC</span><span class="o">-&gt;</span><span class="n">REG_ATTRIBUTESO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xC0000001</span><span class="p">;</span>
-<span class="n">TZC</span><span class="o">-&gt;</span><span class="n">GATE_KEEPER</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="mi">1U</span><span class="p">;</span>
-</pre></div>
-</code></pre>
-<p>First, the “gate keeper” is disabled so that we can modify the configuration.
-Then, we set the access bits to all ones, so that that each NSAID gets both
-write and read permission. Next, we set the attributes so that secure global
-write and read are enabled, and the filter is enabled for the region. Finally,
-we “close” the gate keeper so that the configuration is active.</p>
-<p>To verify that the configuration worked, we print out all the fields from the
-TZC struct defined in the CMSIS Device Peripheral Access Layer Header File
-(<code>stm32mp135fxx_ca7.h</code>):</p>
-<pre><code>[TZC dump] begin
-  BUILD_CONFIG     = 0x00001F08
-  ACTION           = 0x00000000
-  GATE_KEEPER      = 0x00010001
-  SPECULATION_CTRL = 0x00000000
-  REG_BASE_LOWO    = 0x00000000
-  REG_BASE_HIGHO   = 0x00000000
-  REG_TOP_LOWO     = 0xFFFFFFFF
-  REG_TOP_HIGHO    = 0x00000000
-  REG_ATTRIBUTESO  = 0xC0000001
-  REG_ID_ACCESSO   = 0xFFFFFFFF
-[TZC dump] end
-</code></pre>
-<p>Of course, we will not be able to verify that the configuration actually works
-till we unsecure everything else on the list. Then, we will switch the CPU to
-nonsecure world and verify that read and write from DDR succeeds.</p>
-<h3 id="gic-distributor">GIC distributor</h3>
-<p>The Generic Interrupt Controller is split into two parts: the Distributor (GICD)
-takes care of the global IRQ configuration, while the CPU interface (GICC) does
-the per-CPU IRQ delivery. In TrustZone, there are two interrupt groups:</p>
-<ul>
-<li>Group 0 corresponds to the Secure world</li>
-<li>Group 1 corresponds to the Non-Secure world</li>
-</ul>
-<p>Now we go step by step, enabling non-secure access to/from interrupts. First we
-configure the interrupts themselves as non-secure:</p>
-<p>Allow both Group 0 and 1 interrupts to be forwarded from the GICD to the CPU
-interfaces. The GICD control register (<code>GICD_CTLR</code>) is included in the CMSIS
-file <code>core_ca.h</code> in the <code>GICDistributor_Type</code> struct:</p>
-<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">CTLR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x03U</span><span class="p">;</span>
-</pre></div>
-</code></pre>
-<p>Just before switching to non-secure world, we will disable all interrupts, mark
-them as non-pending, and move to Group 1 (non-secure):</p>
-<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">num_reg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
-<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">num_reg</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">ICENABLER</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffffffff</span><span class="p">;</span>
-<span class="w">  </span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">ICPENDR</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffffffff</span><span class="p">;</span>
-<span class="w">  </span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">IGROUPR</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffffffff</span><span class="p">;</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<h3 id="gic-cpu-interface">GIC CPU interface</h3>
-<p>In the CPU interface control register, enable Group 1 signaling:</p>
-<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GICInterface</span><span class="o">-&gt;</span><span class="n">CTLR</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="mh">0x03U</span><span class="p">;</span>
-</pre></div>
-</code></pre>
-<p>Priority masking: allow all priority levels to pass through:</p>
-<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GICInterface</span><span class="o">-&gt;</span><span class="n">PMR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xFFU</span><span class="p">;</span>
-</pre></div>
-</code></pre>
-<p>Now we can dump all the GICC registers after handoff:</p>
-<pre><code><div class="codehilite"><pre><span></span>[GICC dump] begin
-  CTLR    = 0x00000003
-  PMR     = 0x000000F8
-  BPR     = 0x00000002
-  IAR     = 0x000003FF
-  EOIR    = 0x00000000
-  RPR     = 0x000000FF
-  HPPIR   = 0x000003FF
-  ABPR    = 0x00000003
-  AIAR    = 0x000003FF
-  AEOIR   = 0x00000000
-  AHPPIR  = 0x000003FF
-  STATUSR = 0x00000000
-  APR[0]   = 0x00000000
-  APR[1]   = 0x00000000
-  APR[2]   = 0x00000000
-  APR[3]   = 0x00000000
-  NSAPR[0] = 0x00000000
-  NSAPR[1] = 0x00000000
-  NSAPR[2] = 0x00000000
-  NSAPR[3] = 0x00000000
-  IIDR    = 0x0102143B
-  DIR     = 0x00000000
-[GICC dump] end
-</pre></div>
-</code></pre>
-<p>This means:</p>
-<ul>
-<li><code>CTLR</code> enables Group 0 and 1 interrupts</li>
-<li><code>PMR</code> sets <code>PRIORITY[4:0] = 0b11111</code>, which allows all non-secure interrupts
-to be signaled</li>
-<li><code>BPR</code> controls how the 8-bit interrupt priority field is split into a group
-priority field</li>
-<li><code>IAR</code> shows <code>CPUID = 0</code>, and <code>INTERRUPT_ID</code> = 1023, which indicates a
-“Spurious interrupt ID” (no pending interrupt at the CPU interface)</li>
-<li><code>EOIR</code>: <code>CPUID = 0</code>, end-of-interrupt ID = 0, i.e. no interrupt being
-completed</li>
-<li><code>RPR</code>: <code>PRIORITY[4:0] = 0b11111</code>, current running priority on the CPU
-interface indicates no active interrupt</li>
-</ul>
-<h3 id="etzpc--enhanced-trustzone-protection-controller">ETZPC = Enhanced TrustZone Protection Controller</h3>
-<p>Now we open access to all peripherals protected by ETZPC. Luckily the ST HAL
-includes a function to open the entire ETZPC to non-secure access:</p>
-<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">__HAL_RCC_ETZPC_CLK_ENABLE</span><span class="p">();</span>
-
-<span class="c1">// unsecure SYSRAM</span>
-<span class="n">LL_ETZPC_SetSecureSysRamSize</span><span class="p">(</span><span class="n">ETZPC</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
-
-<span class="c1">// unsecure peripherals</span>
-<span class="n">LL_ETZPC_Set_All_PeriphProtection</span><span class="p">(</span><span class="n">ETZPC</span><span class="p">,</span>
-<span class="w">     </span><span class="n">LL_ETZPC_PERIPH_PROTECTION_READ_WRITE_NONSECURE</span><span class="p">);</span>
-</pre></div>
-</code></pre>
-<p>Let’s print out the ETZPC registers after running this:</p>
-<pre><code><div class="codehilite"><pre><span></span>[ETZPC dump] begin
-  TZMA0_SIZE       = 0x8000000D
-  TZMA1_SIZE       = 0x00000000
-  DECPROT0         = 0xFFFFFFFF
-  DECPROT1         = 0xFFFFFFFF
-  DECPROT2         = 0xFFFFFFFF
-  DECPROT3         = 0xFFFFFFFF
-  DECPROT4         = 0x00000000
-  DECPROT5         = 0x00000000
-  DECPROT_LOCK0    = 0x00000000
-  DECPROT_LOCK1    = 0x00000000
-  DECPROT_LOCK2    = 0x00000000
-  HWCFGR           = 0x00004002
-  IP_VER           = 0x00000020
-  ID               = 0x00100061
-  SID              = 0xA3C5DD01
-[ETZPC dump] end
-</pre></div>
-</code></pre>
-<p>This means that SYSRAM and ETZPC are fully non-secure.</p>
-<h3 id="clock-and-reset-control-rcc">Clock and reset control (RCC)</h3>
-<p>Through the RCC secure configuration register (<code>RCC_SECCFGR</code>), we may configure
-various clocks to be either secure or non-secure. Easy enough to unsecure:</p>
-<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">RCC</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
-</pre></div>
-</code></pre>
-<h3 id="pin-controller--all-gpio-banks">Pin controller / all GPIO banks</h3>
-<p>Likewise, after enabling the GPIOs, we need to allow non-secure access to them:</p>
-<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GPIOA</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
-<span class="n">GPIOB</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
-<span class="n">GPIOC</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
-<span class="n">GPIOD</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
-<span class="n">GPIOE</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
-<span class="n">GPIOF</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
-<span class="n">GPIOG</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
-<span class="n">GPIOH</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
-</pre></div>
-</code></pre>
-<h3 id="state-of-the-boot-process-so-far">State of the boot process so far</h3>
-<p>With the steps above done, a program will run in the non-secure world (<code>NS=1</code>).
-However, most of the diagnostics to get there will probe secure-only registers,
-such as those used by the TZC, which will result in an immediate undefined
-instruction or similar abort.</p>
-<p>In other words, in non-secure world, you are limited to non-secure things!</p>
 </div>
 
 

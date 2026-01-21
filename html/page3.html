@@ -23,6 +23,247 @@
 
 <div class="article">
 <div class="article-topic">Embedded</div>
+<h2><a href="unsecuring-stm32mp135-trustzone">Unsecuring STM32MP135 TrustZone</a></h2>
+<div class="article-meta">Published 21 Dec 2025. Written by Jakob Kastelic.</div>
+<p><img alt="" src="../images/mia.jpg"/></p>
+<p>The STM32MP135 integrates the Arm TrustZone extension which partitions the
+system into two isolated security domains, the secure and non-secure worlds,
+depending on the state of the <code>NS</code> bit. On reset, it executes in the secure
+world (<code>NS=0</code>), but in normal operation, we want <code>NS=1</code>.</p>
+<p>In this article, we explain how to execute the world transitions in a bare-metal
+environment. See <a href="https://embd.cc/stm32mp135-without-optee">this article</a> to
+learn how to do it in the context of Arm Trusted Firmware (TF-A) and Linux.</p>
+<h3 id="change-worlds-with-smc-handler">Change worlds with SMC handler</h3>
+<p>The <code>NS</code> bit is only supposed to be flipped in the Secure Monitor handler,
+invoked with the <code>smc</code> instruction. Thus a minimum handler might look as follows
+(assumes the return address is passed in via <code>r3</code>):</p>
+<pre><code class="language-asm"><div class="codehilite"><pre><span></span><span class="na">.align</span><span class="w"> </span><span class="mi">2</span>
+<span class="nl">sm_smc_entry:</span>
+<span class="w">   </span><span class="nf">mrc</span><span class="w"> </span><span class="no">p15</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="c1">// read SCR</span>
+<span class="w">   </span><span class="nf">orr</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="c1">#SCR_NS</span>
+<span class="w">   </span><span class="nf">mcr</span><span class="w"> </span><span class="no">p15</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="no">c1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="c1">// write SCR</span>
+<span class="w">   </span><span class="nf">mov</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="mi">#0</span>
+
+<span class="w">   </span><span class="nf">mov</span><span class="w"> </span><span class="no">r4</span><span class="p">,</span><span class="w"> </span><span class="c1">#(CPSR_MODE_SVC | CPSR_I | CPSR_F)</span>
+<span class="w">   </span><span class="nf">push</span><span class="w">  </span><span class="p">{</span><span class="no">r4</span><span class="p">}</span><span class="w"> </span><span class="c1">// CPSR after return</span>
+<span class="w">   </span><span class="nf">push</span><span class="w">  </span><span class="p">{</span><span class="no">r3</span><span class="p">}</span><span class="w"> </span><span class="c1">// PC after return</span>
+<span class="w">   </span><span class="nf">rfefd</span><span class="w"> </span><span class="no">sp</span>
+</pre></div>
+</code></pre>
+<p>We see that the <code>NS</code> bit lives in the <code>SCR</code> register, and that there is a
+special syntax to access that register. To exit from the SMC handler, we push
+the desired exception state (SVC mode with IRQ and FIQ disabled) on the stack
+together with the return address, and then exit with <code>rfefd sp</code>.</p>
+<h3 id="installing-the-smc-handler">Installing the SMC handler</h3>
+<p>Before we can call <code>smc</code>, we should create the exception table. If the SMC is
+the only exception we care about, a minimal table might look as follows:</p>
+<pre><code class="language-asm"><div class="codehilite"><pre><span></span><span class="na">.align</span><span class="w"> </span><span class="mi">5</span>
+<span class="nl">sm_vect_table:</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Reset</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Undefined instruction</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="no">sm_smc_entry</span><span class="w"> </span><span class="c1">// Secure monitor call</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Prefetch abort</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Data abort</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// Reserved</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// IRQ</span>
+<span class="w">   </span><span class="nf">b</span><span class="w"> </span><span class="p">.</span><span class="w">            </span><span class="c1">// FIQ</span>
+</pre></div>
+</code></pre>
+<p>Then, sometime before calling <code>smc</code>, install it in the <code>MVBAR</code> register as
+follows:</p>
+<pre><code class="language-asm"><div class="codehilite"><pre><span></span><span class="nf">ldr</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="err">=</span><span class="no">sm_vect_table</span>
+<span class="nf">mcr</span><span class="w"> </span><span class="no">p15</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="no">r0</span><span class="p">,</span><span class="w"> </span><span class="no">c12</span><span class="p">,</span><span class="w"> </span><span class="no">c0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="c1">// MVBAR</span>
+</pre></div>
+</code></pre>
+<h3 id="unsecuring-the-system">Unsecuring the system</h3>
+<p>The system and peripherals must be set up with access allowed from the
+non-secure world before we flip the <code>NS</code> bit, otherwise the system will just
+freeze. Here’s a list of things that must be unsecured before the flip:</p>
+<ul>
+<li>DDR unsecured via the TZC-400 firewall</li>
+<li>GIC distributor and CPU interface</li>
+<li>ETZPC = Embedded TrustZone Protection Controller</li>
+<li>Clock and reset control (RCC)</li>
+<li>Pin controller / all GPIO banks</li>
+</ul>
+<p>In the following sections, we will examine these one by one, showing how to
+unsecure then and how to verify they have been unsecured.</p>
+<h3 id="unsecure-ddr-with-tzc-400">Unsecure DDR with TZC-400</h3>
+<p>Let’s configure the TZC to allow DDR <code>Region0</code> R/W non-secure access for all
+IDs. While we can use the TZC to partition the RAM into several regions, we will
+use <code>Region0</code> only which is always enabled. (The region implicitly covers the
+entire address space.)</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">TZC</span><span class="o">-&gt;</span><span class="n">GATE_KEEPER</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">TZC</span><span class="o">-&gt;</span><span class="n">REG_ID_ACCESSO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xFFFFFFFF</span><span class="p">;</span>
+<span class="n">TZC</span><span class="o">-&gt;</span><span class="n">REG_ATTRIBUTESO</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xC0000001</span><span class="p">;</span>
+<span class="n">TZC</span><span class="o">-&gt;</span><span class="n">GATE_KEEPER</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="mi">1U</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>First, the “gate keeper” is disabled so that we can modify the configuration.
+Then, we set the access bits to all ones, so that that each NSAID gets both
+write and read permission. Next, we set the attributes so that secure global
+write and read are enabled, and the filter is enabled for the region. Finally,
+we “close” the gate keeper so that the configuration is active.</p>
+<p>To verify that the configuration worked, we print out all the fields from the
+TZC struct defined in the CMSIS Device Peripheral Access Layer Header File
+(<code>stm32mp135fxx_ca7.h</code>):</p>
+<pre><code>[TZC dump] begin
+  BUILD_CONFIG     = 0x00001F08
+  ACTION           = 0x00000000
+  GATE_KEEPER      = 0x00010001
+  SPECULATION_CTRL = 0x00000000
+  REG_BASE_LOWO    = 0x00000000
+  REG_BASE_HIGHO   = 0x00000000
+  REG_TOP_LOWO     = 0xFFFFFFFF
+  REG_TOP_HIGHO    = 0x00000000
+  REG_ATTRIBUTESO  = 0xC0000001
+  REG_ID_ACCESSO   = 0xFFFFFFFF
+[TZC dump] end
+</code></pre>
+<p>Of course, we will not be able to verify that the configuration actually works
+till we unsecure everything else on the list. Then, we will switch the CPU to
+nonsecure world and verify that read and write from DDR succeeds.</p>
+<h3 id="gic-distributor">GIC distributor</h3>
+<p>The Generic Interrupt Controller is split into two parts: the Distributor (GICD)
+takes care of the global IRQ configuration, while the CPU interface (GICC) does
+the per-CPU IRQ delivery. In TrustZone, there are two interrupt groups:</p>
+<ul>
+<li>Group 0 corresponds to the Secure world</li>
+<li>Group 1 corresponds to the Non-Secure world</li>
+</ul>
+<p>Now we go step by step, enabling non-secure access to/from interrupts. First we
+configure the interrupts themselves as non-secure:</p>
+<p>Allow both Group 0 and 1 interrupts to be forwarded from the GICD to the CPU
+interfaces. The GICD control register (<code>GICD_CTLR</code>) is included in the CMSIS
+file <code>core_ca.h</code> in the <code>GICDistributor_Type</code> struct:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">CTLR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x03U</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>Just before switching to non-secure world, we will disable all interrupts, mark
+them as non-pending, and move to Group 1 (non-secure):</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">num_reg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">num_reg</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">ICENABLER</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffffffff</span><span class="p">;</span>
+<span class="w">  </span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">ICPENDR</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffffffff</span><span class="p">;</span>
+<span class="w">  </span><span class="n">GICDistributor</span><span class="o">-&gt;</span><span class="n">IGROUPR</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mh">0xffffffff</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<h3 id="gic-cpu-interface">GIC CPU interface</h3>
+<p>In the CPU interface control register, enable Group 1 signaling:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GICInterface</span><span class="o">-&gt;</span><span class="n">CTLR</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="mh">0x03U</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>Priority masking: allow all priority levels to pass through:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GICInterface</span><span class="o">-&gt;</span><span class="n">PMR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0xFFU</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>Now we can dump all the GICC registers after handoff:</p>
+<pre><code><div class="codehilite"><pre><span></span>[GICC dump] begin
+  CTLR    = 0x00000003
+  PMR     = 0x000000F8
+  BPR     = 0x00000002
+  IAR     = 0x000003FF
+  EOIR    = 0x00000000
+  RPR     = 0x000000FF
+  HPPIR   = 0x000003FF
+  ABPR    = 0x00000003
+  AIAR    = 0x000003FF
+  AEOIR   = 0x00000000
+  AHPPIR  = 0x000003FF
+  STATUSR = 0x00000000
+  APR[0]   = 0x00000000
+  APR[1]   = 0x00000000
+  APR[2]   = 0x00000000
+  APR[3]   = 0x00000000
+  NSAPR[0] = 0x00000000
+  NSAPR[1] = 0x00000000
+  NSAPR[2] = 0x00000000
+  NSAPR[3] = 0x00000000
+  IIDR    = 0x0102143B
+  DIR     = 0x00000000
+[GICC dump] end
+</pre></div>
+</code></pre>
+<p>This means:</p>
+<ul>
+<li><code>CTLR</code> enables Group 0 and 1 interrupts</li>
+<li><code>PMR</code> sets <code>PRIORITY[4:0] = 0b11111</code>, which allows all non-secure interrupts
+to be signaled</li>
+<li><code>BPR</code> controls how the 8-bit interrupt priority field is split into a group
+priority field</li>
+<li><code>IAR</code> shows <code>CPUID = 0</code>, and <code>INTERRUPT_ID</code> = 1023, which indicates a
+“Spurious interrupt ID” (no pending interrupt at the CPU interface)</li>
+<li><code>EOIR</code>: <code>CPUID = 0</code>, end-of-interrupt ID = 0, i.e. no interrupt being
+completed</li>
+<li><code>RPR</code>: <code>PRIORITY[4:0] = 0b11111</code>, current running priority on the CPU
+interface indicates no active interrupt</li>
+</ul>
+<h3 id="etzpc--enhanced-trustzone-protection-controller">ETZPC = Enhanced TrustZone Protection Controller</h3>
+<p>Now we open access to all peripherals protected by ETZPC. Luckily the ST HAL
+includes a function to open the entire ETZPC to non-secure access:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">__HAL_RCC_ETZPC_CLK_ENABLE</span><span class="p">();</span>
+
+<span class="c1">// unsecure SYSRAM</span>
+<span class="n">LL_ETZPC_SetSecureSysRamSize</span><span class="p">(</span><span class="n">ETZPC</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+
+<span class="c1">// unsecure peripherals</span>
+<span class="n">LL_ETZPC_Set_All_PeriphProtection</span><span class="p">(</span><span class="n">ETZPC</span><span class="p">,</span>
+<span class="w">     </span><span class="n">LL_ETZPC_PERIPH_PROTECTION_READ_WRITE_NONSECURE</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>Let’s print out the ETZPC registers after running this:</p>
+<pre><code><div class="codehilite"><pre><span></span>[ETZPC dump] begin
+  TZMA0_SIZE       = 0x8000000D
+  TZMA1_SIZE       = 0x00000000
+  DECPROT0         = 0xFFFFFFFF
+  DECPROT1         = 0xFFFFFFFF
+  DECPROT2         = 0xFFFFFFFF
+  DECPROT3         = 0xFFFFFFFF
+  DECPROT4         = 0x00000000
+  DECPROT5         = 0x00000000
+  DECPROT_LOCK0    = 0x00000000
+  DECPROT_LOCK1    = 0x00000000
+  DECPROT_LOCK2    = 0x00000000
+  HWCFGR           = 0x00004002
+  IP_VER           = 0x00000020
+  ID               = 0x00100061
+  SID              = 0xA3C5DD01
+[ETZPC dump] end
+</pre></div>
+</code></pre>
+<p>This means that SYSRAM and ETZPC are fully non-secure.</p>
+<h3 id="clock-and-reset-control-rcc">Clock and reset control (RCC)</h3>
+<p>Through the RCC secure configuration register (<code>RCC_SECCFGR</code>), we may configure
+various clocks to be either secure or non-secure. Easy enough to unsecure:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">RCC</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<h3 id="pin-controller--all-gpio-banks">Pin controller / all GPIO banks</h3>
+<p>Likewise, after enabling the GPIOs, we need to allow non-secure access to them:</p>
+<pre><code class="language-c"><div class="codehilite"><pre><span></span><span class="n">GPIOA</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOB</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOC</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOD</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOE</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOF</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOG</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+<span class="n">GPIOH</span><span class="o">-&gt;</span><span class="n">SECCFGR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x00000000</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<h3 id="state-of-the-boot-process-so-far">State of the boot process so far</h3>
+<p>With the steps above done, a program will run in the non-secure world (<code>NS=1</code>).
+However, most of the diagnostics to get there will probe secure-only registers,
+such as those used by the TZC, which will result in an immediate undefined
+instruction or similar abort.</p>
+<p>In other words, in non-secure world, you are limited to non-secure things!</p>
+</div>
+
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Embedded</div>
 <h2><a href="sdcard-on-bare-metal-stm32mp135">SD card on bare-metal STM32MP135</a></h2>
 <div class="article-meta">Published 20 Dec 2025, modified 9 Jan 2026. Written by Jakob Kastelic.</div>
 <p><img alt="" src="../images/deco.jpg"/></p>
@@ -606,529 +847,6 @@ thing at a time. The closer one approaches to the ideal of unity, the more
 efficient the work becomes. Distraction is dissipation; limitation is focus.</p>
 <p>This is not a moral statement but a practical one: limitations free your energy
 for what matters.</p>
-</div>
-
-
-<div class="article-sep"></div>
-
-<div class="article">
-<div class="article-topic">Embedded</div>
-<h2><a href="boot-stm32mp135-over-uart-with-python">Boot STM32MP135 Over UART With Python</a></h2>
-<div class="article-meta">Published 19 Nov 2025, modified 21 Nov 2025. Written by Jakob Kastelic.</div>
-<p><img alt="" src="../images/brid.jpg"/></p>
-<p><em>This article is also available as a <a href="https://github.com/js216/mp135_boot/tree/main/uart_boot">Jupyter
-notebook.</a></em></p>
-<p><a href="stm32mp135-linux-cubeprog.md">Previously</a> we have explored how to flash the
-STM32MP135 using the STM32CubeProg over USB and remained puzzled why we need
-1.5G of code just to transfer some serial data. Here, we will flash the chip
-by talking to the built-in ROM bootloader over UART with a couple lines of
-Python, as explained in an ST app note<sup class="footnote-ref"><a href="#21956565-fn1" id="21956565-fnref1">[1]</a></sup>. The article is in three sections:
-(1) define the communication functions, (2) use them on the evaluation board,
-(3) use them on a custom board.</p>
-<h3 id="comm-functions">Comm Functions</h3>
-<p>This section documents how the STM32MP1 ROM bootloader communicates over UART,
-including the supported commands, packet formats, checksum rules, and Python
-helper functions used to implement the protocol. Skip to the <a href="#flash-the-evaluation-board">next
-section</a> to see how these functions are used.</p>
-<p>The supported commands are listed below:</p>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">interp_cmd</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x00</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"Get"</span>
-    <span class="k">elif</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x01</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"Get Version"</span>
-    <span class="k">elif</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x02</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"Get ID"</span>
-    <span class="k">elif</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x03</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"Get phase"</span>
-    <span class="k">elif</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x11</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"Read Memory"</span>
-    <span class="k">elif</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x12</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"Read Partition"</span>
-    <span class="k">elif</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x21</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"Start (Go)"</span>
-    <span class="k">elif</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x31</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"Download (Write Memory)"</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"???"</span>
-</pre></div>
-</code></pre>
-<p>All communications from STM32CubeProgrammer (PC) to the device are verified as
-follows:</p>
-<ul>
-<li>
-<p>The UART/USART even parity is checked.</p>
-</li>
-<li>
-<p>For each command the host sends a byte and its complement (XOR = 0x00).</p>
-</li>
-<li>
-<p>The device performs a checksum on the sent/received datablocks. A byte
-containing the computed XOR of all previous bytes is appended at the end of
-each communication (checksum byte). By XORing all received bytes, data +
-checksum, the result at the end of the packet must be 0x00. A timeout must be
-managed in any waiting loop to avoid any blocking situation.</p>
-</li>
-</ul>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">pack_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">cmd</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mh">0x00</span><span class="p">,</span> <span class="mh">0x01</span><span class="p">,</span> <span class="mh">0x02</span><span class="p">,</span> <span class="mh">0x03</span><span class="p">,</span> <span class="mh">0x11</span><span class="p">,</span> <span class="mh">0x12</span><span class="p">,</span> <span class="mh">0x21</span><span class="p">,</span> <span class="mh">0x31</span><span class="p">]:</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Invalid cmd requested."</span><span class="p">)</span>
-    <span class="c1"># command followed by its complement</span>
-    <span class="k">return</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"BB"</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="mh">0xff</span><span class="o">-</span><span class="n">cmd</span><span class="p">)</span>
-</pre></div>
-</code></pre>
-<p>Each command packet is either accepted (ACK answer), discarded (NACK answer) or
-aborted (unrecoverable error):</p>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">interp_byte</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x79</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"ACK"</span>
-    <span class="k">elif</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x1F</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"NACK"</span>
-    <span class="k">elif</span> <span class="n">b</span> <span class="o">==</span> <span class="mh">0x5F</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"ABORT"</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">format</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="s1">'#04x'</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">get_ack</span><span class="p">(</span><span class="n">note</span><span class="o">=</span><span class="s2">""</span><span class="p">):</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="si">{</span><span class="n">interp_byte</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="si">}{</span><span class="n">note</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">interp_byte</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"ACK"</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Did not receive ACK."</span><span class="p">)</span>
-</pre></div>
-</code></pre>
-<p>Once the serial boot mode is entered (boot pins set to 000), all the UART/USART
-instances are scanned by the ROM code, monitoring for each instance the
-<code>USARTx_RX</code> line pin, waiting to receive the 0x7F data frame (one start bit,
-0x7F data bits, none parity bit and one stop bit).</p>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">uart_init</span><span class="p">():</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="mh">0x7F</span><span class="p">))</span>
-    <span class="n">get_ack</span><span class="p">(</span><span class="n">note</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
-</pre></div>
-</code></pre>
-<p>The Get command returns the bootloader version and the supported commands. When
-the device receives the Get command, it transmits the version and the supported
-command codes to the host. The commands not supported are removed from the list.</p>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get</span><span class="p">():</span>
-    <span class="c1"># Get command</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">pack_cmd</span><span class="p">(</span><span class="mh">0x00</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">()</span>
-
-    <span class="c1"># Response: number of following bytes – 1</span>
-    <span class="n">num_bytes</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">num_bytes</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">num_bytes</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="si">{</span><span class="n">num_bytes</span><span class="si">}</span><span class="s2"> + 1 bytes to follow"</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">num_bytes</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Did not receive number of bytes to follow."</span><span class="p">)</span>
-
-    <span class="c1"># Response: Bootloader version</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="s2">version </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="nb">hex</span><span class="p">(</span><span class="mh">0x10</span><span class="p">)[</span><span class="mi">2</span><span class="p">:])</span><span class="o">/</span><span class="mi">10</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    
-    <span class="c1"># Response: device ID</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_bytes</span><span class="p">):</span>
-        <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">num_bytes</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="s2">cmd = </span><span class="si">{</span><span class="n">interp_cmd</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">()</span>
-</pre></div>
-</code></pre>
-<p>The Get version command is used to get the version of the running component.
-When the device receives the command, it transmits the version to the host.</p>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_version</span><span class="p">():</span>
-    <span class="c1"># Get version command</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">pack_cmd</span><span class="p">(</span><span class="mh">0x01</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">()</span>
-    
-    <span class="c1"># Response: Bootloader version</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="s2">version </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="nb">hex</span><span class="p">(</span><span class="mh">0x10</span><span class="p">)[</span><span class="mi">2</span><span class="p">:])</span><span class="o">/</span><span class="mi">10</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="c1"># Response: Option byte 1</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="s2">Option byte 1"</span><span class="p">)</span>
-    
-    <span class="c1"># Response: Option byte 2</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="s2">Option byte 2"</span><span class="p">)</span>
-
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">()</span>
-</pre></div>
-</code></pre>
-<p>The Get ID command is used to get the version of the device ID (identification).
-When the device receives the command, it transmits the device ID to the host.</p>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_id</span><span class="p">():</span>
-    <span class="c1"># Get ID command</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">pack_cmd</span><span class="p">(</span><span class="mh">0x02</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">()</span>
-
-    <span class="c1"># Response: number of following bytes – 1</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">r</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="s2"> + 1 bytes to follow"</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Did not receive number of bytes to follow."</span><span class="p">)</span>
-
-    <span class="c1"># Response: device ID</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">r</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'</span><span class="se">\x05\x00</span><span class="s1">'</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'#04x'</span><span class="p">),</span> <span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">'#04x'</span><span class="p">),</span> <span class="s2">"</span><span class="se">\t</span><span class="s2">STM32MP15x"</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">r</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'</span><span class="se">\x05\x01</span><span class="s1">'</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'#04x'</span><span class="p">),</span> <span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">'#04x'</span><span class="p">),</span> <span class="s2">"</span><span class="se">\t</span><span class="s2">STM32MP13x"</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'#04x'</span><span class="p">),</span> <span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">'#04x'</span><span class="p">))</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Did not receive device ID."</span><span class="p">)</span>
-
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">()</span>
-</pre></div>
-</code></pre>
-<p>The Get phase command enables the host to get the phase ID, in order to identify
-the next partition that is going to be downloaded.</p>
-<p>The download address, when present, provides the destination address in memory.
-A value of 0xFFFFFFFF means than the partition is going to be written in NVM.</p>
-<p>Phase ID = 0xFF corresponds to an answered value Reset, in this case the
-information bytes provide the cause of the error in a string just before
-executing the reset.</p>
-<p>The ROM code sends phase = TF-A</p>
-<pre><code><div class="codehilite"><pre><span></span>Byte 1: ACK
-Byte 2 N = 6
-Byte 3: phase ID (file containing FSBL = TF-A, 1)
-Byte 4-7: 0x2FFC2400 on STM32MP15x, 0x2FFDFE00 on STM32MP13x
-Byte 8: X = 1
-Byte 9: 0: reserved
-Byte 10: ACK
-</pre></div>
-</code></pre>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_phase</span><span class="p">():</span>
-    <span class="c1"># Get phase command</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">pack_cmd</span><span class="p">(</span><span class="mh">0x03</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">()</span>
-
-    <span class="c1"># Response: number of following bytes – 1</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">r</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="s2"> + 1 bytes to follow"</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Did not receive number of bytes to follow."</span><span class="p">)</span>
-
-    <span class="c1"># Response: phase ID</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="s2">Phase ID"</span><span class="p">)</span>
-
-    <span class="c1"># Response: download address</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="s1">'#04x'</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">'02x'</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">'02x'</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">'02x'</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\t</span><span class="s2">Download address"</span><span class="p">)</span>
-
-    <span class="c1"># Response: number of additional bytes</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="s2"> additional bytes following"</span><span class="p">)</span>
-    
-    <span class="c1"># Response: reserved</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">mp1</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">format</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="s1">'#04x'</span><span class="p">)</span><span class="si">}</span><span class="se">\t\t</span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="s2"> Reserved"</span><span class="p">)</span>
-
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">()</span>
-</pre></div>
-</code></pre>
-<p>The download command is used to download a binary code (image) into the SRAM
-memory or to write a partition in NVM.</p>
-<p>Two types of operations are available:</p>
-<ul>
-<li>
-<p>Normal operation: download current partition binary to the device. For
-initialization phase the partitions are loaded in SRAM, otherwise for writing
-phase the partition are written in NVM.</p>
-</li>
-<li>
-<p>Special operation: download non-signed data to non-executable memory space</p>
-</li>
-</ul>
-<p>A Start command is necessary to finalize these operations after the download
-command.</p>
-<p>The Packet number is used to specify the type of operation and the number of the
-current packet. The table below gives the description of the packet number.</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:center">Byte</th>
-<th style="text-align:center">Value</th>
-<th style="text-align:left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">3</td>
-<td style="text-align:center">0x00</td>
-<td style="text-align:left">Normal operation: write in current phase</td>
-</tr>
-<tr>
-<td style="text-align:center">.</td>
-<td style="text-align:center">0xF2</td>
-<td style="text-align:left">Special operation: OTP write</td>
-</tr>
-<tr>
-<td style="text-align:center">.</td>
-<td style="text-align:center">0xF3</td>
-<td style="text-align:left">Special operation: Reserved</td>
-</tr>
-<tr>
-<td style="text-align:center">.</td>
-<td style="text-align:center">0xF4</td>
-<td style="text-align:left">Special operation PMIC: NVM write</td>
-</tr>
-<tr>
-<td style="text-align:center">.</td>
-<td style="text-align:center">Others</td>
-<td style="text-align:left">Reserved</td>
-</tr>
-<tr>
-<td style="text-align:center">0-2</td>
-<td style="text-align:center">—</td>
-<td style="text-align:left">Packet number, increasing from 0 to 0xFFFFFF (*)</td>
-</tr>
-</tbody>
-</table>
-<p>Packet number it is not an address as on STM32 MCU with only memory mapped
-flash, but the index of the received packet. The offset of the packet N the
-offset in the current partition/phase is N* 256 bytes when only full packets are
-used.</p>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-    <span class="c1"># Data sanity check</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Packet number </span><span class="si">{</span><span class="n">num</span><span class="si">}</span><span class="s2"> of length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">:"</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">256</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Too much data to send."</span><span class="p">)</span>
-        
-    <span class="c1"># Send "Download" command</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">pack_cmd</span><span class="p">(</span><span class="mh">0x31</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">(</span><span class="s2">" command"</span><span class="p">)</span>
-    
-    <span class="c1"># Packet number</span>
-    <span class="n">i0</span> <span class="o">=</span> <span class="p">(</span><span class="n">num</span> <span class="o">&gt;&gt;</span> <span class="mi">0</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">i1</span> <span class="o">=</span> <span class="p">(</span><span class="n">num</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">i2</span> <span class="o">=</span> <span class="p">(</span><span class="n">num</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"BBBB"</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="n">i2</span><span class="p">,</span> <span class="n">i1</span><span class="p">,</span> <span class="n">i0</span><span class="p">))</span>
-
-    <span class="c1"># Checksum byte: XOR (byte 3 to byte 6)</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="n">i2</span> <span class="o">^</span> <span class="n">i1</span> <span class="o">^</span> <span class="n">i0</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">(</span><span class="s2">" packet number"</span><span class="p">)</span>
-    
-    <span class="c1"># Packet size (0 &lt; N &lt; 255)</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
-    
-    <span class="c1"># N-1 data bytes</span>
-    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-        <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
-        
-    <span class="c1"># Checksum byte: XOR (byte 8 to Last-1)</span>
-    <span class="n">checksum</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-        <span class="n">checksum</span> <span class="o">^=</span> <span class="n">d</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="n">checksum</span><span class="p">))</span>
-
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">(</span><span class="s2">" data"</span><span class="p">)</span>
-</pre></div>
-</code></pre>
-<p>The Read memory command is used to read data from any valid memory address in
-the system memory.</p>
-<p>When the device receives the read memory command, it transmits the ACK byte to
-the application. After the transmission of the ACK byte, the device waits for an
-address (4 bytes) and a checksum byte, then it checks the received address. If
-the address is valid and the checksum is correct, the device transmits an ACK
-byte, otherwise it transmits a NACK byte and aborts the command.</p>
-<p>When the address is valid and the checksum is correct, the device waits for N (N
-= number of bytes to be received -1) and for its complemented byte (checksum).
-If the checksum is correct the device transmits the needed data (N+1 bytes) to
-the application, starting from the received address. If the checksum is not
-correct, it sends a NACK before aborting the command.</p>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">read_memory</span><span class="p">(</span><span class="n">addr</span><span class="p">,</span> <span class="n">num_bytes</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"Note: read memory command not supported by ROM code STM32MP13x."</span><span class="p">)</span>
-    
-    <span class="c1"># Data sanity check</span>
-    <span class="k">if</span> <span class="n">num_bytes</span> <span class="o">&gt;</span> <span class="mi">256</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Too much data to receive."</span><span class="p">)</span>
-        
-    <span class="c1"># Send "Read memory" command</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">pack_cmd</span><span class="p">(</span><span class="mh">0x11</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">(</span><span class="s2">" command"</span><span class="p">)</span>
-
-    <span class="c1"># Start address</span>
-    <span class="n">i0</span> <span class="o">=</span> <span class="p">(</span><span class="n">addr</span> <span class="o">&gt;&gt;</span> <span class="mi">0</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">i1</span> <span class="o">=</span> <span class="p">(</span><span class="n">addr</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">i2</span> <span class="o">=</span> <span class="p">(</span><span class="n">addr</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"BBBB"</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">,</span> <span class="n">i2</span><span class="p">,</span> <span class="n">i1</span><span class="p">,</span> <span class="n">i0</span><span class="p">))</span>
-
-    <span class="c1"># Checksum byte: XOR (byte 3 to byte 6)</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="n">i2</span> <span class="o">^</span> <span class="n">i1</span> <span class="o">^</span> <span class="n">i0</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">(</span><span class="s2">" start address"</span><span class="p">)</span>
-    
-    <span class="c1"># Number of bytes to be received – 1 (N = [0, 255])</span>
-    <span class="c1"># (also Checksum byte: XOR)</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">pack_cmd</span><span class="p">(</span><span class="n">num_bytes</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">(</span><span class="s2">" number of bytes"</span><span class="p">)</span>
-</pre></div>
-</code></pre>
-<p>The Start command is used:</p>
-<ul>
-<li>
-<p>To execute the code just downloaded in the memory or any other code by
-branching to an address specified by the application. When the device receives
-the Start command, it transmits the ACK byte to the application. If the address
-is valid the device transmits an ACK byte and jumps to this address, otherwise
-it transmits a NACK byte and aborts the command.</p>
-</li>
-<li>
-<p>To finalize the last download command, when the host indicates the address =
-0xFFFFFFFF.</p>
-</li>
-</ul>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="n">addr</span><span class="p">):</span>
-    <span class="c1"># Send "Start" command</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">pack_cmd</span><span class="p">(</span><span class="mh">0x21</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">(</span><span class="s2">" command"</span><span class="p">)</span>
-
-    <span class="c1"># Start address</span>
-    <span class="n">i0</span> <span class="o">=</span> <span class="p">(</span><span class="n">addr</span> <span class="o">&gt;&gt;</span> <span class="mi">0</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">i1</span> <span class="o">=</span> <span class="p">(</span><span class="n">addr</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">i2</span> <span class="o">=</span> <span class="p">(</span><span class="n">addr</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">i3</span> <span class="o">=</span> <span class="p">(</span><span class="n">addr</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span><span class="o">*</span><span class="mi">8</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0xff</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"BBBB"</span><span class="p">,</span> <span class="n">i3</span><span class="p">,</span> <span class="n">i2</span><span class="p">,</span> <span class="n">i1</span><span class="p">,</span> <span class="n">i0</span><span class="p">))</span>
-
-    <span class="c1"># Checksum byte: XOR (byte 3 to byte 6)</span>
-    <span class="n">mp1</span><span class="o">.</span><span class="n">write_raw</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="n">i3</span> <span class="o">^</span> <span class="n">i2</span> <span class="o">^</span> <span class="n">i1</span> <span class="o">^</span> <span class="n">i0</span><span class="p">))</span>
-    
-    <span class="c1"># Response: ACK</span>
-    <span class="n">get_ack</span><span class="p">(</span><span class="s2">" address"</span><span class="p">)</span>
-</pre></div>
-</code></pre>
-<p>To download a complete file:</p>
-<pre><code class="language-Python"><div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">down_file</span><span class="p">(</span><span class="n">fname</span><span class="o">=</span><span class="s1">'tf-a-stm32mp135f-dk.stm32'</span><span class="p">):</span>
-    <span class="c1"># size of each chunk (must be &lt;= 256 bytes)</span>
-    <span class="n">sz</span> <span class="o">=</span> <span class="mi">256</span>
-
-    <span class="c1"># open file with the bitstream</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">fb</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-
-    <span class="c1"># split file into this many chunks</span>
-    <span class="n">num_chunks</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fb</span><span class="p">)</span> <span class="o">/</span> <span class="n">sz</span><span class="p">))</span>
-
-    <span class="c1"># send each chunk one by one</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_chunks</span><span class="p">)):</span>
-        <span class="n">chunk</span> <span class="o">=</span> <span class="n">fb</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="n">sz</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">sz</span><span class="p">]</span>
-        <span class="n">download</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">chunk</span><span class="p">)</span>
-        
-    <span class="c1"># necessary to finalize download</span>
-    <span class="n">start</span><span class="p">(</span><span class="mh">0xFFFFFFFF</span><span class="p">)</span>
-</pre></div>
-</code></pre>
-<h3 id="flash-the-evaluation-board">Flash the Evaluation Board</h3>
-<p>We simply run the functions one after the other and verify that the output
-printed matches what’s shown here.</p>
-<p>As an example, we will use the Blink program that we develop, compile, and
-package in <a href="https://github.com/js216/mp135_boot/tree/main/blink_noide">this repo.</a></p>
-<pre><code><div class="codehilite"><pre><span></span>&gt;&gt;&gt; uart_init()
-0x79		ACK
-
-&gt;&gt;&gt; get()
-0x79		ACK
-0x06		6 + 1 bytes to follow
-0x40		version 1.0
-0x06		cmd = Get
-0x06		cmd = Get Version
-0x06		cmd = Get ID
-0x06		cmd = Get phase
-0x06		cmd = Start (Go)
-0x06		cmd = Download (Write Memory)
-0x79		ACK
-
-&gt;&gt;&gt; get_version()
-0x79		ACK
-0x10		version 1.0
-0x00		Option byte 1
-0x00		Option byte 2
-0x79		ACK
-
-&gt;&gt;&gt; get_id()
-0x79		ACK
-0x01		1 + 1 bytes to follow
-0x05 0x01 	STM32MP13x
-0x79		ACK
-
-&gt;&gt;&gt; get_phase()
-0x79		ACK
-0x06		6 + 1 bytes to follow
-0x01		Phase ID
-0x2ffdfe00	Download address
-0x01		1 additional bytes following
-0x00		0 Reserved
-0x79		ACK
-
-&gt;&gt;&gt; down_file(fname='blink.stm32')
-Packet number 0 of length 256:
-0x79		ACK command
-0x79		ACK packet number
-0x79		ACK data
-...
-(skip over lots of packets)
-...
-Packet number 264 of length 156:
-0x79		ACK command
-0x79		ACK packet number
-0x79		ACK data
-0x79		ACK command
-0x79		ACK address
-</pre></div>
-</code></pre>
-<p>After a little bit, the red LED on the evaluation board will blink. Success!</p>
-<h3 id="flash-a-custom-board">Flash a Custom Board</h3>
-<p>Amazingly, the exact same procedure works on any custom board, so long as it
-breaks out the UART4 pin and applies 3.3V and 1.35V power supplies in the
-correct sequence. Find the schematics and layout files for my board in
-<a href="https://github.com/js216/stm32mp135_test_board">this repository.</a></p>
-<p>Since the custom board does not use STPMIC1, the code for the blink example is
-even simpler. Find it <a href="https://github.com/js216/stm32mp135_test_board/tree/main/baremetal/blink">here.</a></p>
-<p>The UART wires (green/yellow) and the two power supplies is all that needs to be
-connected, and then the red LED (middle of the PCB) will blink. Yes, the setup
-is that simple!</p>
-<p><img alt="" src="../images/first_blink.jpg"/></p>
-<hr class="footnotes-sep"/>
-<section class="footnotes">
-<ol class="footnotes-list">
-<li class="footnote-item" id="21956565-fn1"><p>ST application note AN5275, “USB DFU/USART protocols used in STM32MP1
-Series bootloaders”. <a class="footnote-backref" href="#21956565-fnref1">↩︎</a></p>
-</li>
-</ol>
-</section>
 </div>
 
 
