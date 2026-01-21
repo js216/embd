@@ -110,9 +110,9 @@ def main():
             continue
         body, date = extract_body_and_date(html_file, f"{stem}")
         if body:
-            articles.append((body, date))
+            articles.append((body, date, stem))
 
-    articles.sort(key=lambda x: x[1] or datetime.min, reverse=True)
+    articles.sort(key=lambda x: (-(x[1] or datetime.min).timestamp(), x[2]))
     total_articles = len(articles)
     total_pages = (total_articles + ARTICLES_PER_PAGE - 1) // ARTICLES_PER_PAGE
 
@@ -122,7 +122,7 @@ def main():
         page_articles = articles[start:end]
 
         concatenated_body = '\n<div class="article-sep"></div>\n'.join(
-            body for body, _ in page_articles)
+            body for body, _, _ in page_articles)
 
         nav_html = make_nav_links(i, total_pages)
 
