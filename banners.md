@@ -218,3 +218,12 @@ Kaldari:
 *LCD works on the Rev A STM32MP135 board.*
 (JK, 19 Jan 2026)
 ![](../images/lcd.jpg)
+
+---
+
+Lumen roma:
+*Deir as-Suriani Monastery in Wadi Natrun (Egypt)*
+(2008)
+[Source](https://commons.wikimedia.org/wiki/File:Deir_as_Suriani.jpg)
+[Link](https://upload.wikimedia.org/wikipedia/commons/0/09/Deir_as_Suriani.jpg)
+![](../images/brain.jpg)
