@@ -79,3 +79,24 @@ All arts and sciences (*omnes artes ac disciplinae*) have two kinds of purposes:
 > first secured by reflecting on a few saints: from the contemplation of whom,
 > he who has made some progress rises and attains by God's help to that which is
 > termed "one thing," i.e., the consideration of God alone
+
+### Saints are special
+
+> if there chances to be anything herein which [...] seems to him either
+> impossible or very difficult, he should measure it not by the limits of his
+> own powers but by the worth and perfection of the speakers [...] as they were
+> truly dead to this worldly life, and so hampered by no feelings for their
+> kinsmen according to the flesh, and by no ties of worldly occupations.
+> 
+> Next let him bear in mind the character of the country in which they dwelt,
+> how they lived in a vast desert, and were cut off from intercourse with all
+> their fellow-men, and thus were able to have their minds enlightened, and to
+> contemplate, and utter those things which perhaps will seem impossibilities to
+> the uninitiated and uninstructed, because of their way of life and the
+> commonplace character of their habits.
+>
+> But if any one wants to give a true opinion on this matter, and is anxious to
+> try whether such perfection can be attained, let him first endeavour to make
+> his purpose their own, with the same zeal and the same mode of life, and then
+> in the end he will find that those things which used to seem beyond the powers
+> of men, are not only possible, but really delightful

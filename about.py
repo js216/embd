@@ -29,6 +29,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <p>Articles on embedded Linux, STM32 development, low-level programming, and
 practical approaches to software productivity. Tutorials, experiments, and
 reflections on simplicity in computing.</p>
+<p>Contact me at <a href="mailto:contact@embd.cc">contact@embd.cc</a></p>
 
 <pre style="font-family: monospace; margin-top: 3em;">
 {uptime_info}
