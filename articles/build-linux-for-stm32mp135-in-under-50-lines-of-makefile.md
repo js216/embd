@@ -251,6 +251,7 @@ so in an embedded, resource-constrained, highly reliable application.
   <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
   <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
   <li><em>7. This article</em></li>
+  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
 </ul>
 </div>
 

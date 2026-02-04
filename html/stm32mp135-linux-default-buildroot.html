@@ -40,29 +40,29 @@ excellent writeup from <a href="https://bootlin.com/blog/building-a-linux-system
 <ol>
 <li>
 <p>Get a copy of Buildroot:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://gitlab.com/buildroot.org/buildroot.git
-$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>buildroot
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ git clone https://gitlab.com/buildroot.org/buildroot.git
+$ <span class="nb">cd</span> buildroot
 </pre></div>
 </code></pre>
 <p>As of this writing, the latest commit in this repository is</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>rev-parse<span class="w"> </span>HEAD
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ git rev-parse HEAD
 bbb0164de08f761a3399c961700db44befff5c70
 </pre></div>
 </code></pre>
 </li>
 <li>
 <p>Find the default configuration appropriate for this board:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span>make<span class="w"> </span>list-defconfigs<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>stm32mp135
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ make list-defconfigs <span class="p">|</span> grep stm32mp135
 </pre></div>
 </code></pre>
 <p>This shows that <code>stm32mp135f_dk_defconfig</code> is available. Install it by calling
 make on it:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span>make<span class="w"> </span>stm32mp135f_dk_defconfig
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ make stm32mp135f_dk_defconfig
 </pre></div>
 </code></pre>
 <p>Let’s enable the USB mode for Arm Trusted Firmware (TF-A) so that we will be
 able to use USB flashing in the future. Open</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span>make<span class="w"> </span>menuconfig
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ make menuconfig
 </pre></div>
 </code></pre>
 <p>Navigate under <code>Bootloaders ---&gt;  ARM Trusted Firmware (ATF)</code> and add the
@@ -75,18 +75,18 @@ following at the end of the “Additional ATF build variables” string:</p>
 </li>
 <li>
 <p>Run the build, and collect logs into a file:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span><span class="nb">time</span><span class="w"> </span>make<span class="w"> </span>&gt;log.txt<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ <span class="nb">time</span> make &gt;log.txt <span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
 </pre></div>
 </code></pre>
 <p>On my dual-core i5-7300U laptop, this took about an hour and a half.</p>
 <p>Watch the build from another terminal:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </span>log.txt
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ tail -f log.txt
 </pre></div>
 </code></pre>
 </li>
 <li>
 <p>Copy the generated image to an SD card (assumed to be at <code>/dev/sdb</code>):</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>output/images/sdcard.img<span class="w"> </span><span class="nv">of</span><span class="o">=</span>dev/sdb<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>1M
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ sudo dd <span class="k">if</span><span class="o">=</span>output/images/sdcard.img <span class="nv">of</span><span class="o">=</span>dev/sdb <span class="nv">bs</span><span class="o">=</span>1M
 </pre></div>
 </code></pre>
 </li>
@@ -154,6 +154,7 @@ size. Stay tuned!</p>
   <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
   <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
   <li><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">7. Build Linux for STM32MP135 in under 50 Lines of Makefile</a></li>
+  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
 </ul>
 </div>
 

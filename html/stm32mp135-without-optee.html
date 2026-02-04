@@ -29,7 +29,7 @@ articles.</a></em></p>
 <p>Arm chips, such as the STM32MP135, implementing the TrustZone extension divide
 the execution into two worlds: a normal, non-secure world inhabited by the
 application operating system, and a secure world serviced by a secure OS such as
-OP-TEE. The ST wiki<sup class="footnote-ref"><a href="#836d8114-fn1" id="836d8114-fnref1">[1]</a></sup> assures us that OP-TEE is required on all STM32MP1
+OP-TEE. The ST wiki<sup class="footnote-ref"><a href="#83422954-fn1" id="83422954-fnref1">[1]</a></sup> assures us that OP-TEE is required on all STM32MP1
 produces “due to the hardware architecture”. It is our purpose in this article
 to show that that is not the case: <em>OP-TEE is in fact entirely optional</em>.</p>
 <p>The only mechanism to enter the “secure world” is via the <code>SMC</code> instruction
@@ -404,13 +404,14 @@ during the upstreaming process.</p>
   <li><em>5. This article</em></li>
   <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
   <li><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">7. Build Linux for STM32MP135 in under 50 Lines of Makefile</a></li>
+  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
 </ul>
 </div>
 <hr class="footnotes-sep" />
 <section class="footnotes">
 <ol class="footnotes-list">
-<li id="836d8114-fn1" class="footnote-item"><p>ST wiki: <a href="https://wiki.st.com/stm32mpu/wiki/How_to_disable_OP-TEE_secure_services">How to disable OP-TEE secure
-services</a> <a href="#836d8114-fnref1" class="footnote-backref">↩︎</a></p>
+<li id="83422954-fn1" class="footnote-item"><p>ST wiki: <a href="https://wiki.st.com/stm32mpu/wiki/How_to_disable_OP-TEE_secure_services">How to disable OP-TEE secure
+services</a> <a href="#83422954-fnref1" class="footnote-backref">↩︎</a></p>
 </li>
 </ol>
 </section>

@@ -131,24 +131,24 @@ flipped, we need to unsecure many parts of the SoC (DDR, DMA masters, etc).</p>
 <p>Since Linux is just another program, why not try and run it, now that we have
 disabled most secure-world hindrances? One thing to keep in mind is to respect
 the link address:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>buildroot<span class="o">]</span>&gt;<span class="w"> </span>readelf<span class="w"> </span>-h<span class="w"> </span>output/build/linux-custom/vmlinux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>Entry
-<span class="w">  </span>Entry<span class="w"> </span>point<span class="w"> </span>address:<span class="w">               </span>0xc0008000
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>buildroot<span class="o">]</span>&gt; readelf -h output/build/linux-custom/vmlinux <span class="p">|</span> grep Entry
+  Entry point address:               0xc0008000
 </pre></div>
 </code></pre>
 <p>Let’s copy the binary instructions from the ELF file into something we can load
 into memory:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>arm-none-eabi-objcopy<span class="w"> </span>-O<span class="w"> </span>binary<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>output/build/linux-custom/vmlinux<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>output/images/vmlinux.bin
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>arm-none-eabi-objcopy -O binary <span class="se">\</span>
+    output/build/linux-custom/vmlinux <span class="se">\</span>
+    output/images/vmlinux.bin
 </pre></div>
 </code></pre>
 <p>Now we place the binary file in the same SD card image as the bootloader:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span>python3<span class="w"> </span>scripts/sdimage.py<span class="w"> </span>build/sdcard.img<span class="w"> </span>build/main.stm32<span class="w"> </span>build/vmlinux.bin
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ python3 scripts/sdimage.py build/sdcard.img build/main.stm32 build/vmlinux.bin
 
-File<span class="w">                      </span>LBA<span class="w">      </span>Size<span class="w">       </span>Blocks
+File                      LBA      Size       Blocks
 -------------------------------------------------------
-main.stm32<span class="w">                </span><span class="m">128</span><span class="w">      </span><span class="m">100352</span><span class="w">     </span><span class="m">197</span>
-vmlinux.bin<span class="w">               </span><span class="m">324</span><span class="w">      </span><span class="m">19111936</span><span class="w">   </span><span class="m">37329</span>
+main.stm32                <span class="m">128</span>      <span class="m">100352</span>     <span class="m">197</span>
+vmlinux.bin               <span class="m">324</span>      <span class="m">19111936</span>   <span class="m">37329</span>
 </pre></div>
 </code></pre>
 <p>Load the ~40,000 blocks from logical block address (LBA) 324 into DDR to
@@ -157,25 +157,25 @@ we see that the kernel begins executing in <code>arch/arm/kernel/head.S</code> a
 stuck when it realizes that we did not pass it the correct boot parameters.</p>
 <h3 id="provide-a-device-tree-blob">Provide a Device Tree Blob</h3>
 <p>Let’s start with the default DTB and decompile it into the DTS:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="o">[</span>buildroot<span class="o">]</span>&gt;<span class="w"> </span>dtc<span class="w"> </span>-I<span class="w"> </span>dtb<span class="w"> </span>-O<span class="w"> </span>dts<span class="w"> </span>-@<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>output/build/linux-custom/arch/arm/boot/dts/stm32mp135f-dk.dtb<span class="w"> </span>&gt;<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>~/temp/build/min.dts
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="o">[</span>buildroot<span class="o">]</span>&gt; dtc -I dtb -O dts -@ <span class="se">\</span>
+   output/build/linux-custom/arch/arm/boot/dts/stm32mp135f-dk.dtb &gt; <span class="se">\</span>
+   ~/temp/build/min.dts
 </pre></div>
 </code></pre>
 <p>Now remove as much of the unnecessary peripherals from the device tree and
 compile back into a DTB:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>dtc<span class="w"> </span>-I<span class="w"> </span>dts<span class="w"> </span>-O<span class="w"> </span>dtb<span class="w"> </span>min.dts<span class="w"> </span>&gt;<span class="w"> </span>min.dtb
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>dtc -I dts -O dtb min.dts &gt; min.dtb
 </pre></div>
 </code></pre>
 <p>Next, we need to include this DTB in the SD card image:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$<span class="w"> </span>python3<span class="w"> </span>scripts/sdimage.py<span class="w"> </span>build/sdcard.img<span class="w"> </span>build/main.stm32<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>build/vmlinux.bin<span class="w"> </span>build/min.dtb
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>$ python3 scripts/sdimage.py build/sdcard.img build/main.stm32 <span class="se">\</span>
+    build/vmlinux.bin build/min.dtb
 
-File<span class="w">                      </span>LBA<span class="w">      </span>Size<span class="w">       </span>Blocks
+File                      LBA      Size       Blocks
 -------------------------------------------------------
-main.stm32<span class="w">                </span><span class="m">128</span><span class="w">      </span><span class="m">100352</span><span class="w">     </span><span class="m">197</span>
-vmlinux.bin<span class="w">               </span><span class="m">324</span><span class="w">      </span><span class="m">19111936</span><span class="w">   </span><span class="m">37329</span>
-min.dtb<span class="w">                   </span><span class="m">37652</span><span class="w">    </span><span class="m">53248</span><span class="w">      </span><span class="m">105</span>
+main.stm32                <span class="m">128</span>      <span class="m">100352</span>     <span class="m">197</span>
+vmlinux.bin               <span class="m">324</span>      <span class="m">19111936</span>   <span class="m">37329</span>
+min.dtb                   <span class="m">37652</span>    <span class="m">53248</span>      <span class="m">105</span>
 </pre></div>
 </code></pre>
 <p>Write the new image to the SD card, and boot the bootloader, and copy the kernel
@@ -278,6 +278,7 @@ getting things done. After all, this is just routine work!</p>
   <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
   <li><em>6. This article</em></li>
   <li><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">7. Build Linux for STM32MP135 in under 50 Lines of Makefile</a></li>
+  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
 </ul>
 </div>
 

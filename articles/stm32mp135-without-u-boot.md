@@ -286,6 +286,7 @@ the line in some deeply embedded application, perhaps in outer space.
   <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
   <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
   <li><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">7. Build Linux for STM32MP135 in under 50 Lines of Makefile</a></li>
+  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
 </ul>
 </div>
 

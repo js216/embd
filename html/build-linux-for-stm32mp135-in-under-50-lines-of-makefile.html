@@ -39,16 +39,16 @@ this work on a <a href="https://github.com/js216/stm32mp135_test_board">custom b
 <h3 id="boot-linux-on-eval-board">Boot Linux on eval board</h3>
 <p>First, we need to obtain and build the bootloader. Note that we need to enable
 the STPMIC1, since it is used on the eval board:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:js216/stm32mp135-bootloader.git
-<span class="nb">cd</span><span class="w"> </span>stm32mp135-bootloader
-make<span class="w"> </span><span class="nv">CFLAGS_EXTRA</span><span class="o">=</span>-DUSE_STPMIC1x<span class="o">=</span><span class="m">1</span>
-<span class="nb">cd</span><span class="w"> </span>..
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git clone git@github.com:js216/stm32mp135-bootloader.git
+<span class="nb">cd</span> stm32mp135-bootloader
+make <span class="nv">CFLAGS_EXTRA</span><span class="o">=</span>-DUSE_STPMIC1x<span class="o">=</span><span class="m">1</span>
+<span class="nb">cd</span> ..
 </pre></div>
 </code></pre>
 <p>Next, we obtain the Linux kernel from the ST repository (contains a few
 non-standard ST-provided drivers):</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/STMicroelectronics/linux.git
-git<span class="w"> </span>checkout<span class="w"> </span>v6.1-stm32mp-r1.1
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git clone https://github.com/STMicroelectronics/linux.git
+git checkout v6.1-stm32mp-r1.1
 </pre></div>
 </code></pre>
 <p>Let’s apply some patches (mainly to allow non-secure boot without
@@ -56,21 +56,21 @@ git<span class="w"> </span>checkout<span class="w"> </span>v6.1-stm32mp-r1.1
 <a href="https://embd.cc/stm32mp135-without-optee">OPTEE</a>, or
 <a href="https://embd.cc/linux-bringup-on-custom-stm32mp135-board">TF-A</a>), and copy over
 the Device Tree Source (DTS), and the kernel configuration:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:js216/stm32mp135_test_board.git
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>git clone git@github.com:js216/stm32mp135_test_board.git
 
-<span class="nb">cd</span><span class="w"> </span>linux
-git<span class="w"> </span>linux<span class="w"> </span>apply<span class="w"> </span>../configs/evb/patches/linux/*.patch
-<span class="nb">cd</span><span class="w"> </span>..
+<span class="nb">cd</span> linux
+git linux apply ../configs/evb/patches/linux/*.patch
+<span class="nb">cd</span> ..
 
-cp<span class="w"> </span>config/evb/linux.config<span class="w"> </span>linux/.config
-cp<span class="w"> </span>config/evb/board.dts<span class="w"> </span>linux/arch/arm/boot/dts/
+cp config/evb/linux.config linux/.config
+cp config/evb/board.dts linux/arch/arm/boot/dts/
 </pre></div>
 </code></pre>
 <p>Now we can build the Device Tree Blob (DTB) and the kernel itself:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="nb">cd</span><span class="w"> </span>linux
-make<span class="w"> </span><span class="nv">ARCH</span><span class="o">=</span>arm<span class="w"> </span><span class="nv">CROSS_COMPILE</span><span class="o">=</span>arm-linux-gnueabihf-<span class="w"> </span>board.dtb
-make<span class="w"> </span><span class="nv">ARCH</span><span class="o">=</span>arm<span class="w"> </span><span class="nv">CROSS_COMPILE</span><span class="o">=</span>arm-linux-gnueabihf-<span class="w"> </span>zImage
-<span class="nb">cd</span><span class="w"> </span>..
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="nb">cd</span> linux
+make <span class="nv">ARCH</span><span class="o">=</span>arm <span class="nv">CROSS_COMPILE</span><span class="o">=</span>arm-linux-gnueabihf- board.dtb
+make <span class="nv">ARCH</span><span class="o">=</span>arm <span class="nv">CROSS_COMPILE</span><span class="o">=</span>arm-linux-gnueabihf- zImage
+<span class="nb">cd</span> ..
 </pre></div>
 </code></pre>
 <p>Next, we need an init script. (Of course, you can also run the kernel without
@@ -82,89 +82,89 @@ world!”, but if the init program quits, the kernel enters a panic again.</p>
 <a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">here</a>).
 Let’s compile it, making sure to tell the compiler to not link any extra code
 with it:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>arm-linux-gnueabihf-gcc<span class="w"> </span>-Os<span class="w"> </span>-nostdlib<span class="w"> </span>-static<span class="w"> </span>-fno-builtin<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>-Wl,--gc-sections<span class="w"> </span>config/init.c<span class="w"> </span>-o<span class="w"> </span>build/init
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>arm-linux-gnueabihf-gcc -Os -nostdlib -static -fno-builtin <span class="se">\</span>
+   -Wl,--gc-sections config/init.c -o build/init
 </pre></div>
 </code></pre>
 <p>Now that we have an init program, we need a root filesystem to put it on:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>build/rootfs.dir/sbin
-cp<span class="w"> </span>build/init<span class="w"> </span>build/rootfs.dir/sbin/init
-dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/zero<span class="w"> </span><span class="nv">of</span><span class="o">=</span>build/rootfs<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>1M<span class="w"> </span><span class="nv">count</span><span class="o">=</span><span class="m">10</span>
-mke2fs<span class="w"> </span>-t<span class="w"> </span>ext4<span class="w"> </span>-F<span class="w"> </span>-d<span class="w"> </span>build/rootfs.dir<span class="w"> </span>build/rootfs
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>mkdir -p build/rootfs.dir/sbin
+cp build/init build/rootfs.dir/sbin/init
+dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>build/rootfs <span class="nv">bs</span><span class="o">=</span>1M <span class="nv">count</span><span class="o">=</span><span class="m">10</span>
+mke2fs -t ext4 -F -d build/rootfs.dir build/rootfs
 </pre></div>
 </code></pre>
 <p>Finally, we collect all the pieces together with a simple Python script included
 in the bootloader distribution:</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span>python3<span class="w"> </span>bootloader/scripts/sdimage.py<span class="w"> </span>build/sdcard.img<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>bootloader/build/main.stm32<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>linux/arch/arm/boot/dts/board.dtb<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>linux/arch/arm/boot/zImage<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>--partition<span class="w"> </span>build/rootfs
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span>python3 bootloader/scripts/sdimage.py build/sdcard.img <span class="se">\</span>
+   bootloader/build/main.stm32 <span class="se">\</span>
+   linux/arch/arm/boot/dts/board.dtb <span class="se">\</span>
+   linux/arch/arm/boot/zImage <span class="se">\</span>
+   --partition build/rootfs
 </pre></div>
 </code></pre>
 <p>Write this image to the SD card and start the system, and prepare to be greeted
 by the very useless shell implemented in the minimal
 <a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">init program</a>):</p>
-<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="o">[</span><span class="w">    </span><span class="m">1</span>.940577<span class="o">]</span><span class="w"> </span>Run<span class="w"> </span>/sbin/init<span class="w"> </span>as<span class="w"> </span>init<span class="w"> </span>process
-Hello,<span class="w"> </span>world!
-$<span class="w"> </span>ls
-ls:<span class="w"> </span><span class="nb">command</span><span class="w"> </span>not<span class="w"> </span>found
-$<span class="w"> </span>Hey!
-Hey!:<span class="w"> </span><span class="nb">command</span><span class="w"> </span>not<span class="w"> </span>found
+<pre><code class="language-sh"><div class="codehilite"><pre><span></span><span class="o">[</span>    <span class="m">1</span>.940577<span class="o">]</span> Run /sbin/init as init process
+Hello, world!
+$ ls
+ls: <span class="nb">command</span> not found
+$ Hey!
+Hey!: <span class="nb">command</span> not found
 </pre></div>
 </code></pre>
 <p>That’s it!</p>
 <h3 id="the-makefile">The Makefile</h3>
 <p>Here’s the full 49 lines:</p>
-<pre><code class="language-makefile"><div class="codehilite"><pre><span></span><span class="nv">CONFIG_DIR</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span>configs/custom
-<span class="nv">CROSS_COMPILE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>arm-linux-gnueabihf-
-<span class="nv">LINUX_OPTS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ARCH</span><span class="o">=</span>arm<span class="w"> </span><span class="nv">CROSS_COMPILE</span><span class="o">=</span><span class="k">$(</span>CROSS_COMPILE<span class="k">)</span>
+<pre><code class="language-makefile"><div class="codehilite"><pre><span></span><span class="nv">CONFIG_DIR</span> <span class="o">:=</span> configs/custom
+<span class="nv">CROSS_COMPILE</span> <span class="o">=</span> arm-linux-gnueabihf-
+<span class="nv">LINUX_OPTS</span> <span class="o">=</span> <span class="nv">ARCH</span><span class="o">=</span>arm <span class="nv">CROSS_COMPILE</span><span class="o">=</span><span class="k">$(</span>CROSS_COMPILE<span class="k">)</span>
 
-<span class="nf">all</span><span class="o">:</span><span class="w"> </span><span class="n">boot</span> <span class="n">config</span> <span class="n">dtb</span> <span class="n">kernel</span> <span class="n">init</span> <span class="n">root</span> <span class="n">sd</span>
+<span class="nf">all</span><span class="o">:</span> <span class="n">boot</span> <span class="n">config</span> <span class="n">dtb</span> <span class="n">kernel</span> <span class="n">init</span> <span class="n">root</span> <span class="n">sd</span>
 
 <span class="nf">boot</span><span class="o">:</span>
-<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>bootloader<span class="w"> </span>-j<span class="k">$(</span>shell<span class="w"> </span>nproc<span class="k">)</span><span class="w"> </span><span class="nv">CFLAGS_EXTRA</span><span class="o">=</span>-DUSE_STPMIC1x<span class="o">=</span><span class="m">1</span>
+	<span class="k">$(</span>MAKE<span class="k">)</span> -C bootloader -j<span class="k">$(</span>shell nproc<span class="k">)</span> <span class="nv">CFLAGS_EXTRA</span><span class="o">=</span>-DUSE_STPMIC1x<span class="o">=</span><span class="m">1</span>
 
 <span class="nf">patch</span><span class="o">:</span>
-<span class="w">	</span><span class="k">for</span><span class="w"> </span>p<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/patches/linux/*.patch<span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="se">\</span>
+	<span class="k">for</span> p <span class="k">in</span> <span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/patches/linux/*.patch<span class="p">;</span> <span class="k">do</span> <span class="se">\</span>
 <span class="cp">		if git -C linux apply --check ../$$p; then \</span>
 <span class="cp">			git -C linux apply ../$$p; \</span>
 <span class="cp">		fi \</span>
 <span class="cp">	done</span>
 
 <span class="nf">config</span><span class="o">:</span>
-<span class="w">	</span>cp<span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/linux.config<span class="w"> </span>linux/.config
+	cp <span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/linux.config linux/.config
 
 <span class="nf">dtb</span><span class="o">:</span>
-<span class="w">	</span>cp<span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/board.dts<span class="w"> </span>linux/arch/arm/boot/dts/
-<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>linux<span class="w"> </span><span class="k">$(</span>LINUX_OPTS<span class="k">)</span><span class="w"> </span>board.dtb
+	cp <span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/board.dts linux/arch/arm/boot/dts/
+	<span class="k">$(</span>MAKE<span class="k">)</span> -C linux <span class="k">$(</span>LINUX_OPTS<span class="k">)</span> board.dtb
 
 <span class="nf">kernel</span><span class="o">:</span>
-<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>linux<span class="w"> </span><span class="k">$(</span>LINUX_OPTS<span class="k">)</span><span class="w"> </span>-j<span class="k">$(</span>shell<span class="w"> </span>nproc<span class="k">)</span><span class="w"> </span>zImage
+	<span class="k">$(</span>MAKE<span class="k">)</span> -C linux <span class="k">$(</span>LINUX_OPTS<span class="k">)</span> -j<span class="k">$(</span>shell nproc<span class="k">)</span> zImage
 
 <span class="nf">init</span><span class="o">:</span>
-<span class="w">	</span>mkdir<span class="w"> </span>-p<span class="w"> </span>build
-<span class="w">	</span><span class="k">$(</span>CROSS_COMPILE<span class="k">)</span>gcc<span class="w"> </span>-Os<span class="w"> </span>-nostdlib<span class="w"> </span>-static<span class="w"> </span>-fno-builtin<span class="w"> </span><span class="se">\</span>
-<span class="w">		</span>-Wl,--gc-sections<span class="w"> </span><span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/init.c<span class="w"> </span>-o<span class="w"> </span>build/init
+	mkdir -p build
+	<span class="k">$(</span>CROSS_COMPILE<span class="k">)</span>gcc -Os -nostdlib -static -fno-builtin <span class="se">\</span>
+		-Wl,--gc-sections <span class="k">$(</span>CONFIG_DIR<span class="k">)</span>/init.c -o build/init
 
 <span class="nf">root</span><span class="o">:</span>
-<span class="w">	</span>rm<span class="w"> </span>-rf<span class="w"> </span>build/rootfs.dir
-<span class="w">	</span>mkdir<span class="w"> </span>-p<span class="w"> </span>build/rootfs.dir/sbin
-<span class="w">	</span>cp<span class="w"> </span>build/init<span class="w"> </span>build/rootfs.dir/sbin/init
-<span class="w">	</span>dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/zero<span class="w"> </span><span class="nv">of</span><span class="o">=</span>build/rootfs<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>1M<span class="w"> </span><span class="nv">count</span><span class="o">=</span><span class="m">10</span>
-<span class="w">	</span>mke2fs<span class="w"> </span>-t<span class="w"> </span>ext4<span class="w"> </span>-F<span class="w"> </span>-d<span class="w"> </span>build/rootfs.dir<span class="w"> </span>build/rootfs
+	rm -rf build/rootfs.dir
+	mkdir -p build/rootfs.dir/sbin
+	cp build/init build/rootfs.dir/sbin/init
+	dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>build/rootfs <span class="nv">bs</span><span class="o">=</span>1M <span class="nv">count</span><span class="o">=</span><span class="m">10</span>
+	mke2fs -t ext4 -F -d build/rootfs.dir build/rootfs
 
 <span class="nf">sd</span><span class="o">:</span>
-<span class="w">	</span>python3<span class="w"> </span>bootloader/scripts/sdimage.py<span class="w"> </span>build/sdcard.img<span class="w"> </span><span class="se">\</span>
-<span class="w">		</span>bootloader/build/main.stm32
-<span class="w">		</span>linux/arch/arm/boot/dts/board.dtb<span class="w"> </span><span class="se">\</span>
-<span class="w">		</span>linux/arch/arm/boot/zImage<span class="w"> </span><span class="se">\</span>
-<span class="w">		</span>--partition<span class="w"> </span>build/rootfs
+	python3 bootloader/scripts/sdimage.py build/sdcard.img <span class="se">\</span>
+		bootloader/build/main.stm32
+		linux/arch/arm/boot/dts/board.dtb <span class="se">\</span>
+		linux/arch/arm/boot/zImage <span class="se">\</span>
+		--partition build/rootfs
 
 <span class="nf">clean</span><span class="o">:</span>
-<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>linux<span class="w"> </span><span class="k">$(</span>LINUX_OPTS<span class="k">)</span><span class="w"> </span>clean
-<span class="w">	</span><span class="k">$(</span>MAKE<span class="k">)</span><span class="w"> </span>-C<span class="w"> </span>bootloader<span class="w"> </span>clean
-<span class="w">	</span>rm<span class="w"> </span>-rf<span class="w"> </span>build
+	<span class="k">$(</span>MAKE<span class="k">)</span> -C linux <span class="k">$(</span>LINUX_OPTS<span class="k">)</span> clean
+	<span class="k">$(</span>MAKE<span class="k">)</span> -C bootloader clean
+	rm -rf build
 </pre></div>
 </code></pre>
 <h3 id="discussion">Discussion</h3>
@@ -193,10 +193,10 @@ ESR:</p>
 <blockquote>
 <p>Accidental complexity happens because someone didn’t find the simplest way to
 implement a specified set of features. Accidental complexity can be
-eliminated by good design, or good redesign.<sup class="footnote-ref"><a href="#d343fcde-fn1" id="d343fcde-fnref1">[1]</a></sup></p>
+eliminated by good design, or good redesign.<sup class="footnote-ref"><a href="#d361a90e-fn1" id="d361a90e-fnref1">[1]</a></sup></p>
 </blockquote>
 <p>The “root cause” of the highly complex toolchains has been identified by
-Anna-Lena Marx (inovex GmbH) in a talk<sup class="footnote-ref"><a href="#d343fcde-fn2" id="d343fcde-fnref2">[2]</a></sup> last year: the goals of SoC
+Anna-Lena Marx (inovex GmbH) in a talk<sup class="footnote-ref"><a href="#d361a90e-fn2" id="d361a90e-fnref2">[2]</a></sup> last year: the goals of SoC
 vendors and product manufacturers are not aligned. The SoC vendor wants to show
 off all the features of their devices, and they want a Board Support Package
 (BSP) that supports several, even all, of the devices in their portfolio. They
@@ -232,16 +232,17 @@ so in an embedded, resource-constrained, highly reliable application.</p>
   <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
   <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
   <li><em>7. This article</em></li>
+  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
 </ul>
 </div>
 <hr class="footnotes-sep" />
 <section class="footnotes">
 <ol class="footnotes-list">
-<li id="d343fcde-fn1" class="footnote-item"><p>Eric S. Raymond: The Art of Unix Programming. Addison-Wesley, 2004. <a href="#d343fcde-fnref1" class="footnote-backref">↩︎</a></p>
+<li id="d361a90e-fn1" class="footnote-item"><p>Eric S. Raymond: The Art of Unix Programming. Addison-Wesley, 2004. <a href="#d361a90e-fnref1" class="footnote-backref">↩︎</a></p>
 </li>
-<li id="d343fcde-fn2" class="footnote-item"><p>Anna-Lena Marx (inovex GmbH): <em>Your Vendor’s BSP Is Probably Not Built
+<li id="d361a90e-fn2" class="footnote-item"><p>Anna-Lena Marx (inovex GmbH): <em>Your Vendor’s BSP Is Probably Not Built
 for Product Longevity</em>. Yocto Project Summit, December 2025. Quoted on
-1/5/2026 from <a href="https://marx.engineer/content/talks/2025_Yocto-Summit_Your-Vendors-BSP-Is-Probably-Not-Built-For-Product-Longevity.pdf">this URL</a> <a href="#d343fcde-fnref2" class="footnote-backref">↩︎</a></p>
+1/5/2026 from <a href="https://marx.engineer/content/talks/2025_Yocto-Summit_Your-Vendors-BSP-Is-Probably-Not-Built-For-Product-Longevity.pdf">this URL</a> <a href="#d361a90e-fnref2" class="footnote-backref">↩︎</a></p>
 </li>
 </ol>
 </section>
