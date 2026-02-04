@@ -831,12 +831,12 @@ Harmful</a>. <a class="footnote-backref" href="#2d457a2f-fnref1">↩︎</a></p>
 <div class="article">
 <div class="article-topic">Linux</div>
 <h2><a href="stm32mp135-without-u-boot">STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></h2>
-<div class="article-meta">Published 11 Sep 2025, modified 20 Sep 2025. Written by Jakob Kastelic.</div>
+<div class="article-meta">Published 11 Sep 2025, modified 4 Feb 2026. Written by Jakob Kastelic.</div>
 <p><img alt="" src="../images/red.jpg"/></p>
 <p><em>This is Part 3 in the series: Linux on STM32MP135. <a href="#series-list">See other
 articles.</a></em></p>
 <p>In this article, we use Arm Trusted Firmware (TF-A) to load the Linux kernel
-directly, without using U-Boot.<sup class="footnote-ref"><a href="#2585774d-fn1" id="2585774d-fnref1">[1]</a></sup> I have seen the idea of omitting the
+directly, without using U-Boot.<sup class="footnote-ref"><a href="#2421a621-fn1" id="2421a621-fnref1">[1]</a></sup> I have seen the idea of omitting the
 Secondary Program Loader (SPL) referred to as “falcon mode”, since it makes the
 boot process (slightly) faster. However, I am primarily interested in it as a
 way of reducing overall complexity of the software stack.</p>
@@ -1022,7 +1022,7 @@ $ make
 <p>Flash to the SD card and boot into the new system. You should reach the login
 prompt exactly as in the default configuration—but without involving U-Boot</p>
 <h3 id="discussion">Discussion</h3>
-<p>To port the “default” STM32MP135 setup<sup class="footnote-ref"><a href="#2585774d-fn2" id="2585774d-fnref2">[2]</a></sup> to a new board design, one is
+<p>To port the “default” STM32MP135 setup<sup class="footnote-ref"><a href="#2421a621-fn2" id="2421a621-fnref2">[2]</a></sup> to a new board design, one is
 expected to be comfortable writing and modifying the drivers and device tree
 sources that work with</p>
 <ul>
@@ -1035,7 +1035,7 @@ sources that work with</p>
 <p>That is a tall order for a new embedded developer trying to get started
 integrating Linux in their products. To make things worse, there is at present
 almost no literature to be found suggesting that a simpler, saner method exists.
-Certainly the chip vendors themselves do not encourage it.<sup class="footnote-ref"><a href="#2585774d-fn3" id="2585774d-fnref3">[3]</a></sup></p>
+Certainly the chip vendors themselves do not encourage it.<sup class="footnote-ref"><a href="#2421a621-fn3" id="2421a621-fnref3">[3]</a></sup></p>
 <p>With this article, we have began chipping away at the unnecessary complexity. We
 have removed U-Boot from the boot chain. (We still use it for copying the SD
 card image via USB. One thing at a time!) Since our goal is to <em>run Linux</em>, the
@@ -1050,6 +1050,8 @@ the line in some deeply embedded application, perhaps in outer space.</p>
 <p>17/9/2025: amended submission <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786595.html">(v2 0/2, </a>
 <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786596.html">1/2, </a>
 <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html">2/2)</a></p>
+<p>02/04/2026: merged by Thomas Petazzoni as Buildroot commit
+<a href="https://gitlab.com/buildroot.org/buildroot/-/commit/8e4c663529d135088c78a9c7f4b59354f19d6580"><code>8e4c663529d135088c78a9c7f4b59354f19d6580</code></a></p>
 <div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>
 <ul>
@@ -1065,18 +1067,18 @@ the line in some deeply embedded application, perhaps in outer space.</p>
 <hr class="footnotes-sep"/>
 <section class="footnotes">
 <ol class="footnotes-list">
-<li class="footnote-item" id="2585774d-fn1"><p>This approach is inspired by the ST wiki article <a href="https://wiki.st.com/stm32mpu/wiki/How_to_optimize_the_boot_time">How to optimize the
+<li class="footnote-item" id="2421a621-fn1"><p>This approach is inspired by the ST wiki article <a href="https://wiki.st.com/stm32mpu/wiki/How_to_optimize_the_boot_time">How to optimize the
 boot time</a>,
-under “Optimizing boot-time by removing U-Boot”. (cited 09/11/2025) <a class="footnote-backref" href="#2585774d-fnref1">↩︎</a></p>
+under “Optimizing boot-time by removing U-Boot”. (cited 09/11/2025) <a class="footnote-backref" href="#2421a621-fnref1">↩︎</a></p>
 </li>
-<li class="footnote-item" id="2585774d-fn2"><p>See the ST Wiki, <a href="https://wiki.st.com/stm32mpu/wiki/OpenSTLinux_distribution">OpenSTLinux
+<li class="footnote-item" id="2421a621-fn2"><p>See the ST Wiki, <a href="https://wiki.st.com/stm32mpu/wiki/OpenSTLinux_distribution">OpenSTLinux
 distribution</a>
-(cited 09/11/2025) <a class="footnote-backref" href="#2585774d-fnref2">↩︎</a></p>
+(cited 09/11/2025) <a class="footnote-backref" href="#2421a621-fnref2">↩︎</a></p>
 </li>
-<li class="footnote-item" id="2585774d-fn3"><p>As per the <a href="https://community.st.com/t5/stm32-mpus-embedded-software-and/start-linux-kernel-from-tf-a/td-p/91321">ST
+<li class="footnote-item" id="2421a621-fn3"><p>As per the <a href="https://community.st.com/t5/stm32-mpus-embedded-software-and/start-linux-kernel-from-tf-a/td-p/91321">ST
 forum,</a>
 (cited 09/11/2025) the approach outlined in the present article is
-officially <em>not</em> supported by ST. <a class="footnote-backref" href="#2585774d-fnref3">↩︎</a></p>
+officially <em>not</em> supported by ST. <a class="footnote-backref" href="#2421a621-fnref3">↩︎</a></p>
 </li>
 </ol>
 </section>
