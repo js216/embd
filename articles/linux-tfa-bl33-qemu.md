@@ -45,7 +45,7 @@ documentation[^qemu] explains:
 >   register (`r2` for 32-bit guests, or `x0` for 64-bit guests)
 >
 > - For guests booting as "bare-metal" (any other kind of boot), the DTB is at
->   the start of RAM (0x4000_0000)
+>   the start of RAM (`0x4000_0000`)
 
 In our case, TF-A is booted in the "bare-metal" mode. We can see in file
 `plat/qemu/qemu/include/platform_def.h` that this is so:
@@ -77,11 +77,11 @@ instead run Linux directly. In the following section, we explain how to do that.
 1. Obtain Buildroot and check out and build the defconfig that we're starting
    from:
 
-   ```
-   $ git clone https://gitlab.com/buildroot.org/buildroot.git --depth=1
-   $ make qemu_arm_vexpress_tz_defconfig
-   $ make
-   ```
+    ```
+    $ git clone https://gitlab.com/buildroot.org/buildroot.git --depth=1
+    $ make qemu_arm_vexpress_tz_defconfig
+    $ make
+    ```
 
    This builds everything and gives the script `start_qemu.sh` (under
    `output/images`) with the suggested Qemu command line.
@@ -276,6 +276,12 @@ hard-coding it into any compiled code.
 
 17/9/2025: first submission of the Qemu defconfig
 [(link)](https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html)
+
+02/03/2026: response by Thomas Petazzoni
+[(link)](https://lists.buildroot.org/pipermail/buildroot/2026-February/796037.html)
+
+02/04/2026: amended submission as a runtime test
+[(link)](https://lists.buildroot.org/pipermail/buildroot/2026-February/796454.html)
 
 <div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>

@@ -280,18 +280,18 @@ The Packet number is used to specify the type of operation and the number of the
 current packet. The table below gives the description of the packet number.
 
 Byte | Value  | Description
-:---:|:------:|:------------------------------------------|
-  3  | 0x00   | Normal operation: write in current phase  |
-  .  | 0xF2   | Special operation: OTP write              |
-  .  | 0xF3   | Special operation: Reserved               |
-  .  | 0xF4   | Special operation PMIC: NVM write         |
-  .  | Others | Reserved                                  |
- 0-2 | ---    | Packet number, increasing from 0 to 0xFFFFFF (*) 
+:---:|:------:|:-------------------------------------------- |
+  3  | 0x00   | Normal operation: write in current phase     |
+  .  | 0xF2   | Special operation: OTP write                 |
+  .  | 0xF3   | Special operation: Reserved                  |
+  .  | 0xF4   | Special operation PMIC: NVM write            |
+  .  | Others | Reserved                                     |
+ 0-2 | ---    | Packet number, increasing from 0 to 0xFFFFFF |
 
 Packet number it is not an address as on STM32 MCU with only memory mapped
 flash, but the index of the received packet. The offset of the packet N the
-offset in the current partition/phase is N* 256 bytes when only full packets are
-used.
+offset in the current partition/phase is N times 256 bytes when only full
+packets are used.
 
 ```Python
 def download(num, data):

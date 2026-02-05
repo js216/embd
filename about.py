@@ -3,7 +3,6 @@ import datetime
 import os
 import sys
 import time
-import sqlite3
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -79,50 +78,10 @@ def format_uptime():
     return f"{datetime_str} up {uptime_str},  load average: {load_str}"
 
 
-def get_averages(db_file):
-    if not os.path.exists(db_file):
-        return {}
-
-    # Use abbreviated keys directly
-    periods = {
-        'min': 119,
-        'hr': 3600,
-        'd': 86400,
-        'week': 7*86400,
-        'month': 30*86400,
-        'yr': 365*86400
-    }
-
-    now = int(time.time())
-    averages = {}
-
-    # Open the database in read-only mode
-    uri = f'file:{db_file}?mode=ro'
-    with sqlite3.connect(uri, uri=True) as con:
-        cur = con.cursor()
-        for name, seconds in periods.items():
-            start = now - seconds
-            cur.execute("SELECT AVG(mc_2p5) FROM SPS30 WHERE timestamp >= ?", (start,))
-            avg = cur.fetchone()[0]
-            averages[name] = avg if avg is not None else float('nan')
-
-    return averages
-
-
 def main():
-    now = datetime.datetime.now()
-    date_str = now.strftime("%d %b %Y")
-    uptime_info = format_uptime()
-
-    db_file = sys.argv[1] if len(sys.argv) > 1 else 'room.db'
-    avgs = get_averages(db_file)
-    if avgs:
-        parts = [f"{k} = {v:.2f}" for k, v in avgs.items()]
-        uptime_info += "\n\nPM2.5: " + ", ".join(parts)
-
     html = HTML_TEMPLATE.format(
-        date="",#date_str,
-        uptime_info="",#uptime_info
+        date="",
+        uptime_info="",
     )
 
     print(html)
