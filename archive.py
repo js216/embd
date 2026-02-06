@@ -29,6 +29,121 @@ HTML_INTRO = """<!DOCTYPE html>
 <a href="about">About</a>
 </nav>
 </header>
+<p><em>See also the <a href="#topical">index by topic</a> below,
+and my list of <a href="#patches">patches</a>.</em></p>
+"""
+
+PATCHES = """
+<div class="article-topic"></div>
+<h2 id="patches">Patches</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Project</th>
+      <th>Description</th>
+      <th>Link(s)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>17/09/2025</td>
+      <td>Buildroot</td>
+      <td>Linux as TF-A BL33 on Qemu</td>
+      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html">Sub</a></td>
+    </tr>
+    <tr>
+      <td>02/03/2026</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2026-February/796037.html">Resp</a></td>
+    </tr>
+    <tr>
+      <td>02/04/2026</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2026-February/796454.html">Sub</a></td>
+    </tr>
+    <tr>
+      <td>19/12/2024</td>
+      <td>Buildroot</td>
+      <td>STM32MP135 Without U-Boot</td>
+      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2024-December/769250.html">Sub</a></td>
+    </tr>
+    <tr>
+      <td>16/12/2025</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2025-May/778563.html">Resp</a></td>
+    </tr>
+    <tr>
+      <td>17/09/2025</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786595.html">Sub</a> <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786596.html">Sub</a> <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html">Sub</a></td>
+    </tr>
+    <tr>
+      <td>02/04/2026</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://gitlab.com/buildroot.org/buildroot/-/commit/8e4c663529d135088c78a9c7f4b59354f19d6580">Merge</a></td>
+    </tr>
+    <tr>
+      <td>8/8/2025</td>
+      <td>sc</td>
+      <td>rename cmds: left -> mleft, right -> mright</td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/26b07f236d1b709c351981c5db5d12c54382bbc7">Sub</a></td>
+    </tr>
+    <tr>
+      <td>8/8/2025</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/ea7f88fa4256130ccb9ba572f05cfbd485d117b7">Merge</a></td>
+    </tr>
+    <tr>
+      <td>6/29/2025</td>
+      <td>sc</td>
+      <td>repeat search in opposite direction</td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/08fe9431797bdfd43a8bf2a115b178e7ae898a5a">Sub</a></td>
+    </tr>
+    <tr>
+      <td>6/29/2025</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/54080300dab84a3b50fde797542845547a600634">Merge</a></td>
+    </tr>
+    <tr>
+      <td>12/12/2024</td>
+      <td>mc</td>
+      <td>fix ETA calculation overflow</td>
+      <td><a href="https://github.com/MidnightCommander/mc/issues/4613">Sub/Mege</a></td>
+    </tr>
+    <tr>
+      <td>12/12/2024</td>
+      <td>sc</td>
+      <td>fix typo in man page</td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/5c8bea4b625b84317aec1a927cdc7d1a2c1de502">Sub</a></td>
+    </tr>
+    <tr>
+      <td>12/13/2026</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/c11a548fcdaddcc5ef005fc409f9826feca28223">Merge</a></td>
+    </tr>
+    <tr>
+      <td>8/15/2024</td>
+      <td>sc</td>
+      <td>fix typos in man page</td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/3d15ac8fdcd19bf2d21b47603cafc2263387ed3c">Sub</a></td>
+    </tr>
+    <tr>
+      <td>8/15/2024</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/e029bc0fb5fa29da1fd23b04fa2a97039a96d2ba">Merge</a></td>
+    </tr>
+  </tbody>
+</table>
 """
 
 HTML_OUTRO = """<footer class="license-footer">
@@ -82,8 +197,7 @@ def get_articles(folder):
 # ---------- Render chronological listing ----------
 
 def render_chronological(articles):
-    lines = ['<p><em>See also the <a href="#topical">index by topic</a> below.</em></p>'
-             "<h2>Chronological listing</h2>",
+    lines = ["<h2>Chronological listing</h2>",
              '<div class="chronology">']
     for a in sorted(articles, key=lambda x: x["date_obj"], reverse=True):
         fname = a["path"].with_suffix("").name
@@ -137,6 +251,7 @@ def main():
         f.write(render_chronological(articles))
         f.write("\n\n")
         f.write(render_topical(articles))
+        f.write(PATCHES)
         f.write(HTML_OUTRO)
 
 if __name__ == "__main__":

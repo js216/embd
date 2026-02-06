@@ -181,7 +181,7 @@ the `x0` register. We see the implementation of it in
 `plat/qemu/common/qemu_bl2_setup.c` (and very similar lines in
 `plat/arm/common/arm_bl31_setup.c`):
 
-```
+```c
 #if ARM_LINUX_KERNEL_AS_BL33
 		/*
 		 * According to the file ``Documentation/arm64/booting.txt`` of
@@ -218,7 +218,7 @@ board-specific details. (In the defconfig, it inserts PSCI nodes.)
 
 We can insert the two `chosen` lines in the middle of `update_dt()`:
 
-```
+```c
 fdt_setprop_u64(fdt, fdt_path_offset(fdt, "/chosen"),
         "linux,initrd-start", 0x76000040);
 fdt_setprop_u64(fdt, fdt_path_offset(fdt, "/chosen"),
