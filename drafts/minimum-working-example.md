@@ -5,7 +5,7 @@ date:
 topic: Incoherent Thoughts
 description: >
    Keep projects as simple as possible. Stop inventing new rules and build only
-   what’s necessary for it to work.
+   what's necessary for it to work.
 ---
 
 ![](../images/ray.jpg)

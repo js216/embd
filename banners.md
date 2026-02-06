@@ -225,3 +225,18 @@ Lumen roma:
 [Source](https://commons.wikimedia.org/wiki/File:Deir_as_Suriani.jpg)
 [Link](https://upload.wikimedia.org/wikipedia/commons/0/09/Deir_as_Suriani.jpg)
 ![](../images/scetis.jpg)
+
+Pascal Deynat/Odontobase:
+*Dermal denticles of a lemon shark viewed through a scanning electron
+microscope.*
+(2011)
+[Source](https://commons.wikimedia.org/wiki/File:Denticules_cutan%C3%A9s_du_requin_citron_Negaprion_brevirostris_vus_au_microscope_%C3%A9lectronique_%C3%A0_balayage.jpg)
+[Link](https://upload.wikimedia.org/wikipedia/commons/f/fa/Denticules_cutan%C3%A9s_du_requin_citron_Negaprion_brevirostris_vus_au_microscope_%C3%A9lectronique_%C3%A0_balayage.jpg)
+![](../images/sh.jpg)
+
+Bob Flandrena:
+*PJW eyechart (Peter Weinberger)*
+(19xx??)
+[Source](https://spinroot.com/pico/pjw.html)
+[Link](https://spinroot.com/pico/eye_chart.jpg)
+![](../images/pjw.jpg)
