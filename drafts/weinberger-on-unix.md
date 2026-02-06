@@ -1,4 +1,14 @@
-﻿Interview with Peter J. Weinberger, Murray Hill, 8 September 1989 Michael S. Mahoney, Interviewer
+﻿---
+title: Weinberger on Unix
+author: Jakob Kastelic
+date:
+topic: Unix
+description: >
+---
+
+![](../images/pjw.jpg)
+
+Interview with Peter J. Weinberger, Murray Hill, 8 September 1989 Michael S. Mahoney, Interviewer
 
 https://www.tuhs.org/Archive/Documentation/OralHistory/transcripts/weinberger.htm
 
