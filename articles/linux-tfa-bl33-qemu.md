@@ -2,7 +2,7 @@
 title: Linux as TF-A BL33 on Qemu (No U-Boot)
 author: Jakob Kastelic
 date: 15 Sep 2025
-modified: 18 Sep 2025
+modified: 6 Feb 2026
 topic: Linux
 description: >
    Step-by-step guide to booting Linux directly as BL33 with Arm Trusted
@@ -280,8 +280,14 @@ hard-coding it into any compiled code.
 02/03/2026: response by Thomas Petazzoni
 [(link)](https://lists.buildroot.org/pipermail/buildroot/2026-February/796037.html)
 
-02/04/2026: amended submission as a runtime test
+02/04/2026: amended submission (v3) as a runtime test
 [(link)](https://lists.buildroot.org/pipermail/buildroot/2026-February/796454.html)
+
+02/05/2026: response by Thomas Petazzoni
+[(link)](https://lists.buildroot.org/pipermail/buildroot/2026-February/796463.html)
+
+02/04/2026: amended submission (v4)
+[(link)](https://lists.buildroot.org/pipermail/buildroot/2026-February/796518.html)
 
 <div class="series-box">
 <h3 id="series-list">All Articles in This Series</h3>

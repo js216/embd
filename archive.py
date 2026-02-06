@@ -61,8 +61,20 @@ PATCHES = """
     <tr>
       <td>02/04/2026</td>
       <td></td>
-      <td></td>
+      <td>v3</td>
       <td><a href="https://lists.buildroot.org/pipermail/buildroot/2026-February/796454.html">Sub</a></td>
+    </tr>
+    <tr>
+      <td>02/05/2026</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2026-February/796463.html">Resp</a></td>
+    </tr>
+    <tr>
+      <td>02/05/2026</td>
+      <td></td>
+      <td>v4</td>
+      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2026-February/796518.html">Sub</a></td>
     </tr>
     <tr>
       <td>19/12/2024</td>
