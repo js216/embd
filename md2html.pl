@@ -370,29 +370,66 @@ sub simple_markdown_parser {
     return $md;
 }
 
+sub build_published_meta {
+    my ($meta_ref) = @_;
+    my %meta = %{$meta_ref};
+    my $pub = '';
+
+    if ($meta{date}) {
+        $pub = 'Published ' . $meta{date};
+        if ($meta{modified}) {
+            $pub .= ', modified ' . $meta{modified};
+        }
+        $pub .= '.';
+    }
+
+    if ($meta{author}) {
+        $pub .= ' By ' . $meta{author} . '.';
+    }
+    return '<div class="article-meta">' . $pub . '</div>';
+}
+
 sub main {
     my ($md_path, $temp_path) = @ARGV;
     die "Usage: $0 <markdown_file> <template_file>\n" unless $md_path && $temp_path;
     open my $mfh, '<:encoding(UTF-8)', $md_path or die $!;
-    my $raw = do { local $/; <$mfh> }; close $mfh;
+    my $raw = do { local $/; <$mfh> };
+    close $mfh;
+
     # Normalize line endings
     $raw =~ s/\r\n/\n/g;
     $raw =~ s/\r/\n/g;
-    my %meta; my $body = $raw;
+    my %meta;
+    my $body = $raw;
     if ($raw =~ /^---\s*\n(.*?)\n---\s*\n(.*)/s) {
-        my ($m, $c) = ($1, $2); $body = $c;
-        for (split /\n/, $m) { if (/^([^:]+):\s*(.*)/) { $meta{$1} = $2; } }
+        my ($m, $c) = ($1, $2);
+        $body = $c;
+        for (split /\n/, $m) {
+            if (/^([^:]+):\s*(.*)/) {
+                $meta{$1} = $2;
+            }
+        }
     }
-    my $html = smartquotes(simple_markdown_parser($body));
+
+    my $html  = smartquotes(simple_markdown_parser($body));
     my $ahash = substr(simple_hash($raw), 0, 8);
     for ('id="fn-', 'href="#fn-', 'id="fnref-', 'href="#fnref-') {
-        my $r = $_; $r =~ s/-$/-$ahash-/; $html =~ s/\Q$_\E/$r/g;
+        my $r = $_;
+        $r =~ s/-$/-$ahash-/;
+        $html =~ s/\Q$_\E/$r/g;
     }
+
     open my $tfh, '<:encoding(UTF-8)', $temp_path or die $!;
-    my $tpl = do { local $/; <$tfh> }; close $tfh;
+    my $tpl = do { local $/; <$tfh> };
+    close $tfh;
     $tpl =~ s/\$body\$/$html/g;
-    $tpl =~ s/\$published\$/'<div class="article-meta">Published '.($meta{date}||'').'. By '.($meta{author}||'').'.<\/div>'/eg;
-    for (qw(title author date description topic)) { my $v = $meta{$_}||''; $tpl =~ s/\$\Q$_\E\$/$v/g; }
+    my $published = build_published_meta(\%meta);
+    $tpl =~ s/\$published\$/$published/g;
+    for (qw(title author date description topic)) {
+        my $v = $meta{$_} || '';
+        $tpl =~ s/\$\Q$_\E\$/$v/g;
+    }
+
     binmode STDOUT, ':encoding(UTF-8)';
     print $tpl;
 }

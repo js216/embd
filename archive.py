@@ -119,18 +119,6 @@ PATCHES = """
       <td><a href="https://github.com/MidnightCommander/mc/issues/4613">Sub/Mege</a></td>
     </tr>
     <tr>
-      <td>12/12/2024</td>
-      <td>sc</td>
-      <td>fix typo in man page</td>
-      <td><a href="https://github.com/n-t-roff/sc/commit/5c8bea4b625b84317aec1a927cdc7d1a2c1de502">Sub</a></td>
-    </tr>
-    <tr>
-      <td>12/13/2026</td>
-      <td></td>
-      <td></td>
-      <td><a href="https://github.com/n-t-roff/sc/commit/c11a548fcdaddcc5ef005fc409f9826feca28223">Merge</a></td>
-    </tr>
-    <tr>
       <td>8/15/2024</td>
       <td>sc</td>
       <td>fix typos in man page</td>
@@ -141,6 +129,18 @@ PATCHES = """
       <td></td>
       <td></td>
       <td><a href="https://github.com/n-t-roff/sc/commit/e029bc0fb5fa29da1fd23b04fa2a97039a96d2ba">Merge</a></td>
+    </tr>
+    <tr>
+      <td>12/12/2024</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/5c8bea4b625b84317aec1a927cdc7d1a2c1de502">Sub</a></td>
+    </tr>
+    <tr>
+      <td>12/13/2026</td>
+      <td></td>
+      <td></td>
+      <td><a href="https://github.com/n-t-roff/sc/commit/c11a548fcdaddcc5ef005fc409f9826feca28223">Merge</a></td>
     </tr>
   </tbody>
 </table>
