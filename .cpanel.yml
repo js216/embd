@@ -1,6 +1,6 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/irfdtikk/public_html/
+    - make
     - /bin/cp -R html/*.html $DEPLOYPATH
     - /bin/cp -R images/*.jpg $DEPLOYPATH/images
-    - python3 archive.py
