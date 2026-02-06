@@ -286,8 +286,8 @@ sub smartquotes {
     my ($text) = @_;
     my @prot;
     $text =~ s/(<[^>]+>|<code>.*?<\/code>|<pre>.*?<\/pre>)/push(@prot, $1); "\x02P" . $#prot . "\x02"/egs;
-    $text =~ s/(^|[\s\(\[\{])"/$1&ldquo;/g; $text =~ s/"/&rdquo;/g;
-    $text =~ s/(^|[\s\(\[\{])'/$1&lsquo;/g; $text =~ s/'/&rsquo;/g;
+    $text =~ s/(^|[\s\(\[\{>]|\x02)"/$1&ldquo;/g; $text =~ s/"/&rdquo;/g;
+    $text =~ s/(^|[\s\(\[\{>]|\x02)'/$1&lsquo;/g; $text =~ s/'/&rsquo;/g;
     while ($text =~ /\x02P(\d+)\x02/) { $text =~ s/\x02P(\d+)\x02/$prot[$1]/egs; }
     return $text;
 }
@@ -316,7 +316,7 @@ sub render_blocks {
     $text =~ s{^(#{1,6})\s+(.*)$}{
         my $lvl = length($1); my $txt = $2; $txt =~ s/^\s+|\s+$//g;
         my $hid = lc($txt); $hid =~ s/\s+/-/g; $hid =~ s/[^\w\-]//g;
-        "<h$lvl id=\"$hid\">$txt</h$lvl>\n\n";
+        "<h$lvl id=\"$hid\">" . render_inline($txt) . "</h$lvl>\n\n";
     }mge;
     return $text;
 }

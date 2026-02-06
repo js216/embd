@@ -41,9 +41,9 @@ U-Boot from it, and switch to booting to Linux directly from TF-A.</p>
 to remove it. Then, we will provide tutorial-style steps to remove U-Boot from
 the boot process. Then, we suggest with how to integrate this into Buildroot. We
 conclude with a discussion of alternative approaches.</p>
-<h3 id="normal-boot-process">&rdquo;Normal&rdquo; boot process</h3>
+<h3 id="normal-boot-process">&ldquo;Normal&rdquo; boot process</h3>
 <p>In the <code>qemu_arm_vexpress_tz_defconfig</code> defconfig, Qemu is instructed to load
-Arm Trusted Firmware (TF-A) as &ldquo;<code>bios</code>&rdquo;. Qemu auto-generates a Device Tree Blob
+Arm Trusted Firmware (TF-A) as &ldquo;<code>bios</code>&ldquo;. Qemu auto-generates a Device Tree Blob
 (DTB) and loads it in memory at the start of RAM. As the Qemu
 documentation<sup class="footnote-ref"><a href="#fn-388eb7d9-qemu" id="fnref-388eb7d9-qemu">[2]</a></sup> explains:</p>
 <blockquote>
@@ -281,7 +281,7 @@ hard-coding it into any compiled code.</p>
   <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
 </ul>
 </div>
-<hr><section class="footnotes"><ol><li id="fn-388eb7d9-list" value="1">Buildroot mailing list, Fri May 16 2025 message: <a href="https://lists.buildroot.org/pipermail/buildroot/2025-May/778563.html">boot/arm-trusted-firmware: optional Linux as BL33</a> (cited on 09/15/2025)  <a href="#fnref-388eb7d9-list">↩</a></li><li id="fn-388eb7d9-qemu" value="2"> Qemu: <a href="https://www.qemu.org/docs/master/system/arm/virt.html#hardware-configuration-information-for-bare-metal-programming">&rsquo;virt&rsquo; generic virtual platform</a> (cited 09/15/2025).  <a href="#fnref-388eb7d9-qemu">↩</a></li><li id="fn-388eb7d9-disc" value="3">qemu-discuss mailing list, Thu 4 Aug 2022 message: <a href="https://lists.gnu.org/archive/html/qemu-discuss/2022-08/msg00007.html">Re: how to prevent automatic dtb load?</a> (cited 09/15/2025) <a href="#fnref-388eb7d9-disc">↩</a></li></ol></section>
+<hr><section class="footnotes"><ol><li id="fn-388eb7d9-list" value="1">Buildroot mailing list, Fri May 16 2025 message: <a href="https://lists.buildroot.org/pipermail/buildroot/2025-May/778563.html">boot/arm-trusted-firmware: optional Linux as BL33</a> (cited on 09/15/2025)  <a href="#fnref-388eb7d9-list">↩</a></li><li id="fn-388eb7d9-qemu" value="2"> Qemu: <a href="https://www.qemu.org/docs/master/system/arm/virt.html#hardware-configuration-information-for-bare-metal-programming">&lsquo;virt&rsquo; generic virtual platform</a> (cited 09/15/2025).  <a href="#fnref-388eb7d9-qemu">↩</a></li><li id="fn-388eb7d9-disc" value="3">qemu-discuss mailing list, Thu 4 Aug 2022 message: <a href="https://lists.gnu.org/archive/html/qemu-discuss/2022-08/msg00007.html">Re: how to prevent automatic dtb load?</a> (cited 09/15/2025) <a href="#fnref-388eb7d9-disc">↩</a></li></ol></section>
 </div>
 </body>
 </html>

@@ -41,9 +41,9 @@ privileged mode. So long as the kernel does not issue the <code>SMC</code> instr
 secure world need never be entered. Thus, we can restate our purpose as removing
 all secure monitor calls from the kernel configuration.</p>
 <p>The present article is somewhat more involved than the preceding ones in the
-series. For this reason I offer the <a href="#quick-start">”Quick Start”</a> version, where
+series. For this reason I offer the <a href="#quick-start">“Quick Start”</a> version, where
 the required modifications to kernel drivers are offered as patches to apply to
-a particular version. For those interested, the <a href="#theory">”Theory”</a> section fill
+a particular version. For those interested, the <a href="#theory">“Theory”</a> section fill
 in the details. As in other articles, we conclude with a brief discussion.</p>
 <h3 id="quick-start">Quick Start</h3>
 <p>Start by cloning Buildroot as above. However, this time we check out a different
@@ -469,9 +469,9 @@ U-Boot from it, and switch to booting to Linux directly from TF-A.</p>
 to remove it. Then, we will provide tutorial-style steps to remove U-Boot from
 the boot process. Then, we suggest with how to integrate this into Buildroot. We
 conclude with a discussion of alternative approaches.</p>
-<h3 id="normal-boot-process">”Normal” boot process</h3>
+<h3 id="normal-boot-process">“Normal” boot process</h3>
 <p>In the <code>qemu_arm_vexpress_tz_defconfig</code> defconfig, Qemu is instructed to load
-Arm Trusted Firmware (TF-A) as “<code>bios</code>”. Qemu auto-generates a Device Tree Blob
+Arm Trusted Firmware (TF-A) as “<code>bios</code>“. Qemu auto-generates a Device Tree Blob
 (DTB) and loads it in memory at the start of RAM. As the Qemu
 documentation<sup class="footnote-ref"><a href="#fn-388eb7d9-qemu" id="fnref-388eb7d9-qemu">[2]</a></sup> explains:</p>
 <blockquote>
@@ -685,7 +685,7 @@ hard-coding it into any compiled code.</p>
 <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
 </ul>
 </div>
-<hr/><section class="footnotes"><ol><li id="fn-388eb7d9-list" value="1">Buildroot mailing list, Fri May 16 2025 message: <a href="https://lists.buildroot.org/pipermail/buildroot/2025-May/778563.html">boot/arm-trusted-firmware: optional Linux as BL33</a> (cited on 09/15/2025)  <a href="#fnref-388eb7d9-list">↩</a></li><li id="fn-388eb7d9-qemu" value="2"> Qemu: <a href="https://www.qemu.org/docs/master/system/arm/virt.html#hardware-configuration-information-for-bare-metal-programming">’virt’ generic virtual platform</a> (cited 09/15/2025).  <a href="#fnref-388eb7d9-qemu">↩</a></li><li id="fn-388eb7d9-disc" value="3">qemu-discuss mailing list, Thu 4 Aug 2022 message: <a href="https://lists.gnu.org/archive/html/qemu-discuss/2022-08/msg00007.html">Re: how to prevent automatic dtb load?</a> (cited 09/15/2025) <a href="#fnref-388eb7d9-disc">↩</a></li></ol></section>
+<hr/><section class="footnotes"><ol><li id="fn-388eb7d9-list" value="1">Buildroot mailing list, Fri May 16 2025 message: <a href="https://lists.buildroot.org/pipermail/buildroot/2025-May/778563.html">boot/arm-trusted-firmware: optional Linux as BL33</a> (cited on 09/15/2025)  <a href="#fnref-388eb7d9-list">↩</a></li><li id="fn-388eb7d9-qemu" value="2"> Qemu: <a href="https://www.qemu.org/docs/master/system/arm/virt.html#hardware-configuration-information-for-bare-metal-programming">‘virt’ generic virtual platform</a> (cited 09/15/2025).  <a href="#fnref-388eb7d9-qemu">↩</a></li><li id="fn-388eb7d9-disc" value="3">qemu-discuss mailing list, Thu 4 Aug 2022 message: <a href="https://lists.gnu.org/archive/html/qemu-discuss/2022-08/msg00007.html">Re: how to prevent automatic dtb load?</a> (cited 09/15/2025) <a href="#fnref-388eb7d9-disc">↩</a></li></ol></section>
 </div>
 
 <div class="article-sep"></div>
@@ -723,7 +723,7 @@ these inclusions and exclusions. Still, it can take days of work trying out
 disabling and re-enabling things, till you give up and wisely conclude that this
 “premature optimization” is not worth your time and leave everything turned on
 as it is by default.</p>
-<h3 id="packages">”Packages”</h3>
+<h3 id="packages">“Packages”</h3>
 <p>The sad reality of modern scripting languages, and even compiled ones like Rust,
 is that their robust ecosystems of packages and libraries encourage wholesale
 inclusion of code whose size is entirely out of proportion to the task they

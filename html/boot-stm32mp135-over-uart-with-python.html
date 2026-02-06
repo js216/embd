@@ -98,7 +98,7 @@ aborted (unrecoverable error):</p>
     <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x5F</span>:
         <span class="k">return</span> <span class="s">&quot;ABORT&quot;</span>
     <span class="k">else</span>:
-        <span class="k">return</span> <span class="nf">format</span>(b, <span class="s">&rsquo;#04x&rsquo;</span>)
+        <span class="k">return</span> <span class="nf">format</span>(b, <span class="s">&lsquo;#04x&rsquo;</span>)
 
 <span class="k">def</span> <span class="nf">get_ack</span>(note<span class="o">=</span><span class="s">&quot;&quot;</span>):
     r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
@@ -191,12 +191,12 @@ When the device receives the command, it transmits the device ID to the host.</p
 
     <span class="c1"># Response: device ID</span>
     r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">2</span>)
-    <span class="k">if</span> r <span class="o">=</span><span class="o">=</span> b<span class="s">&rsquo;\x05\x00&rsquo;</span>:
-        <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">&rsquo;#04x&rsquo;</span>), <span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">&rsquo;#04x&rsquo;</span>), <span class="s">&quot;\tSTM32MP15x&quot;</span>)
-    <span class="k">elif</span> r <span class="o">=</span><span class="o">=</span> b<span class="s">&rsquo;\x05\x01&rsquo;</span>:
-        <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">&rsquo;#04x&rsquo;</span>), <span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">&rsquo;#04x&rsquo;</span>), <span class="s">&quot;\tSTM32MP13x&quot;</span>)
+    <span class="k">if</span> r <span class="o">=</span><span class="o">=</span> b<span class="s">&lsquo;\x05\x00&rsquo;</span>:
+        <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">&lsquo;#04x&rsquo;</span>), <span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">&lsquo;#04x&rsquo;</span>), <span class="s">&quot;\tSTM32MP15x&quot;</span>)
+    <span class="k">elif</span> r <span class="o">=</span><span class="o">=</span> b<span class="s">&lsquo;\x05\x01&rsquo;</span>:
+        <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">&lsquo;#04x&rsquo;</span>), <span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">&lsquo;#04x&rsquo;</span>), <span class="s">&quot;\tSTM32MP13x&quot;</span>)
     <span class="k">else</span>:
-        <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">&rsquo;#04x&rsquo;</span>), <span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">&rsquo;#04x&rsquo;</span>))
+        <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">&lsquo;#04x&rsquo;</span>), <span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">&lsquo;#04x&rsquo;</span>))
         <span class="k">raise</span> <span class="nf">RuntimeError</span>(<span class="s">&quot;Did not receive device ID.&quot;</span>)
 
     <span class="c1"># Response: ACK</span>
@@ -241,10 +241,10 @@ Byte 10: ACK</code></pre></div>
 
     <span class="c1"># Response: download address</span>
     r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">4</span>)
-    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">3</span>], <span class="s">&rsquo;#04x&rsquo;</span>), end<span class="o">=</span><span class="s">&rsquo;&rsquo;</span>)
-    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">2</span>], <span class="s">&rsquo;02x&rsquo;</span>), end<span class="o">=</span><span class="s">&rsquo;&rsquo;</span>)
-    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">&rsquo;02x&rsquo;</span>), end<span class="o">=</span><span class="s">&rsquo;&rsquo;</span>)
-    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">&rsquo;02x&rsquo;</span>), end<span class="o">=</span><span class="s">&rsquo;&rsquo;</span>)
+    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">3</span>], <span class="s">&lsquo;#04x&rsquo;</span>), end<span class="o">=</span><span class="s">&lsquo;&rsquo;</span>)
+    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">2</span>], <span class="s">&lsquo;02x&rsquo;</span>), end<span class="o">=</span><span class="s">&lsquo;&rsquo;</span>)
+    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">&lsquo;02x&rsquo;</span>), end<span class="o">=</span><span class="s">&lsquo;&rsquo;</span>)
+    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">&lsquo;02x&rsquo;</span>), end<span class="o">=</span><span class="s">&lsquo;&rsquo;</span>)
     <span class="nf">print</span>(<span class="s">&quot;\tDownload address&quot;</span>)
 
     <span class="c1"># Response: number of additional bytes</span>
@@ -414,12 +414,12 @@ it transmits a NACK byte and aborts the command.</p>
 
 
 <p>To download a complete file:</p>
-<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">down_file</span>(fname<span class="o">=</span><span class="s">&rsquo;tf-a-stm32mp135f-dk.stm32&rsquo;</span>):
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">down_file</span>(fname<span class="o">=</span><span class="s">&lsquo;tf-a-stm32mp135f-dk.stm32&rsquo;</span>):
     <span class="c1"># size of each chunk (must be &lt;= 256 bytes)</span>
     sz <span class="o">=</span> <span class="m">256</span>
 
     <span class="c1"># open file with the bitstream</span>
-    <span class="k">with</span> <span class="nf">open</span>(fname, <span class="s">&rsquo;rb&rsquo;</span>) <span class="k">as</span> f:
+    <span class="k">with</span> <span class="nf">open</span>(fname, <span class="s">&lsquo;rb&rsquo;</span>) <span class="k">as</span> f:
         fb <span class="o">=</span> f.<span class="nf">read</span>()
 
     <span class="c1"># split file into this many chunks</span>

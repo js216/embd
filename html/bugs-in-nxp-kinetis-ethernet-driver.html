@@ -34,7 +34,7 @@ reproduce it at will. So the analysis below may or may not be correct.</p>
 <p>The symptom was that the firmware froze upon triggering the assertion in
 <code>lwip/port/enet_ethernetif_kinetis.c</code>:</p>
 <blockquote>
-<p>&rdquo;Buffer returned by <code>ENET_GetRxFrame()</code> doesn&rsquo;t match any RX buffer descriptor&rdquo;</p>
+<p>&ldquo;Buffer returned by <code>ENET_GetRxFrame()</code> doesn&rsquo;t match any RX buffer descriptor&rdquo;</p>
 </blockquote>
 <p>After some Googling I found <a href="https://community.nxp.com/t5/i-MX-RT-Crossover-MCUs/Ethernet-RX-assertion/m-p/1625123">this forum
 thread,</a>

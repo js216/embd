@@ -36,7 +36,7 @@ reproduce it at will. So the analysis below may or may not be correct.</p>
 <p>The symptom was that the firmware froze upon triggering the assertion in
 <code>lwip/port/enet_ethernetif_kinetis.c</code>:</p>
 <blockquote>
-<p>”Buffer returned by <code>ENET_GetRxFrame()</code> doesn’t match any RX buffer descriptor”</p>
+<p>“Buffer returned by <code>ENET_GetRxFrame()</code> doesn’t match any RX buffer descriptor”</p>
 </blockquote>
 <p>After some Googling I found <a href="https://community.nxp.com/t5/i-MX-RT-Crossover-MCUs/Ethernet-RX-assertion/m-p/1625123">this forum
 thread,</a>
@@ -553,7 +553,7 @@ Perl, Python) needed for a “Hello, world!?”</p>
 <p>In my mind I hold an ideal of the “pure” essence of Unix: there is one kernel,
 which at the end of its boot process invokes one user-space program (<code>init</code>),
 which then does anything it wants to. I believe in the simplicity of the Linux
-boot process, as outlined by Russell King in the 2002 masterpiece, <a href="https://www.kernel.org/doc/Documentation/arm/Booting">”Booting ARM
+boot process, as outlined by Russell King in the 2002 masterpiece, <a href="https://www.kernel.org/doc/Documentation/arm/Booting">“Booting ARM
 Linux”</a>:</p>
 <ol>
 <li>
