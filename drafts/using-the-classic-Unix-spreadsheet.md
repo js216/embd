@@ -113,3 +113,14 @@ your muscle memory at the same time, sc is worth a look.
 - Large datasets where GUI tools slow down
 - When reproducibility and scriptability matter
 - When you want a spreadsheet you can control
+
+### UI is expressive and concise
+
+I'm no longer convinced anybody knows anything about user interface. It's clear
+some things are easier to use and some things are harder to use. That's okay.
+But it's also clear that people learn a lot.[^wein]
+
+[^wein]: From an
+  [interview](https://www.tuhs.org/Archive/Documentation/OralHistory/transcripts/weinberger.htm)
+  with Peter J. Weinberger (Murray Hill, 8 September 1989), with Michael S.
+  Mahoney interviewing.

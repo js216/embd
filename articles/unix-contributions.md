@@ -2,7 +2,8 @@
 title: What Unix Contributed
 author: GPT-5 from notes by Jakob Kastelic
 date: 6 Sep 2025
-topic: Philosophy
+modified: 6 Feb 2026
+topic: Unix
 description: >
    An exploration of the key ideas Unix contributed to computing: small
    programs, pipes, everything as a file, portability, and simplicity. Blending
@@ -26,6 +27,18 @@ standard input and write to standard output, unless redirected.
 Most commands are small filters for text streams. They do one job, and they work
 together naturally. Connecting them with pipes lets you build bigger tools out
 of simpler ones.
+
+### Software Tools
+
+In the words of Doug McIlyor, pipes "not only reinforced, almost created"
+the notion of the software toolbox.
+
+> The philosophy that everybody started putting forth: "This is the Unix
+> philosophy. Write programs that do one thing and do it well. Write programs to
+> work together. Write programs that handle text streams because that is a
+> universal interface." All of those ideas, which add up to the tool approach,
+> might have been there in some unformed way prior to pipes. But, they really
+> came in afterwards.[^pip]
 
 ### The File System Abstraction
 
@@ -87,6 +100,11 @@ The 80/20 rule applied everywhere: make most of the system simple and portable,
 accept a little complexity when it really pays off. Code was meant to be 80%
 reusable, not 100%, which avoided the kind of rigidity seen in later systems.
 
+> There certainly was in the past a lot of push towards solving the whole
+> problem. Not that the program solved the whole problem. UNIX is famous for
+> this theory that it's best to do 80% because the last 20% is way too hard. But
+> if there were a big piece you could chop off then you did it.[^wein]
+
 ### Self-Hosting and Accessible
 
 Unix came with all its own sources and tools. It was self-hosting, and people
@@ -96,6 +114,14 @@ platform-specific clutter.
 
 The philosophy was to write programs you would actually use, not ones meant to
 satisfy a standard or some hypothetical future need.
+
+> You can take the manual which was pretty big even in those days and you could
+> read it once and do some things and you could read it again and read it again
+> and by the third time through you actually understood how the system worked to
+> a large extent. All of a sudden things became much less surprising. And then
+> all the source code was on-line in those days. It wasn't all that much source
+> code. And you could look at it. And a large fraction of it had been written
+> by people with very good style. Right, like, say, Dennis.[^wein]
 
 ### Simplicity Above All
 
@@ -108,15 +134,20 @@ portable, teachable, and durable. It showed that you don't need a committee or a
 grand design to build something powerful. You need clarity, restraint, and the
 discipline to write only what you need.
 
+> There is a balance between safety and usefulness and a balance between various
+> flavors of generality. I think UNIX was successful because it turned out that
+> a lot of the safety that people relied on or that academically seemed
+> respectable just was pointless. There's no need for it in many things.[^wein]
+
 ### Reflections and Extensions
 
 Unix also suggests how to go further. Small, portable, self-contained programs
 can approach the kind of stability that TeX achieved---systems so refined that
 they don't need to change.
 
-Portability itself can be modular. The Wollongong group[^wol] showed this by first
-porting Unix piece by piece to an Interdata 7/32, running it alongside the host
-system, and then replacing the host functions with assembly routines. That
+Portability itself can be modular. The Wollongong group[^wol] showed this by
+first porting Unix piece by piece to an Interdata 7/32, running it alongside the
+host system, and then replacing the host functions with assembly routines. That
 approach points toward kernels that are more modular, where pieces like fork and
 exec could be reused without bringing along a whole scheduler.
 
@@ -148,3 +179,15 @@ just radical enough.
 
 [^devsw]: From version 7 Unix, found in
     [`/usr/sys/h/conf.h`](https://www.tuhs.org/cgi-bin/utree.pl?file=V7/usr/sys/h/conf.h).
+
+[^pip]: Interview with M.D. McIlroy, Murray Hill, 18 August 1989, Michael S.
+  Mahoney, Interviewer. From the
+  [transcript](https://www.tuhs.org/Archive/Documentation/OralHistory/transcripts/mcilroy.htm)
+  in the *An Oral History of Unix* project hosted at
+  [TUHS](https://www.tuhs.org/Archive/Documentation/OralHistory/). Quoted
+  02/06/2026.
+
+[^wein]: From an
+  [interview](https://www.tuhs.org/Archive/Documentation/OralHistory/transcripts/weinberger.htm)
+  with Peter J. Weinberger (Murray Hill, 8 September 1989), with Michael S.
+  Mahoney interviewing.

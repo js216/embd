@@ -59,6 +59,8 @@ def extract_body_and_date(file_path, link_href, keep_footer=False):
 
         meta_date_tag = soup.find("meta", attrs={"name": "date"})
         date = parse_date(meta_date_tag["content"]) if meta_date_tag else None
+        if meta_date_tag and not date:
+            raise ValueError(f"Invalid date format in {file_path}")
 
         for h2 in soup.find_all("h2"):
             new_link = soup.new_tag("a", href=link_href)
