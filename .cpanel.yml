@@ -1,3 +1,6 @@
 deployment:
   tasks:
-    - rm -rf /home/irfdtikk/repositories/embd_clone
+    - export DEPLOYPATH=/home/irfdtikk/public_html/
+    - make
+    - /bin/cp -R html/*.html $DEPLOYPATH
+    - /bin/cp -R images/*.jpg $DEPLOYPATH/images
