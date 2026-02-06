@@ -49,7 +49,7 @@ PATCHES = """
     <tr>
       <td>17/09/2025</td>
       <td>Buildroot</td>
-      <td>Linux as TF-A BL33 on Qemu</td>
+      <td><a href="linux-tfa-bl33-qemu">Linux as TF-A BL33 on Qemu</a></td>
       <td><a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html">Sub</a></td>
     </tr>
     <tr>
@@ -79,7 +79,7 @@ PATCHES = """
     <tr>
       <td>19/12/2024</td>
       <td>Buildroot</td>
-      <td>STM32MP135 Without U-Boot</td>
+      <td><a href="stm32mp135-without-u-boot">STM32MP135 Without U-Boot</a></td>
       <td><a href="https://lists.buildroot.org/pipermail/buildroot/2024-December/769250.html">Sub</a></td>
     </tr>
     <tr>
@@ -91,7 +91,7 @@ PATCHES = """
     <tr>
       <td>17/09/2025</td>
       <td></td>
-      <td></td>
+      <td>v2</td>
       <td><a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786595.html">Sub</a> <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786596.html">Sub</a> <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html">Sub</a></td>
     </tr>
     <tr>
