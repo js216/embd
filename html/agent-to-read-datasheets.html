@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="2 Jan 2026">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content=">">
+<link rel="stylesheet" href="style.css">
+<title>Agent To Read Electronic Datasheets</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Agents</div>
+<h2>Agent To Read Electronic Datasheets</h2>
+<div class="article-meta">Published 2 Jan 2026. By Jakob Kastelic.</div>
+<p><img src="../images/pa.jpg" alt=""></p>
+<p>When an electronic design company accumulates large amounts of inventory, it can
+become overwhelming for engineers to go through the thousands of parts to find
+the one needed in a new design. Instead, they are likely to select a new part
+from one of the distributors that have a better search engine. This leads to an
+ever growing inventory: parts kept in stock and never used, a constant departure
+from the ideal of having a &ldquo;lean&rdquo; operation.</p>
+<p>Nowadays, with everyone creating their own &ldquo;agent&rdquo; for just about anything, I
+wondered how hard it would be to create my own search engine. This article
+represents a day of work, proving that structured data extraction from
+semi-unstructured sources like datasheets has become almost a trivial problem.</p>
+<p>I took the <a href="https://deepmind.google/models/gemma/gemma-3/">Gemma 3</a> model (12B
+parameters, 3-bit quantization) from Google, ran it in the
+<a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a> inference framework, and fed
+it the datasheet for an opamp. To extract the text from the PDFs, I used the
+<a href="https://www.docling.ai/">Docling</a> Python library from IBM research. The output,
+generated in about four minutes on a GPU with 8 GB of memory, will be in this
+format for now:</p>
+<div class="codehilite"><pre><code class="language-json">&quot;PSRR (Input offset voltage versus power supply)&quot;: {
+   &quot;min&quot;: 65,
+   &quot;typ&quot;: 100,
+   &quot;max&quot;: null,
+   &quot;unit&quot;: &quot;dB&quot;
+ },</code></pre></div>
+
+
+<p>Let&rsquo;s get started!</p>
+<h3 id="running-the-model">Running the model</h3>
+<p>Obtain and build llama.cpp:</p>
+<div class="codehilite"><pre><code class="language-sh">git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+cmake -B build -S . -DGGML_CUDA=ON
+cmake --build build -j</code></pre></div>
+
+
+<p>Obtain the <a href="https://huggingface.co/bartowski/google_gemma-3-12b-it-GGUF">Gemma
+3</a> model.</p>
+<p>Start the LLM server:</p>
+<div class="codehilite"><pre><code class="language-sh">llama-server -m ~/temp/gemma-3-12b-it-UD-IQ3_XXS.gguf \
+   --port 8080 -c 4096 -ngl 999</code></pre></div>
+
+
+<p>Open <code>localhost:8080</code> and feel free to chat with the model. How simple things
+have become!</p>
+<h3 id="get-datasheet-text">Get datasheet text</h3>
+<p>Next, we need to convert the datasheets from the PDF format into plain text that
+we can feed to the model. Assuming <code>docling</code> is installed (install it with Pip
+if not), we can define the following function to convert the documents:</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">import</span> sys
+<span class="k">from</span> pathlib <span class="k">import</span> Path
+<span class="k">from</span> docling.document_converter <span class="k">import</span> DocumentConverter
+
+<span class="k">def</span> <span class="nf">convert_pdf_to_markdown</span>(pdf_file):
+    pdf_path <span class="o">=</span> <span class="nf">Path</span>(pdf_file)
+    converter <span class="o">=</span> <span class="nf">DocumentConverter</span>()
+    result <span class="o">=</span> converter.<span class="nf">convert</span>(pdf_path)
+    content <span class="o">=</span> result.document.<span class="nf">export_to_markdown</span>()
+    <span class="nf">print</span>(content)</code></pre></div>
+
+
+<p>This yields the output in a Markdown format.</p>
+<h3 id="define-agent-with-a-simple-prompt">Define agent with a simple prompt</h3>
+<p>Here&rsquo;s the best part: the &ldquo;source code&rdquo; for the agent is in plain English. Here
+it is in its entirety:</p>
+<div class="codehilite"><pre><code class="language-text">You are a datasheet specification extraction agent. Your
+only job is to extract specifications.
+
+OUTPUT FORMAT:
+{
+  &quot;Full parameter name (short name)&quot;: {
+    &quot;min&quot;: number or null,
+    &quot;typ&quot;: number or null,
+    &quot;max&quot;: number or null,
+    &quot;unit&quot;: &quot;string&quot;
+  }
+}
+
+EXTRACTION RULES:
+- Always include both the full and short spec name in the key.
+- Full name goes first, and short name in brackets: &quot;Operating Temperature (T)&quot;
+- If a typ value is a range like &quot;-11.5 to 14.5&quot;, split it: min=-11.5, max=14.5
+- Convert scientific notation: &quot;10 12&quot; → 1e12
+- Convert ± values into min/max fields
+- Omit parameters with no numeric values (all null)
+- Omit footnotes like (1) and (2)
+- If no specifications exist, return: {}
+
+CRITICAL OUTPUT RULES:
+- Return ONLY valid JSON
+- NO explanations
+- NO descriptions
+- NO phrases like &quot;this section&quot;, &quot;no specifications&quot;, &quot;I will skip&quot;
+- NO text before or after the JSON
+- NO markdown code blocks
+- Just the raw JSON object</code></pre></div>
+
+
+<p>The insistence on pure JSON is a hack to make it stop being too chatty. There&rsquo;s
+probably a more sophisticated way to do it, but for a first attempt it&rsquo;ll do
+just fine.</p>
+<h3 id="chunking">&rdquo;Chunking&rdquo;</h3>
+<p>The datasheet conversion from PDF includes lots of unnecessary text like
+document version information, copyright, ordering information. For now, we&rsquo;d
+like to get just the electronic specifications. As a first approximation, assume
+that the information is always present in tables only.</p>
+<p>ChatGPT assures me that the following regex magic will extract tables from a
+Markdown document:</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">import</span> re
+
+<span class="k">def</span> <span class="nf">get_chunks</span>(filepath):
+    <span class="s">&quot;&quot;&quot;Return a list of Markdown tables as strings from a file.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nf">open</span>(filepath, <span class="s">&quot;r&quot;</span>, encoding<span class="o">=</span><span class="s">&quot;utf-8&quot;</span>) <span class="k">as</span> f:
+        content <span class="o">=</span> f.<span class="nf">read</span>()
+
+    table_pattern <span class="o">=</span> re.<span class="nf">compile</span>(
+        r<span class="s">&quot;(?:^\|.*\|\s*\n)&quot;</span>           <span class="c1"># Header row</span>
+        r<span class="s">&quot;(?:^\|[-:\s|]+\|\s*\n)&quot;</span>     <span class="c1"># Separator row</span>
+        r<span class="s">&quot;(?:^\|.*\|\s*\n?)+&quot;</span>,        <span class="c1"># Body rows</span>
+        re.MULTILINE
+    )
+
+    tables <span class="o">=</span> table_pattern.<span class="nf">findall</span>(content)
+    <span class="k">return</span> [t.<span class="nf">strip</span>() <span class="k">for</span> t <span class="k">in</span> tables]</code></pre></div>
+
+
+<h3 id="putting-it-together">Putting it together</h3>
+<p>We have all the pieces now: text data in small pieces, a model, the prompt to
+define an agent. Now just iterate over all the chunks as defined above, send
+them to the model together with the prompt, and observe what comes out. To
+automate the process from PDF to the final JSON, I used a Makefile defining the
+recipes for the three steps of the transformation. All of this is too
+straightforward to be worth including here.</p>
+<p>For anyone interested, find the entire code presented above
+<a href="https://github.com/js216/sfap">here</a>.</p>
+</div>
+</body>
+</html>

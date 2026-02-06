@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="21 Jan 2026">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content=">">
+<link rel="stylesheet" href="style.css">
+<title>Ethernet on Bare-Metal STM32MP135</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Embedded</div>
+<h2>Ethernet on Bare-Metal STM32MP135</h2>
+<div class="article-meta">Published 21 Jan 2026. By Jakob Kastelic.</div>
+<p><img src="../images/si.jpg" alt=""></p>
+<p>In this writeup we&rsquo;ll go through the steps needed to bring up the Ethernet
+peripheral (<code>ETH1</code>) on the STM32MP135 <a href="https://www.st.com/en/evaluation-tools/stm32mp135f-dk.html">eval
+board</a> as well as a
+<a href="https://github.com/js216/stm32mp135_test_board">custom board</a>.</p>
+<h3 id="eval-board-connections-to-phy">Eval board connections to PHY</h3>
+<p>The evaluation board uses the <code>LAN8742A-CZ-TR</code> Ethernet PHY chip, connected to
+the SoC as follows:</p>
+<table><thead><tr><th style="text-align:left">PHY pin</th><th style="text-align:left">PHY signal</th><th style="text-align:left">SoC signal</th><th style="text-align:left">SoC pin</th><th style="text-align:left">Alt. Fn.</th><th style="text-align:left">Notes</th></tr></thead><tbody>
+<tr><td style="text-align:left">16</td><td style="text-align:left"><code>TXEN</code></td><td style="text-align:left"><code>PB11/ETH1_TX_EN</code></td><td style="text-align:left"><code>AA2</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+<tr><td style="text-align:left">17</td><td style="text-align:left"><code>TXD0</code></td><td style="text-align:left"><code>PG13/ETH1_TXD0</code></td><td style="text-align:left"><code>AA9</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+<tr><td style="text-align:left">18</td><td style="text-align:left"><code>TXD1</code></td><td style="text-align:left"><code>PG14/ETH1_TXD1</code></td><td style="text-align:left"><code>Y10</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+<tr><td style="text-align:left">8</td><td style="text-align:left"><code>RXD0/MODE0</code></td><td style="text-align:left"><code>PC4/ETH1_RXD0</code></td><td style="text-align:left"><code>Y7</code></td><td style="text-align:left">AF11</td><td style="text-align:left">10k PU</td></tr>
+<tr><td style="text-align:left">7</td><td style="text-align:left"><code>RXD1/MODE1</code></td><td style="text-align:left"><code>PC5/ETH1_RXD1</code></td><td style="text-align:left"><code>AA7</code></td><td style="text-align:left">AF11</td><td style="text-align:left">10k PU</td></tr>
+<tr><td style="text-align:left">11</td><td style="text-align:left"><code>CRS_DV/MODE2</code></td><td style="text-align:left"><code>PC1/ETH1_CRS_DV</code></td><td style="text-align:left"><code>Y9</code></td><td style="text-align:left"><strong>AF10</strong></td><td style="text-align:left">10k PU</td></tr>
+<tr><td style="text-align:left">13</td><td style="text-align:left"><code>MDC</code></td><td style="text-align:left"><code>PG2/ETH1_MDC</code></td><td style="text-align:left"><code>V3</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+<tr><td style="text-align:left">12</td><td style="text-align:left"><code>MDIO</code></td><td style="text-align:left"><code>PA2/ETH1_MDIO</code></td><td style="text-align:left"><code>Y4</code></td><td style="text-align:left">AF11</td><td style="text-align:left">1k5 PU</td></tr>
+<tr><td style="text-align:left">15</td><td style="text-align:left"><code>nRST</code></td><td style="text-align:left"><code>ETH1_NRST</code></td><td style="text-align:left"><code>IO9</code></td><td style="text-align:left"></td><td style="text-align:left">MPC IO</td></tr>
+<tr><td style="text-align:left">14</td><td style="text-align:left"><code>nINT/RECLKO</code></td><td style="text-align:left"><code>PA1/ETH1_RX_CLK</code></td><td style="text-align:left"><code>AA3</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+</tbody></table>
+<h3 id="reset-pin">Reset pin</h3>
+<p>In this design, the Ethernet PHY connected to ETH1 has its own 25MHz crystal.
+Note the <code>ETH1_RX_CLK</code> connection, which uses the <code>MCP23017T-E/ML</code> I2C I/O
+expander.</p>
+<p>One wonders if it was really necessary to complicate Ethernet bringup by
+requiring this extra step (I2C + IO config) on an SoC that has 320 pins. True to
+form, the simple IO expander needs more than 1,300 lines of ST driver code plus
+lots more in the pointless <code>BSP</code> abstraction layer wrapper.</p>
+<p>With a driver that complicated, it&rsquo;s easier to start from scratch. As it
+happens, writing these GPIO pins involves just two I2C transactions. The I2C
+code is trivial, find it
+<a href="https://github.com/js216/stm32mp135-bootloader/blob/main/src/mcp23x17.c">here</a>.</p>
+<h3 id="sending-an-ethernet-frame-from-eval-board">Sending an Ethernet frame from eval board</h3>
+<p>Again ST code examples are very complex, but it takes just over 300 lines of
+code to send an Ethernet frame, by way of verifying that data can be transmitted
+over this interface. I asked ChatGPT to summarize what happens in the
+<a href="https://github.com/js216/stm32mp135-bootloader/blob/main/src/eth.c">code</a>:</p>
+<ol>
+<li>
+<p><strong>Configure the pins for Ethernet</strong> First, all the GPIO pins required by the
+RMII interface are set up. Each pin is switched to its Ethernet alternate
+function, configured for push-pull output, and set to a high speed. This
+ensures the STM32&rsquo;s MAC can physically drive the Ethernet lines correctly. If
+you&rsquo;re using an external GPIO expander like the MCP23x17, it is also
+initialized here, and relevant pins are set high to enable the PHY or other
+control signals.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p><strong>Enable the Ethernet clocks</strong> Before the MAC can operate, the clocks for the
+Ethernet peripheral&mdash;MAC, TX, RX, and the reference clock&mdash;are enabled in
+the RCC. This powers the Ethernet block inside the STM32 and allows it to
+communicate with the PHY.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p><strong>Initialize descriptors and buffers</strong> DMA descriptors for transmit (TX) and
+receive (RX) are allocated and zeroed. The transmit buffer is allocated and
+aligned to 32 bytes, as required by the DMA. A TX buffer descriptor is
+created, pointing to the transmit buffer. This descriptor tells the HAL
+exactly where the frame data is and how long it is.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p><strong>Configure the Ethernet peripheral structure</strong> The <code>ETH_HandleTypeDef</code> is
+populated with the MAC address, RMII mode, pointers to the TX and RX
+descriptors, and the RX buffer size. The clock source for the peripheral is
+selected. At this stage, the HAL has all the information needed to manage the
+hardware.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p><strong>Initialize the MAC and PHY</strong> Calling <code>HAL_ETH_Init()</code> programs the MAC with
+the descriptor addresses, frame length settings, and other features like
+checksum offload. The PHY is reset and auto-negotiation is enabled via MDIO.
+Reading the PHY ID verifies that the PHY is responding correctly.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p><strong>Start the MAC</strong> With <code>HAL_ETH_Start()</code>, the MAC begins normal operation,
+monitoring the RMII interface for frames to transmit or receive.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p><strong>Build the Ethernet frame</strong> A frame is constructed in memory. The first 6
+bytes are the destination MAC (broadcast in this case), the next 6 bytes are
+the source MAC (the STM32&rsquo;s MAC), followed by a 2-byte EtherType. The payload
+is copied into the frame (e.g., a short test string), and the frame is padded
+to at least 60 bytes to satisfy Ethernet minimum length requirements.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p><strong>Transmit the frame</strong> The TX buffer descriptor is updated with the frame
+length and pointer to the buffer. <code>HAL_ETH_Transmit()</code> is called, which
+programs the DMA to fetch the frame from memory and put it onto the Ethernet
+wire. After this call completes successfully, the frame is sent, and you can
+see it in Wireshark on the network.</p>
+</li>
+</ol>
+<p>For the record, when a cable is connected, the PHY sees the link is up:</p>
+<pre><code>&gt; eth_status
+Ethernet link is up
+  Speed: 100 Mbps
+  Duplex: full
+  BSR = 0x782D, PHYSCSR = 0x1058</code></pre>
+<h3 id="custom-board-connections-to-phy">Custom board connections to PHY</h3>
+<p>The custom board (Rev A) also uses the <code>LAN8742A-CZ-TR</code> Ethernet PHY chip,
+connected to the SoC as follows:</p>
+<table><thead><tr><th style="text-align:left">PHY pin</th><th style="text-align:left">PHY signal</th><th style="text-align:left">SoC signal</th><th style="text-align:left">SoC pin</th><th style="text-align:left">Alt. Fn.</th><th style="text-align:left">Notes</th></tr></thead><tbody>
+<tr><td style="text-align:left">16</td><td style="text-align:left"><code>TXEN</code></td><td style="text-align:left"><code>PB11/ETH1_TX_EN</code></td><td style="text-align:left"><code>N5</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+<tr><td style="text-align:left">17</td><td style="text-align:left"><code>TXD0</code></td><td style="text-align:left"><code>PG13/ETH1_TXD0</code></td><td style="text-align:left"><code>P8</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+<tr><td style="text-align:left">18</td><td style="text-align:left"><code>TXD1</code></td><td style="text-align:left"><code>PG14/ETH1_TXD1</code></td><td style="text-align:left"><code>P9</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+<tr><td style="text-align:left">8</td><td style="text-align:left"><code>RXD0/MODE0</code></td><td style="text-align:left"><code>PC4/ETH1_RXD0</code></td><td style="text-align:left"><code>U6</code></td><td style="text-align:left">AF11</td><td style="text-align:left">10k PU</td></tr>
+<tr><td style="text-align:left">7</td><td style="text-align:left"><code>RXD1/MODE1</code></td><td style="text-align:left"><code>PC5/ETH1_RXD1</code></td><td style="text-align:left"><code>R7</code></td><td style="text-align:left">AF11</td><td style="text-align:left">10k PU</td></tr>
+<tr><td style="text-align:left">11</td><td style="text-align:left"><code>CRS_DV/MODE2</code></td><td style="text-align:left"><code>PA7/ETH1_CRS_DV</code></td><td style="text-align:left"><code>U2</code></td><td style="text-align:left"><strong>AF11</strong></td><td style="text-align:left">10k PU</td></tr>
+<tr><td style="text-align:left">13</td><td style="text-align:left"><code>MDC</code></td><td style="text-align:left"><code>PG2/ETH1_MDC</code></td><td style="text-align:left"><code>R1</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+<tr><td style="text-align:left">12</td><td style="text-align:left"><code>MDIO</code></td><td style="text-align:left"><code>PG3/ETH1_MDIO</code></td><td style="text-align:left"><code>L5</code></td><td style="text-align:left">AF11</td><td style="text-align:left">1k5 PU</td></tr>
+<tr><td style="text-align:left">15</td><td style="text-align:left"><code>nRST</code></td><td style="text-align:left"><code>PG11</code></td><td style="text-align:left"><code>M3</code></td><td style="text-align:left"></td><td style="text-align:left">10k PD</td></tr>
+<tr><td style="text-align:left">14</td><td style="text-align:left"><code>nINT/RECLKO</code></td><td style="text-align:left"><code>PG12/ETH1_PHY_INTN</code></td><td style="text-align:left"><code>T1</code></td><td style="text-align:left">AF11</td><td style="text-align:left">10k PU</td></tr>
+<tr><td style="text-align:left">5</td><td style="text-align:left"><code>XTAL1/CLKIN</code></td><td style="text-align:left"><code>PA11/ETH1_CLK</code></td><td style="text-align:left"><code>T2</code></td><td style="text-align:left">AF11</td><td style="text-align:left"></td></tr>
+</tbody></table>
+<p>The differences with respect to eval board are:</p>
+<table><thead><tr><th style="text-align:left">Signal</th><th style="text-align:left">Eval board</th><th style="text-align:left">Custom board</th></tr></thead><tbody>
+<tr><td style="text-align:left"><code>ETH1_CRS_DV</code></td><td style="text-align:left"><code>PC1/ETH1_CRS_DV</code></td><td style="text-align:left"><code>PA7/ETH1_CRS_DV</code></td></tr>
+<tr><td style="text-align:left"><code>ETH1_MDIO</code></td><td style="text-align:left"><code>PA2/ETH1_MDIO</code></td><td style="text-align:left"><code>PG3/ETH1_MDIO</code></td></tr>
+<tr><td style="text-align:left"><code>nRST</code></td><td style="text-align:left">GPIO expander</td><td style="text-align:left"><code>PG11</code>, 10k pulldown</td></tr>
+<tr><td style="text-align:left"><code>nINT/REFCLKO</code></td><td style="text-align:left"><code>PA1/ETH1_RX_CLK</code></td><td style="text-align:left"><code>PG12/ETH1_PHY_INTN</code></td></tr>
+<tr><td style="text-align:left"><code>XTAL1/CLKIN</code></td><td style="text-align:left">25 MHz XTAL</td><td style="text-align:left"><code>PA11/ETH1_CLK</code></td></tr>
+</tbody></table>
+<p>That is, two different port assignments, direct GPIO for reset instead of
+expander, clock to be output from the SoC to the PHY, and using <code>INTN</code> signal
+instead of <code>RX_CLK</code>. All alternate functions are 11, while on the eval board one
+of them (<code>CRS_DV</code>) was 10.</p>
+<h3 id="transmit-ethernet-frame-from-custom-board">Transmit Ethernet frame from custom board</h3>
+<p>First, we need to set the clock correctly. Since Ethernet does not have a
+dedicated crystal on the custom board, we need to source it from a PLL. In
+particular, we can set PLL3Q to output <code>24/2*50/24=25</code> MHz, and select the
+<code>ETH1</code> clock source:</p>
+<div class="codehilite"><pre><code class="language-c">pclk.PeriphClockSelection <span class="o">=</span> RCC_PERIPHCLK_ETH1;
+pclk.Eth1ClockSelection   <span class="o">=</span> RCC_ETH1CLKSOURCE_PLL3;
+<span class="k">if</span> (<span class="nf">HAL_RCCEx_PeriphCLKConfig</span>(<span class="o">&amp;</span>pclk) <span class="o">!</span><span class="o">=</span> HAL_OK)
+   <span class="nf">ERROR</span>(<span class="s">&quot;ETH1&quot;</span>);</code></pre></div>
+
+
+<p>With the scope, I can see a 25 MHz clock on the <code>ETH_CLK</code> trace and the <code>nRST</code>
+pin is driven high (3.3V). Nonetheless, <code>HAL_ETH_Init()</code> returns with an error.</p>
+<p>Of course, we forgot to tell the HAL what the Ethernet clock source is. On the
+eval board, we had</p>
+<div class="codehilite"><pre><code class="language-c">eth_handle.Init.ClockSelection <span class="o">=</span> HAL_ETH1_REF_CLK_RX_CLK_PIN;</code></pre></div>
+
+
+<p>But on the custom board, the SoC provides the clock to the PHY:</p>
+<div class="codehilite"><pre><code class="language-c">eth_handle.Init.ClockSelection <span class="o">=</span> HAL_ETH1_REF_CLK_RCC;</code></pre></div>
+
+
+<h3 id="mistake-in-hal-driver">Mistake in HAL driver?</h3>
+<p>With the RCC clock selected for Ethernet, yet again <code>HAL_ETH_Init()</code> fails. This
+time, it tries to select the RCC clock source:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="k">if</span> (heth<span class="o">-</span><span class="o">&gt;</span>Init.ClockSelection <span class="o">=</span><span class="o">=</span> HAL_ETH1_REF_CLK_RCC)
+{
+  syscfg_config <span class="o">|</span><span class="o">=</span> SYSCFG_PMCSETR_ETH1_REF_CLK_SEL;
+}
+<span class="nf">HAL_SYSCFG_ETHInterfaceSelect</span>(syscfg_config);</code></pre></div>
+
+
+<p>The Ethernet interface and clocking setup is done in the <code>PMCSETR</code> register,
+together with some other configuration.</p>
+<div class="codehilite"><pre><code class="language-c"><span class="k">void</span> <span class="nf">HAL_SYSCFG_ETHInterfaceSelect</span>(uint32_t SYSCFG_ETHInterface)
+{
+   <span class="nf">assert_param</span>(<span class="nf">IS_SYSCFG_ETHERNET_CONFIG</span>(SYSCFG_ETHInterface));
+   SYSCFG<span class="o">-</span><span class="o">&gt;</span>PMCSETR <span class="o">=</span> (uint32_t)(SYSCFG_ETHInterface);
+}</code></pre></div>
+
+
+<p>Now the driver trips over the assertion. The assertion macro expects the
+config word to pure interface selection, forgetting that the same register also
+carries the <code>ETH1_REF_CLK_SEL</code> field (amongst others!):</p>
+<div class="codehilite"><pre><code class="language-text">#define IS_SYSCFG_ETHERNET_CONFIG(CONFIG)                                      \
+   (((CONFIG) == SYSCFG_ETH1_MII) || ((CONFIG) == SYSCFG_ETH1_RMII) ||         \
+    ((CONFIG) == SYSCFG_ETH1_RGMII) || ((CONFIG) == SYSCFG_ETH2_MII) ||        \
+    ((CONFIG) == SYSCFG_ETH2_RMII) || ((CONFIG) == SYSCFG_ETH2_RGMII))
+#endif /* SYSCFG_DUAL_ETH_SUPPORT */</code></pre></div>
+
+
+<p>If we comment out this assertion, the initialization proceeds without further
+errors. However, link is still down.</p>
+<h3 id="biasing-transformer-center-taps">Biasing transformer center taps</h3>
+<p>Even with an Ethernet cable plugged in, link is down:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="c1">// Read basic status register</span>
+<span class="k">if</span> (<span class="nf">HAL_ETH_ReadPHYRegister</span>(<span class="o">&amp;</span>eth_handle, LAN8742_ADDR,
+      LAN8742_BSR, <span class="o">&amp;</span>v) <span class="o">!</span><span class="o">=</span> HAL_OK) {
+   <span class="nf">my_printf</span>(<span class="s">&quot;PHY BSR read failed\r\n&quot;</span>);
+   <span class="k">return</span>;
+}
+
+<span class="k">if</span> ((v <span class="o">&amp;</span> LAN8742_BSR_LINK_STATUS) <span class="o">=</span><span class="o">=</span> 0u) {
+   <span class="nf">my_printf</span>(<span class="s">&quot;Link is down (no cable or remote inactive)\r\n&quot;</span>);
+   <span class="k">return</span>;
+}</code></pre></div>
+
+
+<p>On the schematic diagram of the custom board, we notice that the RJ-45
+transformer center taps (<code>TXCT</code>, <code>RXCT</code> on the <code>J1011F21PNL</code> connector) are
+decoupled to ground, but are not connected to 3.3V unlike on the eval board. The
+<code>LAN8742A</code> datasheet does not talk about it explicitly, but instead shows a
+schematic diagram (Figure 3-23) where the two center taps are tied together and
+pulled up to 3.3V via a ferrite bead.</p>
+<p>Tying the center taps to 3.3V, we still get no link. Printing the PHY Basic
+Status Register, we see:</p>
+<pre><code>Link is down (no cable or remote inactive)
+BSR = 0x7809</code></pre>
+<p>This means: link down, auto-negotiation not complete.</p>
+<p><code>REF_CLK</code> pin is not outputting a 50 MHz clock but instead sits at about 3.3V.</p>
+<h3 id="leds-and-straps">LEDs and straps</h3>
+<p>The PHY chip shares LED pins with straps.</p>
+<p><code>LED1</code> is shared with <code>REGOFF</code> and is tied to the anode of the LED, which pulls
+down the pin such that <code>REGOFF=0</code> and the regulator is enabled. We measure that
+<code>VDDCR</code> is at 1.25V, which indicates that the internal regulator started
+successfully. During board operation, this pin is low (close to 0V).</p>
+<p><code>LED2</code> is shared with the <code>nINTSEL</code> pin, and is connected to the LED cathode.
+During board operation, this pin is high (close to 3.3V). Selecting <code>nINTSEL=1</code>
+means <code>REF_CLK</code> In Mode, as is explained in Table 3-6: &ldquo;<code>nINT/REFCLKO</code> is an
+active low interrupt output. The <code>REF_CLK</code> is sourced externally and must be
+driven on the <code>XTAL1/CLKIN</code> pin.&rdquo;</p>
+<p>Section 3.7.4 explains further regarding the &ldquo;Clock In&rdquo; mode:</p>
+<blockquote>
+<p>In <code>REF_CLK</code> In Mode, the 50 MHz <code>REF_CLK</code> is driven on the <code>XTAL1/CLKIN</code> pin.
+This is the traditional system configuration when using RMII [...]</p>
+<p>In <code>REF_CLK</code> In Mode, the 50 MHz <code>REF_CLK</code> is driven on the <code>XTAL1/CLKIN</code> pin.
+A 50 MHz source for <code>REF_CLK</code> must be available external to the device when
+using this mode. The clock is driven to both the MAC and PHY as shown in
+Figure 3-7.</p>
+</blockquote>
+<p>Furthermore, according to Section 3.8.1.6 of the PHY datasheet, the absence of a
+pulldown resistor on <code>LED2/nINTSEL</code> pin means that <code>LED2</code> output is active low.
+That means that the anode of <code>LED2</code> should have been tied to <code>VDD2A</code> according
+to Fig. 3-15, rather than ground as is currently the case.</p>
+<p>This means we have two alternatives:</p>
+<ul>
+<li>
+<p>Add a 10k pulldown from <code>LED2/nINTSEL</code> to ground, and flip the polarity of the
+LED (connect the PHY to anode, or pin 9 of the connector). This would select
+<code>nINTSEL=0</code>. In that case, a 25 MHz clock is to be provided to <code>XTAL1/CLKIN</code>.</p>
+</li>
+</ul>
+<ul>
+<li>
+<p>Keep <code>LED2/nINTSEL</code> connected to the LED cathode, without any pulldown
+resistor. This selects <code>nINTSEL=1</code>. However, make sure to connect the LED
+anode (pin 9, <code>+LEDR</code>, of connector) to <code>VDD2A</code> instead of <code>GND</code>. In this
+case, a 50 MHz clock is to be provided to <code>XTAL1/CLKIN</code>.</p>
+</li>
+</ul>
+<p>In this instance I chose the latter option and ordered PLL3Q to output
+<code>24/2*50/12=50</code> MHz. The link is briefly up and the green <code>LED2</code> blinks:</p>
+<pre><code>&gt; eth_status
+Ethernet link is up
+  Speed: 100 Mbps
+  Duplex: full
+  BSR = 0x782D, PHYSCSR = 0x1058</code></pre>
+<p>But strange enough, when I check the status just a moment later, the link is
+down again:</p>
+<pre><code>&gt; eth_status
+Link is down (no cable or remote inactive)
+BSR = 0x7809</code></pre>
+<p>Checking repeatedly, sometimes it&rsquo;s up, and sometimes it&rsquo;s down.</p>
+<p>I see that the current drawn from the 3.3V supply switches between 0.08A and
+0.13A continuously, every second or two.</p>
+<h3 id="digging-in-registers">Digging in registers</h3>
+<p>Printing out some more info in both situations:</p>
+<pre><code>Link is down (no cable or remote inactive)
+  BSR = 0x7809, PHYSCSR = 0x0040, ISFR = 0x0098, SMR = 0x60E0, SCSIR = 0x0040
+SYSCFG_PMCSETR = 0x820000
+&gt; e
+Ethernet link is up
+  Speed: 100 Mbps
+  Duplex: full
+  BSR = 0x782D, PHYSCSR = 0x1058, ISFR = 0x00CA, SMR = 0x60E0, SCSIR = 0x1058
+SYSCFG_PMCSETR = 0x820000</code></pre>
+<p>PHY Basic Status Register <code>BSR</code>, when link is down, shows the following status:</p>
+<ul>
+<li>
+<p>No T4 ability</p>
+</li>
+<li>
+<p>TX with full duplex ability</p>
+</li>
+<li>
+<p>TX with half duplex ability</p>
+</li>
+<li>
+<p>10 Mbps with full duplex ability</p>
+</li>
+<li>
+<p>10 Mbps with half duplex ability</p>
+</li>
+<li>
+<p>Auto-negotiate process not completed</p>
+</li>
+<li>
+<p>No remote fault</p>
+</li>
+<li>
+<p>Able to perform auto-negotiation function</p>
+</li>
+<li>
+<p>Link is down</p>
+</li>
+<li>
+<p>No jabber condition detected.</p>
+</li>
+<li>
+<p>Supports extended capabilities registers</p>
+</li>
+</ul>
+<p>When link is up, <code>BSR</code> shows (of course) that link is up, and also that
+the auto-negotiate process completed.</p>
+<p>The PHY Special Control/Status Register (<code>PHYSCSR</code>), when link is down, does not
+have a meaningful speed indication (<code>000</code>), or anything else. When link is up,
+it shows speed as <code>100BASE-TX full-duplex</code> (<code>110</code>), and that auto-negotiation is
+done.</p>
+<p>The PHY Interrupt Source Flag Register (<code>PHYISFR</code>), when link is down, shows
+Auto-Negotiation LP Acknowledge, Link Down (link status negated), and <code>ENERGYON</code>
+generated. When link is up, we get Auto-Negotiation Page Received,
+Auto-Negotiation LP Acknowledge, <code>ENERGYON</code> generated, and Wake on LAN (<code>WoL</code>)
+event detected.</p>
+<p>The PHY Special Modes Register (<code>PHYSMR</code>), when link is either up or down, shows
+the same value: 0x60E0. This means that <code>PHYAD=00000</code> (PHY address), and
+<code>MODE=111</code> (transceiver mode of operation is set to &ldquo;All capable.
+Auto-negotiation enabled.&rdquo;.</p>
+<p>The PHY Special Control/Status Indications Register (<code>PHYSCSIR</code>), when link is
+up, shows Reversed polarity of <code>10BASE-T</code>, even though link is 100 Mbps.</p>
+<p>SoC <code>PMCSETR</code> has two fields set: <code>ETH1_SEL</code> is set to 100, meaning RMII, and
+<code>ETH1_REF_CLK_SEL</code> is set to 1, meaning that the reference clock (RMII mode)
+comes from the RCC.</p>
+<h3 id="solution-pll-config-again">Solution: PLL config (again!)</h3>
+<p>Painfully obvious in retrospect, but the problem was that <code>PLL3</code>, from which
+we&rsquo;ve derived the Ethernet clock, was set to fractional mode:</p>
+<div class="codehilite"><pre><code class="language-c">rcc_oscinitstructure.PLL3.PLLFRACV  <span class="o">=</span> <span class="m">0x1a04</span>;
+rcc_oscinitstructure.PLL3.PLLMODE   <span class="o">=</span> RCC_PLL_FRACTIONAL;</code></pre></div>
+
+
+<p>If instead we derive the clock from <code>PLL4</code>, which is already set to integer
+mode, then sending the Ethernet frame <em>just works</em>, and the link gets up and
+stays up:</p>
+<div class="codehilite"><pre><code class="language-c">rcc_oscinitstructure.PLL4.PLLFRACV  <span class="o">=</span> <span class="m">0</span>;
+rcc_oscinitstructure.PLL4.PLLMODE   <span class="o">=</span> RCC_PLL_INTEGER;
+<span class="c1">// ...</span>
+pclk.PeriphClockSelection <span class="o">=</span> RCC_PERIPHCLK_ETH1;
+pclk.Eth1ClockSelection   <span class="o">=</span> RCC_ETH1CLKSOURCE_PLL4;</code></pre></div>
+
+
+<p>Of course! Ethernet requires a perfectly precise 50 MHz clock, up to about 50
+ppm. On the eval board that was not a problem: the PHY had its own crystal, and
+it returned a good 50 MHz clock directly back to the SoC&rsquo;s MAC.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Articles on embedded Linux, STM32 development, low-level programming, and practical approaches to software productivity. Tutorials, experiments, and reflections on simplicity in computing.">
+<link rel="license" href="https://creativecommons.org/licenses/by/4.0/">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="favicon.ico">
+<title>embd.cc</title>
+</head>
+<body>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+
+<div class="article">
+<div class="article-topic">Agents</div>
+<h2><a href="llm-problems-observed-in-humans">LLM problems observed in humans</a></h2>
+<div class="article-meta">Published 7 Jan 2026. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/brain.jpg"/></p>
+<p>While some are still discussing why computers will never be able to pass the
+Turing test, I find myself repeatedly facing the idea that as the models improve
+and humans don’t, the bar for the test gets raised and eventually humans won’t
+pass the test themselves. Here’s a list of what used to be LLM failure modes but
+that are now more commonly observed when talking to people.</p>
+<h3 id="dont-know-when-to-stop-generating">Don’t know when to stop generating</h3>
+<p>This has always been an issue in conversations: you ask a seemingly small and
+limited question, and in return have to listen to what seems like hours of
+incoherent rambling. Despite exhausting their knowledge of the topic, people
+will keep on talking about stuff you have no interest in. I find myself
+searching for the “stop generating” button, only to remember that all I can do
+is drop hints, or rudely walk away.</p>
+<h3 id="small-context-window">Small context window</h3>
+<p>The best thing about a good deep conversation is when the other person gets you:
+you explain a complicated situation you find yourself in, and find some
+resonance in their replies. That, at least, is what happens when chatting with
+the recent large models. But when subjecting the limited human mind to the same
+prompt—a rather long one—again and again the information in the prompt
+somehow gets lost, their focus drifts away, and you have to repeat crucial
+facts. In such a case, my gut reaction is to see if there’s a way to pay to
+upgrade to a bigger model, only to remember that there’s no upgrading of the
+human brain. At most what you can do is give them a good night’s sleep and then
+they may possibly switch from the “Fast” to the “Thinking” mode, but that’s not
+guaranteed with all people.</p>
+<h3 id="too-narrow-training-set">Too narrow training set</h3>
+<p>I’ve got a lot of interests and on any given day, I may be excited to discuss
+various topics, from kernels to music to cultures and religions. I know I can
+put together a prompt to give any of today’s leading models and am essentially
+guaranteed a fresh perspective on the topic of interest. But let me pose the
+same prompt to people and more often then not the reply will be a polite nod
+accompanied by clear signs of their thinking something else entirely, or maybe
+just a summary of the prompt itself, or vague general statements about how
+things should be. In fact, so rare it is to find someone who knows what I mean
+that it feels like a magic moment. With the proliferation of genuinely good
+models—well educated, as it were—finding a conversational partner with a
+good foundation of shared knowledge has become trivial with AI. This does not
+bode well for my interest in meeting new people.</p>
+<h3 id="repeating-the-same-mistakes">Repeating the same mistakes</h3>
+<p>Models with a small context window, or a small number of parameters, seem to
+have a hard time learning from their mistakes. This should not be a problem for
+humans: we have a long term memory span measured in decades, with emotional
+reinforcement of the most crucial memories. And yet, it happens all too often
+that I must point out the same logical fallacy again and again in the same
+conversation! Surely, I think, if I point out the mistake in the reasoning, this
+will count as an important correction that the brain should immediately make use
+of? As it turns out, there seems to be some kind of a fundamental limitation on
+how quickly the neural connections can get rewired. Chatting with recent models,
+who can make use the extra information immediately, has deteriorated my patience
+regarding having to repeat myself.</p>
+<h3 id="failure-to-generalize">Failure to generalize</h3>
+<p>By this point, it’s possible to explain what happens in a given situation, and
+watch the model apply the lessons learned to a similar situation. Not so with
+humans. When I point out that the same principles would apply elsewhere, their
+response will be somewhere along the spectrum of total bafflement on the one end
+and on the other, a face-saving explanation that the comparison doesn’t apply
+“because it’s different”. Indeed the whole point of comparisons is to apply same
+principles in different situations, so why the excuse? I’ve learned to take up
+such discussions with AI and not trouble people with them.</p>
+<h3 id="failure-to-apply-to-specific-situation">Failure to apply to specific situation</h3>
+<p>This is the opposite issue: given a principle stated in general terms, the
+person will not be able to apply it in a specific situation. Indeed, I’ve had a
+lifetime of observing this very failure mode in myself: given the laws of
+physics, which are typically “obvious” and easy to understand, I find it very
+difficult to calculate how long before the next eclipse. More and more, rather
+than think these things through myself, I’d just send a quick prompt to the most
+recent big model, and receive a good answer in seconds. In other words, models
+threaten to sever me not only from other flawed humans, but from my own “slow”
+thinking as well!</p>
+<h3 id="persistent-hallucination">Persistent hallucination</h3>
+<p>Understood in the medical sense, hallucination refers to when something appears
+to be real even as you know very well it isn’t. Having no direct insight into
+the “inner mental life” of models, we claim that every false fact they spit out
+is a form of hallucination. The meaning of the word is shifting from the medical
+sense towards the direction of “just being wrong, and persistently so”. This has
+plagued human speech for centuries. As a convenient example, look up some heated
+debate between proponents of science and those of religion. (As if the two need
+be in conflict!) When a model exhibits hallucination, often providing more
+context and evidence will dispel it, but the same trick does not appear to work
+so well on humans.</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>Where to go from here? One conclusion is that LLMs are damaging the connection
+people feel with each other, much like a decade before social networks
+threatened to destroy it by replacing it with a shallower, simulated versions.
+Another interpretation would be to conclude cynically that it’s time humans get
+either enhanced or replaced by a more powerful form of intelligence. I’d say
+we’re not there yet entirely, but that some of the replacement has been effected
+already: I’ll never again ask a human to write a computer program shorter than
+about a thousand lines, since an LLM will do it better.</p>
+<p>Indeed, why am I even writing this? I asked GPT-5 for additional failure modes
+and found more additional examples than I could hope to get from a human:</p>
+<blockquote>
+<p>Beyond the failure modes already discussed, humans also exhibit analogues of
+several newer LLM pathologies: conversations often suffer from <strong>instruction
+drift,</strong> where the original goal quietly decays as social momentum takes over;
+<strong>mode collapse,</strong> in which people fall back on a small set of safe clichés
+and conversational templates; and <strong>reward hacking,</strong> where social approval or
+harmony is optimized at the expense of truth or usefulness. Humans frequently
+<strong>overfit the prompt,</strong> responding to the literal wording rather than the
+underlying intent, and display <strong>safety overrefusal,</strong> declining to engage
+with reasonable questions to avoid social or reputational risk. Reasoning is
+also marked by <strong>inconsistency across turns,</strong> with contradictions going
+unnoticed, and by <strong>temperature instability,</strong> where fatigue, emotion, or
+audience dramatically alters the quality and style of thought from one moment
+to the next.</p>
+</blockquote>
+</div>
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Linux</div>
+<h2><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">Build Linux for STM32MP135 in under 50 Lines of Makefile</a></h2>
+<div class="article-meta">Published 6 Jan 2026. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/rain.jpg"/></p>
+<p><em>This is Part 7 in the series: Linux on STM32MP135. <a href="#series-list">See other
+articles.</a></em></p>
+<p>In the <a href="https://embd.cc/linux-bringup-on-custom-stm32mp135-board">previous
+article</a> we took a
+<a href="https://github.com/js216/stm32mp135_test_board">custom STM32MP135 board</a> from a
+simple LED blink to passing the kernel early boot stage, printing the “Booting
+Linux” message. Now, it’s time to finish the kernel initialization all the way
+up to running our first process: the <code>init</code> process.</p>
+<p>We’ll do it in two steps. First, we make it run on the official <a href="https://www.st.com/en/evaluation-tools/stm32mp135f-dk.html">evaluation
+board</a> for the SoC.
+In a future article, we will consider what needs to be changed in order to make
+this work on a <a href="https://github.com/js216/stm32mp135_test_board">custom board</a>.</p>
+<h3 id="boot-linux-on-eval-board">Boot Linux on eval board</h3>
+<p>First, we need to obtain and build the bootloader. Note that we need to enable
+the STPMIC1, since it is used on the eval board:</p>
+<div class="codehilite"><pre><code class="language-sh">git clone git@github.com:js216/stm32mp135-bootloader.git
+cd stm32mp135-bootloader
+make CFLAGS_EXTRA=-DUSE_STPMIC1x=1
+cd ..</code></pre></div>
+<p>Next, we obtain the Linux kernel from the ST repository (contains a few
+non-standard ST-provided drivers):</p>
+<div class="codehilite"><pre><code class="language-sh">git clone https://github.com/STMicroelectronics/linux.git
+git checkout v6.1-stm32mp-r1.1</code></pre></div>
+<p>Let’s apply some patches (mainly to allow non-secure boot without
+<a href="https://embd.cc/stm32mp135-without-u-boot">U-Boot</a>,
+<a href="https://embd.cc/stm32mp135-without-optee">OPTEE</a>, or
+<a href="https://embd.cc/linux-bringup-on-custom-stm32mp135-board">TF-A</a>), and copy over
+the Device Tree Source (DTS), and the kernel configuration:</p>
+<div class="codehilite"><pre><code class="language-sh">git clone git@github.com:js216/stm32mp135_test_board.git
+
+cd linux
+git linux apply ../configs/evb/patches/linux/*.patch
+cd ..
+
+cp config/evb/linux.config linux/.config
+cp config/evb/board.dts linux/arch/arm/boot/dts/</code></pre></div>
+<p>Now we can build the Device Tree Blob (DTB) and the kernel itself:</p>
+<div class="codehilite"><pre><code class="language-sh">cd linux
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- board.dtb
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage
+cd ..</code></pre></div>
+<p>Next, we need an init script. (Of course, you can also run the kernel without
+it, but be prepared for a kernel panic at the end of the boot, telling you the
+init is missing.) An init script can be essentially any program, even a “Hello,
+world!”, but if the init program quits, the kernel enters a panic again.</p>
+<p>I asked AI to write a minimal init, without any C standard library dependencies
+(find the result
+<a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">here</a>).
+Let’s compile it, making sure to tell the compiler to not link any extra code
+with it:</p>
+<div class="codehilite"><pre><code class="language-sh">arm-linux-gnueabihf-gcc -Os -nostdlib -static -fno-builtin \
+   -Wl,--gc-sections config/init.c -o build/init</code></pre></div>
+<p>Now that we have an init program, we need a root filesystem to put it on:</p>
+<div class="codehilite"><pre><code class="language-sh">mkdir -p build/rootfs.dir/sbin
+cp build/init build/rootfs.dir/sbin/init
+dd if=/dev/zero of=build/rootfs bs=1M count=10
+mke2fs -t ext4 -F -d build/rootfs.dir build/rootfs</code></pre></div>
+<p>Finally, we collect all the pieces together with a simple Python script included
+in the bootloader distribution:</p>
+<div class="codehilite"><pre><code class="language-sh">python3 bootloader/scripts/sdimage.py build/sdcard.img \
+   bootloader/build/main.stm32 \
+   linux/arch/arm/boot/dts/board.dtb \
+   linux/arch/arm/boot/zImage \
+   --partition build/rootfs</code></pre></div>
+<p>Write this image to the SD card and start the system, and prepare to be greeted
+by the very useless shell implemented in the minimal
+<a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">init program</a>):</p>
+<div class="codehilite"><pre><code class="language-sh">[    1.940577] Run /sbin/init as init process
+Hello, world!
+$ ls
+ls: command not found
+$ Hey!
+Hey!: command not found</code></pre></div>
+<p>That’s it!</p>
+<h3 id="the-makefile">The Makefile</h3>
+<p>Here’s the full 49 lines:</p>
+<div class="codehilite"><pre><code class="language-makefile">CONFIG_DIR := configs/custom
+CROSS_COMPILE = arm-linux-gnueabihf-
+LINUX_OPTS = ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE)
+
+all: boot config dtb kernel init root sd
+
+boot:
+	$(MAKE) -C bootloader -j$(shell nproc) CFLAGS_EXTRA=-DUSE_STPMIC1x=1
+
+patch:
+	for p in $(CONFIG_DIR)/patches/linux/*.patch; do \
+		if git -C linux apply --check ../$$p; then \
+			git -C linux apply ../$$p; \
+		fi \
+	done
+
+config:
+	cp $(CONFIG_DIR)/linux.config linux/.config
+
+dtb:
+	cp $(CONFIG_DIR)/board.dts linux/arch/arm/boot/dts/
+	$(MAKE) -C linux $(LINUX_OPTS) board.dtb
+
+kernel:
+	$(MAKE) -C linux $(LINUX_OPTS) -j$(shell nproc) zImage
+
+init:
+	mkdir -p build
+	$(CROSS_COMPILE)gcc -Os -nostdlib -static -fno-builtin \
+		-Wl,--gc-sections $(CONFIG_DIR)/init.c -o build/init
+
+root:
+	rm -rf build/rootfs.dir
+	mkdir -p build/rootfs.dir/sbin
+	cp build/init build/rootfs.dir/sbin/init
+	dd if=/dev/zero of=build/rootfs bs=1M count=10
+	mke2fs -t ext4 -F -d build/rootfs.dir build/rootfs
+
+sd:
+	python3 bootloader/scripts/sdimage.py build/sdcard.img \
+		bootloader/build/main.stm32
+		linux/arch/arm/boot/dts/board.dtb \
+		linux/arch/arm/boot/zImage \
+		--partition build/rootfs
+
+clean:
+	$(MAKE) -C linux $(LINUX_OPTS) clean
+	$(MAKE) -C bootloader clean
+	rm -rf build</code></pre></div>
+<h3 id="discussion">Discussion</h3>
+<p>The Makefile that reproduces the steps above is less than 50 lines long and
+creates a minimal, bootable SD card image in a very straightforward way: build
+the kernel, the DTB, and a userspace program (init), and package everything into
+a single SD card image. The next simplest thing to accomplish the same result is
+the “lightweight” <a href="https://buildroot.org/">Buildroot</a>, which needs nearly 100k
+lines of make. What could possibly be happening in all that code!?</p>
+<p>The sentiment
+has been captured by the Reddit user <code>triffid_hunter</code> in a recent
+<a href="https://www.reddit.com/r/embedded/comments/1pqg3ty/embedded_systems_are_really_hard_to_learn">comment</a>:</p>
+<blockquote>
+<p>I find that the hardest part about embedded is the horrendously obtuse
+manufacturer-provided toolchains.</p>
+<p>If I can find a way to ditch them and switch to gcc+Makefile+basic C
+libraries, that’s the first thing I’ll do.</p>
+</blockquote>
+<p>Buildroot is a relatively clean solution to the problem of supporting a huge
+number of packages on a wide variety of boards, but most of that complexity is
+not needed for a single-board project. (Yocto is an even more complex system,
+which we won’t cover here—its simplicity for the user comes at the cost of
+massive implementation complexity.) From my point of view, all these hundreds of
+thousands of lines of code are simply “accidental complexity” as articulated by
+ESR:</p>
+<blockquote>
+<p>Accidental complexity happens because someone didn’t find the simplest way to
+ implement a specified set of features. Accidental complexity can be
+ eliminated by good design, or good redesign.<sup class="footnote-ref"><a href="#fn-ab35ed71-acc" id="fnref-ab35ed71-acc">[1]</a></sup></p>
+</blockquote>
+<p>The “root cause” of the highly complex toolchains has been identified by
+Anna-Lena Marx (inovex GmbH) in a talk<sup class="footnote-ref"><a href="#fn-ab35ed71-talk" id="fnref-ab35ed71-talk">[2]</a></sup> last year: the goals of SoC
+vendors and product manufacturers are not aligned. The SoC vendor wants to show
+off all the features of their devices, and they want a Board Support Package
+(BSP) that supports several, even all, of the devices in their portfolio. They
+want a “turnkey solution” that allows an engineer to go from nothing to a
+full-featured demo in ten minutes.</p>
+<p>In contrast, a product manufacturer who wants to use embedded Linux in their
+application-specific product wants a minimal software stack, as close as
+possible to the upstream stable versions in order to be stable, secure, &amp;
+maintainable. It’s the difference between merely using the system, and owning
+it.</p>
+<p>From the product side, I can concur that the SoC BSPs can be a nightmare to work
+with! They are simple to get started with, being a packaged “turnkey solution”,
+but require a massive amount of work to unpeel all the abstraction layers that
+the SoC vendor found necessary to support their entire ecosystem of devices. ST,
+being perhaps the most “hacker friendly” vendor, likely has the cleanest, most
+“upstreamed” offering, and still there’s loads of cruft that must be removed
+before getting to something workable.</p>
+<p>I would like a world where SoC vendors ship their product with simple,
+straightforward <em>documentation</em>, rather than monolithic code examples. Give me
+the smallest possible building blocks and tell me how to connect them together
+to accomplish something, rather than give the huge all-in-one example code that
+can take many tens of hours to pull apart and reassemble. In other words, I
+expect a Linux distribution to approach to the ideal of <a href="https://embd.cc/unix-contributions">Unix
+philosophy</a> much more closely, all the more
+so in an embedded, resource-constrained, highly reliable application.</p>
+<div class="series-box">
+<h3 id="series-list">All Articles in This Series</h3>
+<ul>
+<li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
+<li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
+<li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
+<li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
+<li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
+<li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
+<li><em>7. This article</em></li>
+<li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
+</ul>
+</div>
+<hr/><section class="footnotes"><ol><li id="fn-ab35ed71-acc" value="1">Eric S. Raymond: The Art of Unix Programming. Addison-Wesley, 2004. <a href="#fnref-ab35ed71-acc">↩</a></li><li id="fn-ab35ed71-talk" value="2">Anna-Lena Marx (inovex GmbH): <em>Your Vendor’s BSP Is Probably Not Built for Product Longevity</em>. Yocto Project Summit, December 2025. Quoted on 1/5/2026 from <a href="https://marx.engineer/content/talks/2025_Yocto-Summit_Your-Vendors-BSP-Is-Probably-Not-Built-For-Product-Longevity.pdf">this URL</a> <a href="#fnref-ab35ed71-talk">↩</a></li></ol></section>
+</div>
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Incoherent Thoughts</div>
+<h2><a href="let-reality-update-you">Let Reality Update You</a></h2>
+<div class="article-meta">Published 5 Jan 2026. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/arc.jpg"/></p>
+<p>Reality always makes sense because it is reality. When our ideas of it do not
+correspond to it, it’s the ideas that are suspect.</p>
+<p>Insofar as our understanding involves a mapping of the fluid reality to fixed
+ideas, we will always end up confused when refusing to let go of fixed ideas
+that have lost their relevance.</p>
+<p>Staying flexible in thought is a form of mental hygiene.</p>
+</div>
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Agents</div>
+<h2><a href="agent-to-read-datasheets">Agent To Read Electronic Datasheets</a></h2>
+<div class="article-meta">Published 2 Jan 2026. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/pa.jpg"/></p>
+<p>When an electronic design company accumulates large amounts of inventory, it can
+become overwhelming for engineers to go through the thousands of parts to find
+the one needed in a new design. Instead, they are likely to select a new part
+from one of the distributors that have a better search engine. This leads to an
+ever growing inventory: parts kept in stock and never used, a constant departure
+from the ideal of having a “lean” operation.</p>
+<p>Nowadays, with everyone creating their own “agent” for just about anything, I
+wondered how hard it would be to create my own search engine. This article
+represents a day of work, proving that structured data extraction from
+semi-unstructured sources like datasheets has become almost a trivial problem.</p>
+<p>I took the <a href="https://deepmind.google/models/gemma/gemma-3/">Gemma 3</a> model (12B
+parameters, 3-bit quantization) from Google, ran it in the
+<a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a> inference framework, and fed
+it the datasheet for an opamp. To extract the text from the PDFs, I used the
+<a href="https://www.docling.ai/">Docling</a> Python library from IBM research. The output,
+generated in about four minutes on a GPU with 8 GB of memory, will be in this
+format for now:</p>
+<div class="codehilite"><pre><code class="language-json">"PSRR (Input offset voltage versus power supply)": {
+   "min": 65,
+   "typ": 100,
+   "max": null,
+   "unit": "dB"
+ },</code></pre></div>
+<p>Let’s get started!</p>
+<h3 id="running-the-model">Running the model</h3>
+<p>Obtain and build llama.cpp:</p>
+<div class="codehilite"><pre><code class="language-sh">git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+cmake -B build -S . -DGGML_CUDA=ON
+cmake --build build -j</code></pre></div>
+<p>Obtain the <a href="https://huggingface.co/bartowski/google_gemma-3-12b-it-GGUF">Gemma
+3</a> model.</p>
+<p>Start the LLM server:</p>
+<div class="codehilite"><pre><code class="language-sh">llama-server -m ~/temp/gemma-3-12b-it-UD-IQ3_XXS.gguf \
+   --port 8080 -c 4096 -ngl 999</code></pre></div>
+<p>Open <code>localhost:8080</code> and feel free to chat with the model. How simple things
+have become!</p>
+<h3 id="get-datasheet-text">Get datasheet text</h3>
+<p>Next, we need to convert the datasheets from the PDF format into plain text that
+we can feed to the model. Assuming <code>docling</code> is installed (install it with Pip
+if not), we can define the following function to convert the documents:</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">import</span> sys
+<span class="k">from</span> pathlib <span class="k">import</span> Path
+<span class="k">from</span> docling.document_converter <span class="k">import</span> DocumentConverter
+
+<span class="k">def</span> <span class="nf">convert_pdf_to_markdown</span>(pdf_file):
+    pdf_path <span class="o">=</span> <span class="nf">Path</span>(pdf_file)
+    converter <span class="o">=</span> <span class="nf">DocumentConverter</span>()
+    result <span class="o">=</span> converter.<span class="nf">convert</span>(pdf_path)
+    content <span class="o">=</span> result.document.<span class="nf">export_to_markdown</span>()
+    <span class="nf">print</span>(content)</code></pre></div>
+<p>This yields the output in a Markdown format.</p>
+<h3 id="define-agent-with-a-simple-prompt">Define agent with a simple prompt</h3>
+<p>Here’s the best part: the “source code” for the agent is in plain English. Here
+it is in its entirety:</p>
+<div class="codehilite"><pre><code class="language-text">You are a datasheet specification extraction agent. Your
+only job is to extract specifications.
+
+OUTPUT FORMAT:
+{
+  "Full parameter name (short name)": {
+    "min": number or null,
+    "typ": number or null,
+    "max": number or null,
+    "unit": "string"
+  }
+}
+
+EXTRACTION RULES:
+- Always include both the full and short spec name in the key.
+- Full name goes first, and short name in brackets: "Operating Temperature (T)"
+- If a typ value is a range like "-11.5 to 14.5", split it: min=-11.5, max=14.5
+- Convert scientific notation: "10 12" → 1e12
+- Convert ± values into min/max fields
+- Omit parameters with no numeric values (all null)
+- Omit footnotes like (1) and (2)
+- If no specifications exist, return: {}
+
+CRITICAL OUTPUT RULES:
+- Return ONLY valid JSON
+- NO explanations
+- NO descriptions
+- NO phrases like "this section", "no specifications", "I will skip"
+- NO text before or after the JSON
+- NO markdown code blocks
+- Just the raw JSON object</code></pre></div>
+<p>The insistence on pure JSON is a hack to make it stop being too chatty. There’s
+probably a more sophisticated way to do it, but for a first attempt it’ll do
+just fine.</p>
+<h3 id="chunking">”Chunking”</h3>
+<p>The datasheet conversion from PDF includes lots of unnecessary text like
+document version information, copyright, ordering information. For now, we’d
+like to get just the electronic specifications. As a first approximation, assume
+that the information is always present in tables only.</p>
+<p>ChatGPT assures me that the following regex magic will extract tables from a
+Markdown document:</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">import</span> re
+
+<span class="k">def</span> <span class="nf">get_chunks</span>(filepath):
+    <span class="s">"""Return a list of Markdown tables as strings from a file."""</span>
+    <span class="k">with</span> <span class="nf">open</span>(filepath, <span class="s">"r"</span>, encoding<span class="o">=</span><span class="s">"utf-8"</span>) <span class="k">as</span> f:
+        content <span class="o">=</span> f.<span class="nf">read</span>()
+
+    table_pattern <span class="o">=</span> re.<span class="nf">compile</span>(
+        r<span class="s">"(?:^\|.*\|\s*\n)"</span>           <span class="c1"># Header row</span>
+        r<span class="s">"(?:^\|[-:\s|]+\|\s*\n)"</span>     <span class="c1"># Separator row</span>
+        r<span class="s">"(?:^\|.*\|\s*\n?)+"</span>,        <span class="c1"># Body rows</span>
+        re.MULTILINE
+    )
+
+    tables <span class="o">=</span> table_pattern.<span class="nf">findall</span>(content)
+    <span class="k">return</span> [t.<span class="nf">strip</span>() <span class="k">for</span> t <span class="k">in</span> tables]</code></pre></div>
+<h3 id="putting-it-together">Putting it together</h3>
+<p>We have all the pieces now: text data in small pieces, a model, the prompt to
+define an agent. Now just iterate over all the chunks as defined above, send
+them to the model together with the prompt, and observe what comes out. To
+automate the process from PDF to the final JSON, I used a Makefile defining the
+recipes for the three steps of the transformation. All of this is too
+straightforward to be worth including here.</p>
+<p>For anyone interested, find the entire code presented above
+<a href="https://github.com/js216/sfap">here</a>.</p>
+</div>
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Self-Change</div>
+<h2><a href="emptiness-constraint-actually-doing-things">On Emptiness, Constraint, and Doing Things</a></h2>
+<div class="article-meta">Published 23 Dec 2025. By Jakob Kastelic and GPT-5.</div>
+<p><img alt="" src="../images/roy.jpg"/></p>
+<p>There’s a <a href="https://embd.cc/limitation-is-freedom">recurring</a> paradox in life:
+when forced into constraint—normally in the office—it’s easy to get a
+surprising amount of work done. When free—at home, with a desk full of
+possibilities—I do almost nothing. Probably most people have felt this:
+paralyzed by options, not liberated by freedom.</p>
+<p>In the office, there’s a clear system. Hours, tasks, deadlines. None of these
+promise joy or meaning. You just show up, pick the thing that needs to be done,
+and do it. Often it’s boring, sometimes hard, sometimes fun—but mostly it’s
+ordinary execution. And it gets done, the meaning/joy shows up later, if it
+does. In other words, meaning is retrospective, not prospective.</p>
+<h3 id="the-problem">The Problem</h3>
+<p>At home, when anyone could be the architect of their own life—at least in
+theory—everything feels like a potential project rather than a commitment.
+There’s a long list of things to do someday. You start something, lose
+interest, start something else, lose interest there too. The pile grows. The
+mind feels like a full cup, overflowing, useless as a vessel since it has no
+volume available. I had a lot of energy running toward the possibility of
+things, and none toward actually doing any of them.</p>
+<p>There are all these things to do, but when the time came, I would just scroll
+through random websites and stuff.  Not for lack of desire but because every
+possibility was simultaneously “urgent” and none had any context, boundary, or
+commitment. I was waiting for the meaning to arrive—expecting to feel it
+first, and act second. A kind of dopamine-before-action loop that never
+materializes, because dopamine isn’t a starting signal; it’s a reward signal
+after progress has been made.</p>
+<p>I recently realized this was not a motivational problem but a structural one.
+The <code>ideas.txt</code> file, where the latest projects and ideas get stored, was
+effectively a home version of what at work would be called <code>unnecessary.txt</code>: a
+repository of work items that don’t currently need attention (see <a href="https://embd.cc/yes-no-productivity">this
+article</a> for more on this approach). But
+because at home all of those things are regarded as “alive”, they were
+cluttering the “mental desk”, competing for attention and claiming emotional
+validity. This is exactly how productivity systems fail: they mistake interest
+with execution rights. You think something is alive because you wrote it down.
+That creates mental load.</p>
+<p>So I enforced a constraint.</p>
+<h3 id="a-solution-one-hobby-at-a-time">A Solution: One Hobby at a Time</h3>
+<p>I adapted this: Only one productive leisure project gets execution rights at a
+time. The rest become cold archive—”not right now, maybe later.” They live in
+<code>ideas.txt</code>, not in the working memory.</p>
+<p>This is not suppression of curiosity. It’s admission control, a bit like the WIP
+limits (the kanban-style work in progress caps, see below) that enforce unity of
+purpose and prevent jamming the “system” with too many requirements.</p>
+<p>The curious thing: once all the other activities besides the “One Hobby” became
+off-limits to tracking and obligation, they lost their psychological “landmine”
+quality. They became playful again, instead of competing for real estate in the
+head. Then they were constantly evaluated, compared, prioritized—a swarm of
+partial commitments without form or finish.</p>
+<h3 id="productive-vs-restorative-leisure">Productive vs Restorative Leisure</h3>
+<p>That distinction matters.</p>
+<p>Productive Leisure is an activity that:</p>
+<ul>
+<li>
+<p>can be tracked for progress,</p>
+</li>
+<li>
+<p>has future implications or expectations,</p>
+</li>
+<li>
+<p>competes for mental slots,</p>
+</li>
+<li>
+<p>produces artifacts, skill growth, or structured outcomes.</p>
+</li>
+</ul>
+<p>These are the things that can fill up the mind if left unconstrained.</p>
+<p>In contrast, restorative Leisure is play without future stakes:</p>
+<ul>
+<li>
+<p>no tracking,</p>
+</li>
+<li>
+<p>no backlog,</p>
+</li>
+<li>
+<p>no scorecards,</p>
+</li>
+<li>
+<p>activities done for their own sake.</p>
+</li>
+</ul>
+<p>Once Productive Leisure items were formally demoted to “cold archive unless
+active,” many of them felt like Restorative Leisure: something you might do
+because it’s pleasant, not something you have to do to avoid guilt or loss.</p>
+<p>This distinction mirrors the essence of constraint in productivity: by making
+clear what counts and what doesn’t, you reduce the cognitive load of
+decision-making and let intentional action happen.</p>
+<h3 id="kanban">Kanban</h3>
+<p>Kanban, in its original form at Toyota, was a simple, physical system for
+managing production flow on the factory floor using cards that each represented
+permission to produce or move a specific part. Rather than relying on schedules,
+forecasts, or manager oversight, kanban used these tangible cards to regulate
+when work could start and when it could move forward. The system naturally
+enforced limits on how much unfinished work could exist at any moment.</p>
+<p>The key irony is that the system makes work more productive by <em>preventing</em>
+work, that is, an excess of work. Each step in the production line is governed
+by a small number of physical kanban cards, and a task cannot move forward
+unless a card is available. It recognizes that no worker or process has infinite
+capacity and it helps no one to pretend otherwise. Bottlenecks become visible
+immediately, there is no illusion of productivity or busy-work, queues cannot
+silently grow, and problems are forced to surface where they actually occur.</p>
+<p>Fewer parallel tasks means less context switching, faster feedback, and higher
+quality, since defects were discovered close to their source. Crucially, kanban
+does not rely on motivation, discipline, or managerial pressure; it embedded
+restraint directly into the environment. The tokens made overcommitment
+impossible, and in doing so created the emptiness in which steady, reliable work
+could actually happen.</p>
+<h3 id="taoist-emptiness-and-functional-capacity">Taoist Emptiness and Functional Capacity</h3>
+<p>I was struck by how this aligned with a very old idea: the usefulness of
+emptiness:</p>
+<blockquote>
+<p>I do my utmost to attain emptiness; I hold firmly to stillness. The myriad
+creatures all rise together And I watch their return. [Tao Te Ching, 16]</p>
+<p>The way never acts yet nothing is left undone. [37]</p>
+<p>The Master does nothing, yet he leaves nothing undone. The ordinary man is
+always doing things, yet many more are left to be done. [38]</p>
+</blockquote>
+<p>The Taoists observed that a cup is useful because it is empty; a room is useful
+because it has space. When something gets completely full, it loses its
+usefulness. The same applied to the “mental desk”: when it was totally full of
+half-alive things, it became rigid, dead, and useless.</p>
+<p>In this emptiness—not the absence of goals, but the absence of competing
+commitments—things can actually happen. You don’t wait for meaning; you let
+meaning emerge from action.</p>
+<p>”The Way does nothing, yet leaves nothing undone.” Action arises unforced when
+the system isn’t cluttered with demands, comparisons, and anticipation.</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>The system distilled down to a simple invariant:</p>
+<ul>
+<li>
+<p>Only one productive leisure activity is alive in the present.</p>
+</li>
+<li>
+<p>Everything else is archived.</p>
+</li>
+<li>
+<p>Restorative activities are permissionless.</p>
+</li>
+<li>
+<p>Progress, not aspiration, drives meaning.</p>
+</li>
+</ul>
+<p>In other words, <em>interest does not grant execution rights</em>. Execution rights
+must be scarce, just like kanban tokens. When they are, things get done; when
+they’re abundant, nothing happens.</p>
+<p>In this system, willpower or motivation became almost irrelevant. When the mind
+is freed from the need to do “everything”, the intention can take over. This
+kind of intentional action, in my experience, only works when there’s very few
+intentions to compete with each other.</p>
+<p>Emptiness isn’t the absence of desires. It’s the absence of conflicting claims
+on your attention. Start there, and you can actually practice something.</p>
+</div>
+
+    <div class="nav-links" style="display:flex; justify-content:space-between;">
+        <div><a class="older" href="page3.html">← Older articles</a></div>
+        <div><a class="newer" href="index.html">Newer articles →</a></div>
+    </div>
+    
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+</body>
+</html>

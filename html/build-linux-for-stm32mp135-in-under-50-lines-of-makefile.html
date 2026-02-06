@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="6 Jan 2026">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content=">">
+<link rel="stylesheet" href="style.css">
+<title>Build Linux for STM32MP135 in under 50 Lines of Makefile</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Linux</div>
+<h2>Build Linux for STM32MP135 in under 50 Lines of Makefile</h2>
+<div class="article-meta">Published 6 Jan 2026. By Jakob Kastelic.</div>
+<p><img src="../images/rain.jpg" alt=""></p>
+<p><em>This is Part 7 in the series: Linux on STM32MP135. <a href="#series-list">See other
+articles.</a></em></p>
+<p>In the <a href="https://embd.cc/linux-bringup-on-custom-stm32mp135-board">previous
+article</a> we took a
+<a href="https://github.com/js216/stm32mp135_test_board">custom STM32MP135 board</a> from a
+simple LED blink to passing the kernel early boot stage, printing the &ldquo;Booting
+Linux&rdquo; message. Now, it&rsquo;s time to finish the kernel initialization all the way
+up to running our first process: the <code>init</code> process.</p>
+<p>We&rsquo;ll do it in two steps. First, we make it run on the official <a href="https://www.st.com/en/evaluation-tools/stm32mp135f-dk.html">evaluation
+board</a> for the SoC.
+In a future article, we will consider what needs to be changed in order to make
+this work on a <a href="https://github.com/js216/stm32mp135_test_board">custom board</a>.</p>
+<h3 id="boot-linux-on-eval-board">Boot Linux on eval board</h3>
+<p>First, we need to obtain and build the bootloader. Note that we need to enable
+the STPMIC1, since it is used on the eval board:</p>
+<div class="codehilite"><pre><code class="language-sh">git clone git@github.com:js216/stm32mp135-bootloader.git
+cd stm32mp135-bootloader
+make CFLAGS_EXTRA=-DUSE_STPMIC1x=1
+cd ..</code></pre></div>
+
+
+<p>Next, we obtain the Linux kernel from the ST repository (contains a few
+non-standard ST-provided drivers):</p>
+<div class="codehilite"><pre><code class="language-sh">git clone https://github.com/STMicroelectronics/linux.git
+git checkout v6.1-stm32mp-r1.1</code></pre></div>
+
+
+<p>Let&rsquo;s apply some patches (mainly to allow non-secure boot without
+<a href="https://embd.cc/stm32mp135-without-u-boot">U-Boot</a>,
+<a href="https://embd.cc/stm32mp135-without-optee">OPTEE</a>, or
+<a href="https://embd.cc/linux-bringup-on-custom-stm32mp135-board">TF-A</a>), and copy over
+the Device Tree Source (DTS), and the kernel configuration:</p>
+<div class="codehilite"><pre><code class="language-sh">git clone git@github.com:js216/stm32mp135_test_board.git
+
+cd linux
+git linux apply ../configs/evb/patches/linux/*.patch
+cd ..
+
+cp config/evb/linux.config linux/.config
+cp config/evb/board.dts linux/arch/arm/boot/dts/</code></pre></div>
+
+
+<p>Now we can build the Device Tree Blob (DTB) and the kernel itself:</p>
+<div class="codehilite"><pre><code class="language-sh">cd linux
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- board.dtb
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage
+cd ..</code></pre></div>
+
+
+<p>Next, we need an init script. (Of course, you can also run the kernel without
+it, but be prepared for a kernel panic at the end of the boot, telling you the
+init is missing.) An init script can be essentially any program, even a &ldquo;Hello,
+world!&rdquo;, but if the init program quits, the kernel enters a panic again.</p>
+<p>I asked AI to write a minimal init, without any C standard library dependencies
+(find the result
+<a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">here</a>).
+Let&rsquo;s compile it, making sure to tell the compiler to not link any extra code
+with it:</p>
+<div class="codehilite"><pre><code class="language-sh">arm-linux-gnueabihf-gcc -Os -nostdlib -static -fno-builtin \
+   -Wl,--gc-sections config/init.c -o build/init</code></pre></div>
+
+
+<p>Now that we have an init program, we need a root filesystem to put it on:</p>
+<div class="codehilite"><pre><code class="language-sh">mkdir -p build/rootfs.dir/sbin
+cp build/init build/rootfs.dir/sbin/init
+dd if=/dev/zero of=build/rootfs bs=1M count=10
+mke2fs -t ext4 -F -d build/rootfs.dir build/rootfs</code></pre></div>
+
+
+<p>Finally, we collect all the pieces together with a simple Python script included
+in the bootloader distribution:</p>
+<div class="codehilite"><pre><code class="language-sh">python3 bootloader/scripts/sdimage.py build/sdcard.img \
+   bootloader/build/main.stm32 \
+   linux/arch/arm/boot/dts/board.dtb \
+   linux/arch/arm/boot/zImage \
+   --partition build/rootfs</code></pre></div>
+
+
+<p>Write this image to the SD card and start the system, and prepare to be greeted
+by the very useless shell implemented in the minimal
+<a href="https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c">init program</a>):</p>
+<div class="codehilite"><pre><code class="language-sh">[    1.940577] Run /sbin/init as init process
+Hello, world!
+$ ls
+ls: command not found
+$ Hey!
+Hey!: command not found</code></pre></div>
+
+
+<p>That&rsquo;s it!</p>
+<h3 id="the-makefile">The Makefile</h3>
+<p>Here&rsquo;s the full 49 lines:</p>
+<div class="codehilite"><pre><code class="language-makefile">CONFIG_DIR := configs/custom
+CROSS_COMPILE = arm-linux-gnueabihf-
+LINUX_OPTS = ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE)
+
+all: boot config dtb kernel init root sd
+
+boot:
+	$(MAKE) -C bootloader -j$(shell nproc) CFLAGS_EXTRA=-DUSE_STPMIC1x=1
+
+patch:
+	for p in $(CONFIG_DIR)/patches/linux/*.patch; do \
+		if git -C linux apply --check ../$$p; then \
+			git -C linux apply ../$$p; \
+		fi \
+	done
+
+config:
+	cp $(CONFIG_DIR)/linux.config linux/.config
+
+dtb:
+	cp $(CONFIG_DIR)/board.dts linux/arch/arm/boot/dts/
+	$(MAKE) -C linux $(LINUX_OPTS) board.dtb
+
+kernel:
+	$(MAKE) -C linux $(LINUX_OPTS) -j$(shell nproc) zImage
+
+init:
+	mkdir -p build
+	$(CROSS_COMPILE)gcc -Os -nostdlib -static -fno-builtin \
+		-Wl,--gc-sections $(CONFIG_DIR)/init.c -o build/init
+
+root:
+	rm -rf build/rootfs.dir
+	mkdir -p build/rootfs.dir/sbin
+	cp build/init build/rootfs.dir/sbin/init
+	dd if=/dev/zero of=build/rootfs bs=1M count=10
+	mke2fs -t ext4 -F -d build/rootfs.dir build/rootfs
+
+sd:
+	python3 bootloader/scripts/sdimage.py build/sdcard.img \
+		bootloader/build/main.stm32
+		linux/arch/arm/boot/dts/board.dtb \
+		linux/arch/arm/boot/zImage \
+		--partition build/rootfs
+
+clean:
+	$(MAKE) -C linux $(LINUX_OPTS) clean
+	$(MAKE) -C bootloader clean
+	rm -rf build</code></pre></div>
+
+
+<h3 id="discussion">Discussion</h3>
+<p>The Makefile that reproduces the steps above is less than 50 lines long and
+creates a minimal, bootable SD card image in a very straightforward way: build
+the kernel, the DTB, and a userspace program (init), and package everything into
+a single SD card image. The next simplest thing to accomplish the same result is
+the &ldquo;lightweight&rdquo; <a href="https://buildroot.org/">Buildroot</a>, which needs nearly 100k
+lines of make. What could possibly be happening in all that code!?</p>
+<p>The sentiment
+has been captured by the Reddit user <code>triffid_hunter</code> in a recent
+<a href="https://www.reddit.com/r/embedded/comments/1pqg3ty/embedded_systems_are_really_hard_to_learn">comment</a>:</p>
+<blockquote>
+<p>I find that the hardest part about embedded is the horrendously obtuse
+manufacturer-provided toolchains.</p>
+<p>If I can find a way to ditch them and switch to gcc+Makefile+basic C
+libraries, that&rsquo;s the first thing I&rsquo;ll do.</p>
+</blockquote>
+<p>Buildroot is a relatively clean solution to the problem of supporting a huge
+number of packages on a wide variety of boards, but most of that complexity is
+not needed for a single-board project. (Yocto is an even more complex system,
+which we won&rsquo;t cover here&mdash;its simplicity for the user comes at the cost of
+massive implementation complexity.) From my point of view, all these hundreds of
+thousands of lines of code are simply &ldquo;accidental complexity&rdquo; as articulated by
+ESR:</p>
+<blockquote>
+<p>Accidental complexity happens because someone didn&rsquo;t find the simplest way to
+ implement a specified set of features. Accidental complexity can be
+ eliminated by good design, or good redesign.<sup class="footnote-ref"><a href="#fn-ab35ed71-acc" id="fnref-ab35ed71-acc">[1]</a></sup></p>
+</blockquote>
+<p>The &ldquo;root cause&rdquo; of the highly complex toolchains has been identified by
+Anna-Lena Marx (inovex GmbH) in a talk<sup class="footnote-ref"><a href="#fn-ab35ed71-talk" id="fnref-ab35ed71-talk">[2]</a></sup> last year: the goals of SoC
+vendors and product manufacturers are not aligned. The SoC vendor wants to show
+off all the features of their devices, and they want a Board Support Package
+(BSP) that supports several, even all, of the devices in their portfolio. They
+want a &ldquo;turnkey solution&rdquo; that allows an engineer to go from nothing to a
+full-featured demo in ten minutes.</p>
+<p>In contrast, a product manufacturer who wants to use embedded Linux in their
+application-specific product wants a minimal software stack, as close as
+possible to the upstream stable versions in order to be stable, secure, &
+maintainable. It&rsquo;s the difference between merely using the system, and owning
+it.</p>
+<p>From the product side, I can concur that the SoC BSPs can be a nightmare to work
+with! They are simple to get started with, being a packaged &ldquo;turnkey solution&rdquo;,
+but require a massive amount of work to unpeel all the abstraction layers that
+the SoC vendor found necessary to support their entire ecosystem of devices. ST,
+being perhaps the most &ldquo;hacker friendly&rdquo; vendor, likely has the cleanest, most
+&ldquo;upstreamed&rdquo; offering, and still there&rsquo;s loads of cruft that must be removed
+before getting to something workable.</p>
+<p>I would like a world where SoC vendors ship their product with simple,
+straightforward <em>documentation</em>, rather than monolithic code examples. Give me
+the smallest possible building blocks and tell me how to connect them together
+to accomplish something, rather than give the huge all-in-one example code that
+can take many tens of hours to pull apart and reassemble. In other words, I
+expect a Linux distribution to approach to the ideal of <a href="https://embd.cc/unix-contributions">Unix
+philosophy</a> much more closely, all the more
+so in an embedded, resource-constrained, highly reliable application.</p>
+<div class="series-box">
+<h3 id="series-list">All Articles in This Series</h3>
+<ul>
+  <li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
+  <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
+  <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
+  <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
+  <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
+  <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
+  <li><em>7. This article</em></li>
+  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
+</ul>
+</div>
+<hr><section class="footnotes"><ol><li id="fn-ab35ed71-acc" value="1">Eric S. Raymond: The Art of Unix Programming. Addison-Wesley, 2004. <a href="#fnref-ab35ed71-acc">↩</a></li><li id="fn-ab35ed71-talk" value="2">Anna-Lena Marx (inovex GmbH): <em>Your Vendor&rsquo;s BSP Is Probably Not Built for Product Longevity</em>. Yocto Project Summit, December 2025. Quoted on 1/5/2026 from <a href="https://marx.engineer/content/talks/2025_Yocto-Summit_Your-Vendors-BSP-Is-Probably-Not-Built-For-Product-Longevity.pdf">this URL</a>  <a href="#fnref-ab35ed71-talk">↩</a></li></ol></section>
+</div>
+</body>
+</html>

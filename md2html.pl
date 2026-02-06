@@ -166,26 +166,37 @@ sub render_lists {
             my $tag = $marker =~ /^\d/ ? 'ol' : 'ul';
             my (@items, @current_item);
             push @current_item, $first; $i++;
+            my $blank_after_list = 0;
             while ($i < @lines) {
                 if ($lines[$i] =~ /^\Q$indent_str\E(\d+\.|[*+-])(\s+)(.*)/) {
                     push @items, join("\n", @current_item);
                     $marker = $1; $spacing = $2; @current_item = ($3); $i++;
+                    $blank_after_list = 0;
                 } elsif ($lines[$i] =~ /^\s*$/) {
                     # Only consume blank line if next non-blank line is indented
                     my $next = $i + 1;
                     while ($next < @lines && $lines[$next] =~ /^\s*$/) { $next++; }
                     if ($next < @lines && $lines[$next] =~ /^(\s+)/ && length($1) > $indent_len) {
                         push @current_item, map { "" } ($i .. $next - 1); $i = $next;
-                    } else { last; }
+                        $blank_after_list = 0;
+                    } else { 
+                        # Count blank lines after list ends
+                        $blank_after_list = $next - $i;
+                        last; 
+                    }
                 } elsif ($lines[$i] =~ /^(\s+)/ && length($1) > $indent_len) {
                     my $l = $lines[$i];
                     my $strip = $indent_len + length($marker) + length($spacing);
                     $l =~ s/^\s{0,$strip}//; push @current_item, $l; $i++;
+                    $blank_after_list = 0;
                 } else { last; }
             }
             push @items, join("\n", @current_item);
             my @li = map { "<li>\n" . wrap_loose_paragraphs(render_blocks($_)) . "\n</li>" } @items;
-            push @output, "<$tag>\n" . join("\n", @li) . "\n</$tag>\n\n";
+            my $list_html = "<$tag>\n" . join("\n", @li) . "\n</$tag>\n\n";
+            # Add back blank lines that were after the list
+            $list_html .= "\n" x $blank_after_list if $blank_after_list > 0;
+            push @output, $list_html;
         } else { push @output, $lines[$i]; $i++; }
     }
     return join "\n", @output;
@@ -196,11 +207,69 @@ sub render_lists {
 sub render_inline {
     my ($text) = @_;
     $text =~ s/`([^`]+)`/push(@inline_data, '<code>' . html_escape($1) . '<\/code>'); "\x01P" . $#inline_data . "\x01"/eg;
-    $text =~ s/!\[([^\]]*)\]\(([^)]+)\)/push(@inline_data, qq{<img src="$2" alt="$1">}); "\x01P" . $#inline_data . "\x01"/eg;
-    $text =~ s/\[([^\]]+)\]\(([^)]+)\)/
-        my $inner = render_inline($1);
-        push(@inline_data, qq{<a href="$2">$inner<\/a>}); "\x01P" . $#inline_data . "\x01"
-    /eg;
+    
+    # Images and links: parse with balanced brackets
+    my $result = '';
+    my $pos = 0;
+    while ($pos < length($text)) {
+        # Look for image marker
+        if (substr($text, $pos, 2) eq '![') {
+            my $bracket_pos = $pos + 2;
+            my $depth = 1;
+            my $alt_text = '';
+            # Find matching ]
+            while ($bracket_pos < length($text) && $depth > 0) {
+                my $c = substr($text, $bracket_pos, 1);
+                if ($c eq '[') { $depth++; }
+                elsif ($c eq ']') { $depth--; }
+                $alt_text .= $c unless ($depth == 0);
+                $bracket_pos++;
+            }
+            # Check for (url)
+            if ($depth == 0 && $bracket_pos < length($text) && substr($text, $bracket_pos, 1) eq '(') {
+                my $url_start = $bracket_pos + 1;
+                my $url_end = index($text, ')', $url_start);
+                if ($url_end != -1) {
+                    my $url = substr($text, $url_start, $url_end - $url_start);
+                    push(@inline_data, qq{<img src="$url" alt="$alt_text">});
+                    $result .= "\x01P" . $#inline_data . "\x01";
+                    $pos = $url_end + 1;
+                    next;
+                }
+            }
+        }
+        # Look for link marker
+        elsif (substr($text, $pos, 1) eq '[') {
+            my $bracket_pos = $pos + 1;
+            my $depth = 1;
+            my $link_text = '';
+            # Find matching ]
+            while ($bracket_pos < length($text) && $depth > 0) {
+                my $c = substr($text, $bracket_pos, 1);
+                if ($c eq '[') { $depth++; }
+                elsif ($c eq ']') { $depth--; }
+                $link_text .= $c unless ($depth == 0);
+                $bracket_pos++;
+            }
+            # Check for (url)
+            if ($depth == 0 && $bracket_pos < length($text) && substr($text, $bracket_pos, 1) eq '(') {
+                my $url_start = $bracket_pos + 1;
+                my $url_end = index($text, ')', $url_start);
+                if ($url_end != -1) {
+                    my $url = substr($text, $url_start, $url_end - $url_start);
+                    my $inner = render_inline($link_text);
+                    push(@inline_data, qq{<a href="$url">$inner</a>});
+                    $result .= "\x01P" . $#inline_data . "\x01";
+                    $pos = $url_end + 1;
+                    next;
+                }
+            }
+        }
+        $result .= substr($text, $pos, 1);
+        $pos++;
+    }
+    $text = $result;
+    
     $text =~ s/---/&mdash;/g; $text =~ s/--/&ndash;/g;
     $text =~ s/\*\*\*([\s\S]*?)\*\*\*/<strong><em>$1<\/em><\/strong>/g;
     $text =~ s/___([\s\S]*?)___/<strong><em>$1<\/em><\/strong>/g;
@@ -302,9 +371,13 @@ sub simple_markdown_parser {
 }
 
 sub main {
-    my ($md_path, $temp_path, $out_path) = @ARGV;
+    my ($md_path, $temp_path) = @ARGV;
+    die "Usage: $0 <markdown_file> <template_file>\n" unless $md_path && $temp_path;
     open my $mfh, '<:encoding(UTF-8)', $md_path or die $!;
     my $raw = do { local $/; <$mfh> }; close $mfh;
+    # Normalize line endings
+    $raw =~ s/\r\n/\n/g;
+    $raw =~ s/\r/\n/g;
     my %meta; my $body = $raw;
     if ($raw =~ /^---\s*\n(.*?)\n---\s*\n(.*)/s) {
         my ($m, $c) = ($1, $2); $body = $c;
@@ -320,8 +393,8 @@ sub main {
     $tpl =~ s/\$body\$/$html/g;
     $tpl =~ s/\$published\$/'<div class="article-meta">Published '.($meta{date}||'').'. By '.($meta{author}||'').'.<\/div>'/eg;
     for (qw(title author date description topic)) { my $v = $meta{$_}||''; $tpl =~ s/\$\Q$_\E\$/$v/g; }
-    open my $ofh, '>:encoding(UTF-8)', $out_path or die $!;
-    print $ofh $tpl; close $ofh;
+    binmode STDOUT, ':encoding(UTF-8)';
+    print $tpl;
 }
 
 main();

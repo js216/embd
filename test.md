@@ -15,6 +15,8 @@ There can be a [link
 text](https://www.st.com/en/evaluation-tools/stm32mp135f-dk.html) as well as
 [another link](https://github.com/js216/stm32mp135_test_board).
 
+A [[link]](google.com) can contain "square" brackets.
+
 Note that a link can also be code:
 [`STM32Cube_FW_MP13_V1.2.0`](https://wiki.st.com/stm32mpu/wiki/STM32CubeMP13_Package_-_Getting_started)
 (and there's nothing wrong with it).
@@ -82,6 +84,8 @@ def interp_cmd(b):
     if b == 0x00:
         return "Get"
 ```
+
+### "Chunking"
 
 How about a little JSON?
 

@@ -5,7 +5,7 @@ all: html/index.html html/style.css html/robots.txt html/favicon.ico \
 	html/about.html html/archive.html
 
 html/%.html: articles/%.md template.html md2html.pl | html
-	perl md2html.pl $< template.html $@
+	perl md2html.pl $< template.html > $@
 
 html:
 	mkdir html

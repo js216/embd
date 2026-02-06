@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="2 Sep 2025">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content=">">
+<link rel="stylesheet" href="style.css">
+<title>UART DMA with a Circular Buffer on K64</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Embedded</div>
+<h2>UART DMA with a Circular Buffer on K64</h2>
+<div class="article-meta">Published 2 Sep 2025. By Jakob Kastelic.</div>
+<p><img src="../images/circ.jpg" alt=""></p>
+<p>Working on a FreeRTOS-based project running on the NXP Kinetis K64, I wanted to
+read data from several UART interfaces. The default &ldquo;easy&rdquo; method using
+interrupts is easy to set up via the NXP MCUXpresso Config Tools; the problem is
+that the UART peripheral only has a few bytes of built-in buffer. If the data is
+arriving at the interfaces faster than the firmware can read it, the tiny buffer
+immediately overflows and part of the data is lost.</p>
+<p>This is obviously a task for Direct Memory Access (DMA): let the data arrive
+into a much larger buffer, from where the software can take characters at its
+leisure. In this article, we will briefly contrast three ways of receiving data
+from UART: interrupt-based, simple DMA, and DMA with a circular buffer (aka ring
+buffer).</p>
+<h3 id="uart-with-interrupts">UART with Interrupts</h3>
+<p>The &ldquo;point-and-click&rdquo; method works out of the box with the Config tools. Leave
+things at their default values, or change whatever is necessary. In my setup, I
+had the values shown in the image below.</p>
+<p><img src="../images/inter.jpg" alt="Config Tools: UART Interrupt Configuration"></p>
+<p>Even the interrupt handler is provided by the tool. Click on &ldquo;Copy to
+clipboard&rdquo;, and adapt as necessary. All that is needed is to read the status
+flags and read a byte of data, and push it to a FreeRTOS queue that we set up
+previously:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="k">void</span> <span class="nf">UART0_SERIAL_RX_TX_IRQHANDLER</span>(<span class="k">void</span>)
+{
+   uint32_t intStatus <span class="o">=</span> <span class="nf">UART_GetStatusFlags</span>(UART0);
+   <span class="k">if</span> ((kUART_RxDataRegFullFlag <span class="o">|</span> kUART_RxOverrunFlag) <span class="o">&amp;</span> intStatus) {
+      <span class="k">const</span> uint8_t data <span class="o">=</span> <span class="nf">UART_ReadByte</span>(UART0);
+      <span class="nf">xQueueSendToBackFromISR</span>(rx_queue, <span class="o">&amp;</span>data, NULL);
+   }
+}</code></pre></div>
+
+
+<p>This seems like it couldn&rsquo;t be simpler, and it just <em>should</em> work. Indeed, for
+baud rates at or below about 9600, it does work almost reliably. And yet
+sometimes, for no good reason, a byte gets dropped. Is that possible?</p>
+<p>Let&rsquo;s see. At 115,200 baud, we get a character every 8.7 μs. It&rsquo;s entirely
+possible that some other interrupt or critical section takes priority over this
+one for much longer than that, especially looking at some of the rather long
+Ethernet ISRs supplied with the NXP SDK. If we have less than 10 microseconds to
+process a character before it goes away, we&rsquo;ll probably miss many of them!
+Onwards to DMA.</p>
+<h3 id="uart-with-edma">UART with eDMA</h3>
+<p>With direct memory access, the UART peripheral should be able to place the bytes
+directly in a software buffer, without having to go through an RTOS queue.
+Besides being much faster, we can also make the queue almost arbitrarily large,
+ensuring that we&rsquo;ll be able to get to the data eventually and process it.</p>
+<p>Thanks to the Config Tools, setting this up is again very straightforward. Just
+enable some checkboxes and set up DMA channels, as I did in the image below.</p>
+<p><img src="../images/edma.jpg" alt="Config Tools: UART eDMA Configuration"></p>
+<p>This time, we do not have a handy &ldquo;Click to get code&rdquo; button. Instead, ChatGPT
+or Gemini or Claude are happy to write something that nearly works. In a
+dedicated FreeRTOS task, let&rsquo;s poll for characters as they arrive into the
+buffer:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="k">for</span> (;;) {
+   uint32_t bytesWritten;
+   <span class="k">if</span> (<span class="nf">UART_TransferGetReceiveCountEDMA</span>(UART0_PERIPHERAL,
+            <span class="o">&amp;</span>UART0_UART_eDMA_Handle,
+            <span class="o">&amp;</span>bytesWritten) <span class="o">!</span><span class="o">=</span> kStatus_Success) {
+      <span class="nf">vTaskDelay</span>(<span class="nf">pdMS_TO_TICKS</span>(<span class="m">1</span>));
+      <span class="k">continue</span>;
+   }
+
+   <span class="k">while</span> (readIndex <span class="o">!</span><span class="o">=</span> (bytesWritten <span class="o">%</span> DMA_BUF_SIZE)) {
+      <span class="k">char</span> c <span class="o">=</span> uartRxBuf[readIndex];
+      readIndex <span class="o">=</span> (readIndex <span class="o">+</span> <span class="m">1</span>) <span class="o">%</span> DMA_BUF_SIZE;
+      <span class="c1">// now do what you want with the received character</span>
+   }
+
+   <span class="nf">vTaskDelay</span>(<span class="m">1</span>);
+}</code></pre></div>
+
+
+<p>Note the <code>vTaskDelay(1)</code> calls which ensure that this task does not starve
+lower-priority tasks of processor time.</p>
+<p>In the above, the chatbot made use of the function
+<code>UART_TransferGetReceiveCountEDMA()</code> from the NXP SDK and implemented the ring
+buffer wraparound with some modulo operation that&rsquo;s probably about correct. But
+what happens when the buffer gets filled up? In that case, an interrupt triggers
+the DMA callback, which simply restarts the DMA to receive data back into the
+beginning of the buffer:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="k">static</span> <span class="k">void</span> <span class="nf">uart0_callback</span>(UART_Type <span class="o">*</span>base, uart_edma_handle_t <span class="o">*</span>handle,
+                           status_t status, <span class="k">void</span> <span class="o">*</span>userData)
+{
+    uart_transfer_t rxXfer <span class="o">=</span> {
+        .data <span class="o">=</span> uartRxBuf,
+        .dataSize <span class="o">=</span> DMA_BUF_SIZE
+    };
+    <span class="nf">UART_ReceiveEDMA</span>(UART0_PERIPHERAL, handle, <span class="o">&amp;</span>rxXfer);
+}</code></pre></div>
+
+
+<p>This works great, but has an unfortunate limitation. When the buffer is at the
+end of its capacity, characters must arrive slowly enough so we have time to
+re-start the DMA. In other words, we have not solved anything! Data will
+occasionally get lost when the callback is executing.</p>
+<p>Naturally, the DMA should be writing continuously without us having to restart
+it. Much back and forth with AI achieved nothing. The version of the NXP SDK
+that I&rsquo;m using, while full of intricate code covering what appears to be almost
+every possible use case, somehow does not cover the most elementary DMA
+operation: continuous data reception.</p>
+<h3 id="true-continuous-dma-ring-buffer">True continuous DMA ring buffer</h3>
+<p>This brings us to the final section: how to make the ring buffer work without
+stopping? By my count, the SDK takes 4517 lines of C to implement the
+&ldquo;simplified&rdquo; DMA configuration code, and yet there&rsquo;s no easy
+<code>UART_MakeMeARingBuffer()</code>. There are 80 pages in the K64 Sub-Family Reference
+Manual about the DMA, and 85 about UART, with lots of tables of registers, flow
+charts, diagrams. Enough to leave one entirely mystified.</p>
+<p>The key revelation here is that the <em>DMA peripheral is not nearly as complicated
+as NXP would have us believe.</em> As it turns out, there are only a couple fields
+one has to fill out in the &ldquo;transfer control descriptor&rdquo; (TCD): source and
+address of the data, the size of each logical word (for UART: one byte), how
+many bytes to write altogether, and what to do after writing them.</p>
+<p>To integrate it with the code generated by the Config Tools above, we need the
+handles to the UART and eDMA controls, and a buffer to place the data in:</p>
+<div class="codehilite"><pre><code class="language-c">UART_Type <span class="o">*</span>uart <span class="o">=</span> UART0_PERIPHERAL;
+edma_handle_t <span class="o">*</span>dma <span class="o">=</span> <span class="o">&amp;</span>UART1_RX_Handle;
+
+<span class="cp">#define</span> BUF_SIZE <span class="m">256</span>
+<span class="k">static</span> uint8_t buf[BUF_SIZE];</code></pre></div>
+
+
+<p>Next, we define the source (UART buffer) and destination for the data:</p>
+<div class="codehilite"><pre><code class="language-c">edma_tcd_t <span class="o">*</span>tcd <span class="o">=</span> (edma_tcd_t <span class="o">*</span>)<span class="o">&amp;</span>dma<span class="o">-</span><span class="o">&gt;</span>base<span class="o">-</span><span class="o">&gt;</span>TCD[dma<span class="o">-</span><span class="o">&gt;</span>channel];
+tcd<span class="o">-</span><span class="o">&gt;</span>SADDR <span class="o">=</span> <span class="nf">UART_GetDataRegisterAddress</span>(uart);
+tcd<span class="o">-</span><span class="o">&gt;</span>DADDR <span class="o">=</span> (uint32_t)buf;</code></pre></div>
+
+
+<p>Fill in the source and destination offset, number of bytes to transfer at once
+(just one byte), and number of bytes to transfer in a so-called &ldquo;major loop&rdquo;
+(equal to the size of the ring buffer):</p>
+<div class="codehilite"><pre><code class="language-c">tcd<span class="o">-</span><span class="o">&gt;</span>SOFF <span class="o">=</span> <span class="m">0</span>;
+tcd<span class="o">-</span><span class="o">&gt;</span>DOFF <span class="o">=</span> <span class="m">1</span>;
+tcd<span class="o">-</span><span class="o">&gt;</span>NBYTES <span class="o">=</span> <span class="m">1</span>;
+tcd<span class="o">-</span><span class="o">&gt;</span>ATTR <span class="o">=</span> <span class="nf">DMA_ATTR_SSIZE</span>(kEDMA_TransferSize1Bytes) <span class="o">|</span> <span class="nf">DMA_ATTR_DSIZE</span>(kEDMA_TransferSize1Bytes);
+tcd<span class="o">-</span><span class="o">&gt;</span>CITER <span class="o">=</span> BUF_SIZE;
+tcd<span class="o">-</span><span class="o">&gt;</span>BITER <span class="o">=</span> BUF_SIZE;
+tcd<span class="o">-</span><span class="o">&gt;</span>DLAST_SGA <span class="o">=</span> <span class="o">-</span>BUF_SIZE;</code></pre></div>
+
+
+<p>Note the <code>DLAST_SGA</code> field: it causes the write address to be rewound back to
+the start of the data buffer upon completing the major loop. This is really all
+that&rsquo;s needed to create a true circular ring buffer that runs without stopping.</p>
+<p>Finally, to make it run, we need to enable the DMA service request from both the
+eDMA and UART sides:</p>
+<div class="codehilite"><pre><code class="language-c">dma<span class="o">-</span><span class="o">&gt;</span>base<span class="o">-</span><span class="o">&gt;</span>SERQ <span class="o">=</span> <span class="nf">DMA_SERQ_SERQ</span>(dma<span class="o">-</span><span class="o">&gt;</span>channel);
+uart<span class="o">-</span><span class="o">&gt;</span>C5 <span class="o">|</span><span class="o">=</span> (uint8_t)UART_C5_RDMAS_MASK;
+uart<span class="o">-</span><span class="o">&gt;</span>C2 <span class="o">|</span><span class="o">=</span> (uint8_t)UART_C2_RIE_MASK;</code></pre></div>
+
+
+<p><em>Beware:</em> If making use of any NXP-provided functions, know that several of them
+implicitly set the <code>DREQ</code> bit (&ldquo;Disable Request&rdquo;) which will stop DMA once a
+single major loop is complete. As the Reference Manual puts it,</p>
+<blockquote>
+<p><code>DREQ</code> (Disable Request) If this flag is set, the eDMA hardware automatically
+clears the corresponding <code>ERQ</code> bit when the current major iteration count
+reaches zero.</p>
+</blockquote>
+<h3 id="readout-from-the-buffer">Readout from the buffer</h3>
+<p>Once the DMA is happily streaming UART bytes into the buffer, we would like to
+get it out.  The simplest way to do so would be a character at a time,
+<code>getc</code>-style.</p>
+<p><em>Step One:</em> consult the DMA registers about the current iteration inside a major
+loop:</p>
+<div class="codehilite"><pre><code class="language-c">uint32_t ch   <span class="o">=</span> dma<span class="o">-</span><span class="o">&gt;</span>channel;
+<span class="k">const</span> uint16_t biter <span class="o">=</span> dma<span class="o">-</span><span class="o">&gt;</span>base<span class="o">-</span><span class="o">&gt;</span>TCD[ch].BITER_ELINKNO;
+<span class="k">const</span> uint16_t citer <span class="o">=</span> dma<span class="o">-</span><span class="o">&gt;</span>base<span class="o">-</span><span class="o">&gt;</span>TCD[ch].CITER_ELINKNO;</code></pre></div>
+
+
+<p><em>Step Two:</em> compute the number of bytes available in the buffer.</p>
+<div class="codehilite"><pre><code class="language-c">size_t write_index <span class="o">=</span> (biter <span class="o">-</span> citer) <span class="o">%</span> UART_DMA_BUF_SIZE;
+<span class="k">int</span> avail <span class="o">=</span> <span class="m">0</span>;
+<span class="k">if</span> (write_index <span class="o">&gt;</span><span class="o">=</span> <span class="o">*</span>head) {
+   avail <span class="o">=</span> write_index <span class="o">-</span> <span class="o">*</span>head;
+} <span class="k">else</span> {
+   avail <span class="o">=</span> (UART_DMA_BUF_SIZE <span class="o">-</span> <span class="o">*</span>head) <span class="o">+</span> write_index;
+}</code></pre></div>
+
+
+<p><em>Step Three:</em> If any bytes are available for readout, let&rsquo;s read it out (into
+the variable <code>c</code>), then advance the queue pointer:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="k">if</span> (avail) {
+   uint8_t c <span class="o">=</span> buf[<span class="o">*</span>head];
+   <span class="o">*</span>head <span class="o">=</span> (<span class="o">*</span>head <span class="o">+</span> <span class="m">1</span>) <span class="o">%</span> UART_DMA_BUF_SIZE;
+}</code></pre></div>
+
+
+<p>That&rsquo;s it!</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>My intention with this writeup was to show that DMA configuration on the Kinetis
+K64 is very simple once one learns to let go of the tools that are supposed to
+make it easier: the NXP SDK, the Config Tools GUI, the Reference Manual. 17
+lines of code is all it takes to configure a UART ring buffer with DMA!</p>
+<p>Direct manipulation of system registers may appear confusing. After all, where
+is one supposed to learn which are all the registers that must be set? The SDK
+is often the only entry point, but it&rsquo;s discouraging: confusing,
+over-engineered, and ironically missing the simplest features.</p>
+<p>It&rsquo;s an amusing experience to take the &ldquo;official&rdquo; code examples and manually
+inline all the functions, unfolding the complex call chain into hundreds of
+lines of code. Once all the unnecessary conditional compilation and inapplicable
+conditions are removed, you can often be left with just a handful of lines of
+simple code which, with the help of the reference manual, is pretty readable.
+Certainly more than the mostly undocumented, partially implemented SDK morass of
+functions, drivers, modules, what have you!</p>
+</div>
+</body>
+</html>

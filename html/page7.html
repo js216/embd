@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Articles on embedded Linux, STM32 development, low-level programming, and practical approaches to software productivity. Tutorials, experiments, and reflections on simplicity in computing.">
+<link rel="license" href="https://creativecommons.org/licenses/by/4.0/">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="favicon.ico">
+<title>embd.cc</title>
+</head>
+<body>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+
+<div class="article">
+<div class="article-topic">Philosophy</div>
+<h2><a href="programming-values-checklist">A Checklist of Values for Programming</a></h2>
+<div class="article-meta">Published 31 Aug 2025. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/sub.jpg"/></p>
+<h3 id="1-simplicity-and-minimalism">1. Simplicity and minimalism</h3>
+<p>Each program does <em>one</em> thing only.</p>
+<blockquote>
+<p>Do not put code in your program that might be used. Do not leave hooks on
+which you can hang extensions. The things you might want to do are infinite;
+that means that each one has 0 probability of realization. If you need an
+extension later, you can code it later - and probably do a better job than if
+you did it now. And if someone else adds the extension, will they notice the
+hooks you left?<sup class="footnote-ref"><a href="#fn-26573b80-pol" id="fnref-26573b80-pol">[1]</a></sup></p>
+</blockquote>
+<p>Do not be tempted to use all the features provided by the language, operating
+system, or hardware.</p>
+<p>While making full use of the hardware is a nice thing, DO NOT fill up the
+available program or data memory more than about 75%, or else future
+modifications (or even extra features!) will become <em>really</em> difficult to
+implement. When the entire system capacity is used up, every functions and
+feature becomes entangled with every other one: if you want an extra variable
+here, you need to make some other part smaller, etc.</p>
+<h3 id="2-portability">2. Portability</h3>
+<p>Be very strict to only use those of the language features that are guaranteed by
+the standard.</p>
+<p>Use a simple compile/build process that works on all relevant operating systems
+and none, on all relevant combinations of hardware, and with all compilers for
+the same language that you have available.</p>
+<p>The inevitable non-portable stuff (think the likes of DMA configuration) is to
+be minimized, isolated, and documented. The goal of the minimization is not to
+make it more “performant”, whatever that means, but to make it possible for
+someone new to the project or platform to understand.</p>
+<p>If the non-portable parts are more than usually obscure, document them in a
+literate style.</p>
+<h3 id="3-error-handling">3. Error handling</h3>
+<p>All functions should return 0 on success and -1 on error. In languages like C
+where a function can only return one value, this unfortunately implies that the
+data is to be returned via function pointers; these should be the first (few)
+arguments of the function.</p>
+<p>The error handling should be implemented in multiple levels. At least two are
+mandatory:</p>
+<ul>
+<li>
+<p>Assertions are errors that “cannot happen”, which indicate programming errors
+which are to be discovered during testing. Also known as <code>ERROR</code>, or <code>fail</code>.</p>
+</li>
+</ul>
+<ul>
+<li>
+<p>User errors, such as invalid input, which can be recovered from. The error
+codes should be collected all in one place and be associated with
+understandable error messages, which are to be communicated to the user in
+some way.</p>
+</li>
+</ul>
+<p>Both of these should be present from the very beginning of a project. If the
+infrastructure is not in place yet, simply make a file like <code>errors.c</code> with
+empty implementations:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="k">void</span> <span class="nf">fail</span>(<span class="k">char</span> <span class="o">*</span>msg) {}
+<span class="k">int</span> <span class="nf">error</span>(enum err_code err) {}</code></pre></div>
+<p>Most likely it will be appropriate to include a way to print the error messages,
+or to report them to the user, or trigger a debugger breakpoint when they
+happen, etc. That can all easily be added later. What’s important is that the
+functions be present and used from the very start.</p>
+<p>Additional error levels can be added, such as warnings (valid, but unusual and
+probably unexpected conditions) and debug information (explaining what the
+program is doing at a particular point, to enable crash reconstruction from
+these logs).</p>
+<h3 id="4-readability">4. Readability</h3>
+<p>Functions must be very short (ideally less than 25 lines or so).</p>
+<p>Use simple control flow. No deeply nested loops and conditional, three
+indentation levels inside a function are quite enough.</p>
+<p>No multi-cycle recursion, where <code>f1()</code> calls <code>f2()</code> which calls <code>f3()</code> which
+calls <code>f1()</code> again.</p>
+<p>Header inclusions, or the use of modules in general must be a directed acyclic
+graph. In particular, two or three modules are not allowed to call each other’s
+functions, or else these functions should probably be located inside the same
+module.</p>
+<p>Modules need to be short with the minimal number of functions and data
+structures necessary to accomplish their goal.</p>
+<p>No function or operator overloading besides what’s already provided by the
+language. To be very emphatic about it: different functions should not have same
+names! (Sorry C++, go away.)</p>
+<h3 id="5-no-side-effects">5. No side effects</h3>
+<p>Except in the dream world of functional people, a rule like this is only viable
+when its exception is clearly spelled out: the functions with side effects are
+to be confined to a small, clearly marked and isolated section of code. Again
+like the non-portable code, the amount of code with side effects must be small
+in proportion to the main program, perhaps no more than 10% of the entire source
+code.</p>
+<h3 id="6-tests-and-tests">6. Tests and tests</h3>
+<p>There should be an extensive set of tests corresponding to all anticipated use
+cases of the program. When new use cases are discovered, more tests are to be
+added.</p>
+<p>At a minimum, the tests need to cover the “trivial” edge or boundary cases where
+most of the bugs hide anyway.</p>
+<p>As with the error handling, the testing infrastructure must be present in the
+code base from the very beginning, ideally before <em>any</em> of the actual
+application-specific code is added. Again, this does not need to be complicated.
+It is enough to create a directory called “tests” and add a target “test” to the
+build system, which compiles and runs a test program. The test program in turn
+can be quite minimal, just a list of test functions (function pointer array in
+C, or an actual list in Python), and a main function that runs each of these in
+turn, checking whether the test function returned 0 (success) or -1 (failure).</p>
+<p>As the program grows, if and only if it becomes necessary, more sophisticated
+test frameworks can be substituted. But for a small program this may be all that
+is needed.</p>
+<h3 id="7-reusability">7. Reusability</h3>
+<p>No inheritance! (Sorry C++.)</p>
+<blockquote>
+<p>I think the lack of reusability comes in object-oriented languages, not
+functional languages. Because the problem with object-oriented languages is
+they’ve got all this implicit environment that they carry around with them.
+You wanted a banana but what you got was a gorilla holding the banana and the
+entire jungle.</p>
+<p>If you have referentially transparent code, if you have pure functions—all
+the data comes in its input arguments and everything goes out and leave no
+state behind—it’s incredibly reusable.<sup class="footnote-ref"><a href="#fn-26573b80-work" id="fnref-26573b80-work">[2]</a></sup></p>
+</blockquote>
+<p>Functions and modules are to be so reusable that you can copy-paste them from
+one program to another without <em>any</em> modifications. Inheritance-based programs
+require a difficult process to extricate an inherited class, requiring one to
+manually resolve the dependencies. (And all functions have the same name, which
+does not help.)</p>
+<p>Ensure short, simple, minimal dependency chains: short function call chains,
+short chains of module inclusions. (It would be nice if there was a tool to
+check this mechanically.)</p>
+<p>Avoiding side effects in all functions except for a small, isolated set almost
+ensures reusability, since one does not have to worry about the changes to the
+global state.</p>
+<p>In general, when writing functions, modules, and programs, think <em>tools</em> rather
+than complete systems. General purpose blocks are automatically more reusable
+than any specialized system.</p>
+<h3 id="8-robustness">8. Robustness</h3>
+<p>The functions, and the completed program, are to handle all corner cases in a
+sensible manner. All possible argument values need to be accepted without
+crashing the program or causing any other unexpected behavior.</p>
+<p>The code should do extensive validation of pre-conditions and post-conditions.
+These checks should be added to the code with reckless abandon and disregard for
+performance implications, since their performance impact can be easily undone by
+toggling a single “debug-mode” switch.</p>
+<p>In theory, a program can be proven correct if each module, considered as a black
+box, or a box in a flowchart, is ensured to have its pre-conditions met, and if
+it makes sure to leave the post-conditions as expected by the modules that come
+after.</p>
+<blockquote>
+<p>if any one of the assertions on the arrows leading into the box is true before
+the operation in that box is performed, then all of the assertions on the
+arrows leading away from the box are true after the operation.</p>
+<p>Once [this] has been proved for each box, it follows that all assertions are
+true during any execution of the algorithm.<sup class="footnote-ref"><a href="#fn-26573b80-taocp" id="fnref-26573b80-taocp">[3]</a></sup></p>
+</blockquote>
+<p>In practice, such checks are easy to add, most of the time don’t catch major
+bugs, but when they do, they are invaluable. The real payoff is that it forces
+one to think about all the possible cases the function or program may encounter
+during its life.  (This knowledge is also useful when writing tests.)</p>
+<p>A function should not knowingly trigger any exceptions, interrupts, traps, what
+have you. (Probably does not apply in OS design.)</p>
+<p>Aim to write complete, finished programs. Do not design products and teams with
+the expectation to ship half-broken stuff, and then break it further with
+continual “safety” improvement updates which annoy users. A suggestion: do it
+right the first time around. If in a rush, get a new job.</p>
+<h3 id="9-clean-source-code-organization">9. Clean source code organization.</h3>
+<p>Shallow directory structure: it’s enough to have <code>src</code>, <code>tests</code>, and, for a
+library, <code>include</code>. In a small C project, there should be a single Makefile, of
+no more than 100 lines, covering the entire build process including building and
+running tests, and static code analysis.</p>
+<p>The buildchain should be standard as much as possible. Do not use special
+compiler features. Do not use fancy GUI build tools which generate a deeply
+nested directory structure full of entirely illegible garbage code.</p>
+<p>The build tools themselves should have a simple build process. Do not torture
+future developers with a need to spend two weeks setting up the toolchain,
+installing just the right version of each tool that happens to work with the
+other tools and your code, etc.</p>
+<h3 id="10-clean-interfaces">10. Clean interfaces</h3>
+<p>Functions should have a small number of arguments and returned values, certainly
+no more than about five.</p>
+<p>Modules should expose a small, mostly orthogonal set of public functions.</p>
+<p>Ideally, programs should be small, cooperative, and produce their output if
+possible in the form of human and machine readable text:</p>
+<blockquote>
+<p>Write programs to work together. Write programs that handle text streams,
+because that is a universal interface.<sup class="footnote-ref"><a href="#fn-26573b80-quat" id="fnref-26573b80-quat">[4]</a></sup></p>
+</blockquote>
+<p>In particular, there should be no unnecessary output, only what is required for
+the communicating processes to talk to each other, or upon explicit user
+request.</p>
+<blockquote>
+<p>Generally a program should say nothing unless and until it has something to
+say.<sup class="footnote-ref"><a href="#fn-26573b80-tools" id="fnref-26573b80-tools">[5]</a></sup></p>
+</blockquote>
+<hr/><section class="footnotes"><ol><li id="fn-26573b80-pol" value="1">C. Moore: Programming a Problem-Oriented-Language, ca. 1970.  <a href="#fnref-26573b80-pol">↩</a></li><li id="fn-26573b80-work" value="2">J. Armstrong, quoted in P. Seibel: Coders at Work, 2009.  <a href="#fnref-26573b80-work">↩</a></li><li id="fn-26573b80-taocp" value="3">D. Knuth: The Art of Computer Programming. Volume 1: Fundamental Algorithms.  <a href="#fnref-26573b80-taocp">↩</a></li><li id="fn-26573b80-quat" value="4">D. McIlroy, quoted in P. Salus: A Quarter Century Of UNIX, 1994.  <a href="#fnref-26573b80-quat">↩</a></li><li id="fn-26573b80-tools" value="5">B. W. Kernighan and P. J. Plauger: Software Tools, Addison-Wesley, Reading, Mass., 1976. <a href="#fnref-26573b80-tools">↩</a></li></ol></section>
+</div>
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Productivity</div>
+<h2><a href="yes-no-productivity">Yes/No Productivity</a></h2>
+<div class="article-meta">Published 24 Aug 2025. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/avant.jpg"/></p>
+<p>Many systems have been devised to organize work into several priority queues,
+calendars, etc., with sophisticated tracking tools and graphics. Here’s instead
+the simplest possible effective way to get things done.</p>
+<p>Write down every idea, thought, request, wish to do something, all in one place.
+This avoids getting yourself overwhelmed by too many sets of things to do.</p>
+<p>Then, go over the list and split it into two lists, titled “Yes” and “No”,
+according to the answer to the following question:</p>
+<blockquote>
+<p>Is doing this absolutely indispensable in order to finish this project?</p>
+</blockquote>
+<p>The Yes list will contain tasks crucial to the purpose of what you’re doing,
+while the No list will be full of “nice to haves” and interesting ideas. You can
+do this either all at once, or in batches of 10 items, or even for each item
+separately, when you start working on it.</p>
+<p>Until the project is complete and delivered to where is has to go, only work on
+the things from the Yes list. If anyone asks about their request that you’re put
+on the No list, tell them you’ll get to it later.</p>
+<p>You cannot focus on more than one thing at a time, although you can [try], at a
+great cost to your sanity and productivity. The Yes list enforces your unity of
+purpose.</p>
+<p>Then, hopefully, the project is out: paper published, product shipping to
+customers, system running and being useful. Do not discard the No list just yet!
+It’s full of potentially good ideas which you have subconsciously been working
+on (in [true parallelism] with the main project) for many weeks, months, even
+years. Scan it for these ideas, form new projects out of them, present or assign
+them to others to work on. Of course, many of these will be obsolete by now, or
+simply not good. Graciously let go of them — throw them away.</p>
+</div>
+
+    <div class="nav-links" style="display:flex; justify-content:space-between;">
+        <div></div>
+        <div><a class="newer" href="page6.html">Newer articles →</a></div>
+    </div>
+    
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+</body>
+</html>

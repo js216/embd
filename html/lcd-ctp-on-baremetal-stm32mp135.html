@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="19 Jan 2026">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content=">">
+<link rel="stylesheet" href="style.css">
+<title>LCD/CTP on Bare-Metal STM32MP135</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Embedded</div>
+<h2>LCD/CTP on Bare-Metal STM32MP135</h2>
+<div class="article-meta">Published 19 Jan 2026. By Jakob Kastelic.</div>
+<p><img src="../images/lcd.jpg" alt=""></p>
+<p>In this writeup we&rsquo;ll go through the steps needed to bring up the LCD/CTP
+peripheral on the <a href="https://github.com/js216/stm32mp135_test_board">custom STM32MP135
+board</a>.</p>
+<h3 id="connections">Connections</h3>
+<p>I am using the Rocktech <code>RK050HR01-CT</code> LCD display, connecting to the
+<code>STM32MP135FAE</code> SoC, as follows:</p>
+<table><thead><tr><th style="text-align:left">LCD pin</th><th style="text-align:left">LCD signal</th><th style="text-align:left">SoC signal</th><th style="text-align:left">SoC pin</th><th style="text-align:left">Alt. Fn.</th></tr></thead><tbody>
+<tr><td style="text-align:left">1, 2</td><td style="text-align:left"><code>VLED+/-</code></td><td style="text-align:left"><code>PB15/TIM1_CH3N</code></td><td style="text-align:left"><code>B12</code></td><td style="text-align:left">AF1</td></tr>
+<tr><td style="text-align:left">8</td><td style="text-align:left"><code>R3</code></td><td style="text-align:left"><code>PB12/LCD_R3</code></td><td style="text-align:left"><code>D9</code></td><td style="text-align:left">AF13</td></tr>
+<tr><td style="text-align:left">9</td><td style="text-align:left"><code>R4</code></td><td style="text-align:left"><code>PE3/LCD_R4</code></td><td style="text-align:left"><code>D13</code></td><td style="text-align:left">AF13</td></tr>
+<tr><td style="text-align:left">10</td><td style="text-align:left"><code>R5</code></td><td style="text-align:left"><code>PF5/LCD_R5</code></td><td style="text-align:left"><code>B2</code></td><td style="text-align:left">AF14</td></tr>
+<tr><td style="text-align:left">11</td><td style="text-align:left"><code>R6</code></td><td style="text-align:left"><code>PF0/LCD_R6</code></td><td style="text-align:left"><code>C13</code></td><td style="text-align:left">AF13</td></tr>
+<tr><td style="text-align:left">12</td><td style="text-align:left"><code>R7</code></td><td style="text-align:left"><code>PF6/LCD_R7</code></td><td style="text-align:left"><code>G2</code></td><td style="text-align:left">AF13</td></tr>
+<tr><td style="text-align:left">15</td><td style="text-align:left"><code>G2</code></td><td style="text-align:left"><code>PF7/LCD_G2</code></td><td style="text-align:left"><code>M1</code></td><td style="text-align:left">AF14</td></tr>
+<tr><td style="text-align:left">16</td><td style="text-align:left"><code>G3</code></td><td style="text-align:left"><code>PE6/LCD_G3</code></td><td style="text-align:left"><code>N1</code></td><td style="text-align:left">AF14</td></tr>
+<tr><td style="text-align:left">17</td><td style="text-align:left"><code>G4</code></td><td style="text-align:left"><code>PG5/LCD_G4</code></td><td style="text-align:left"><code>F2</code></td><td style="text-align:left">AF11</td></tr>
+<tr><td style="text-align:left">18</td><td style="text-align:left"><code>G5</code></td><td style="text-align:left"><code>PG0/LCD_G5</code></td><td style="text-align:left"><code>D7</code></td><td style="text-align:left">AF14</td></tr>
+<tr><td style="text-align:left">19</td><td style="text-align:left"><code>G6</code></td><td style="text-align:left"><code>PA12/LCD_G6</code></td><td style="text-align:left"><code>E3</code></td><td style="text-align:left">AF14</td></tr>
+<tr><td style="text-align:left">20</td><td style="text-align:left"><code>G7</code></td><td style="text-align:left"><code>PA15/LCD_G7</code></td><td style="text-align:left"><code>E6</code></td><td style="text-align:left">AF11</td></tr>
+<tr><td style="text-align:left">24</td><td style="text-align:left"><code>B3</code></td><td style="text-align:left"><code>PG15/LCD_B3</code></td><td style="text-align:left"><code>G4</code></td><td style="text-align:left">AF14</td></tr>
+<tr><td style="text-align:left">25</td><td style="text-align:left"><code>B4</code></td><td style="text-align:left"><code>PB2/LCD_B4</code></td><td style="text-align:left"><code>H4</code></td><td style="text-align:left">AF14</td></tr>
+<tr><td style="text-align:left">26</td><td style="text-align:left"><code>B5</code></td><td style="text-align:left"><code>PH9/LCD_B5</code></td><td style="text-align:left"><code>A9</code></td><td style="text-align:left">AF9</td></tr>
+<tr><td style="text-align:left">27</td><td style="text-align:left"><code>B6</code></td><td style="text-align:left"><code>PF4/LCD_B6</code></td><td style="text-align:left"><code>L2</code></td><td style="text-align:left">AF13</td></tr>
+<tr><td style="text-align:left">28</td><td style="text-align:left"><code>B7</code></td><td style="text-align:left"><code>PB6/LCD_B7</code></td><td style="text-align:left"><code>C1</code></td><td style="text-align:left">AF14</td></tr>
+<tr><td style="text-align:left">30</td><td style="text-align:left"><code>DCLK</code></td><td style="text-align:left"><code>PD9/LCD_CLK</code></td><td style="text-align:left"><code>E8</code></td><td style="text-align:left">AF13</td></tr>
+<tr><td style="text-align:left">31</td><td style="text-align:left"><code>DISP</code></td><td style="text-align:left"><code>PG7</code></td><td style="text-align:left"><code>C9</code></td><td style="text-align:left">&mdash;</td></tr>
+<tr><td style="text-align:left">32</td><td style="text-align:left"><code>HSYNC</code></td><td style="text-align:left"><code>PE1/LCD_HSYNC</code></td><td style="text-align:left"><code>B5</code></td><td style="text-align:left">AF9</td></tr>
+<tr><td style="text-align:left">33</td><td style="text-align:left"><code>VSYNC</code></td><td style="text-align:left"><code>PE12/LCD_VSYNC</code></td><td style="text-align:left"><code>B4</code></td><td style="text-align:left">AF9</td></tr>
+<tr><td style="text-align:left">34</td><td style="text-align:left"><code>DE</code></td><td style="text-align:left"><code>PG6/LCD_DE</code></td><td style="text-align:left"><code>A14</code></td><td style="text-align:left">AF13</td></tr>
+</tbody></table>
+<h3 id="backlight">Backlight</h3>
+<p>The easiest thing to check is the display backlight, since it&rsquo;s just a single
+GPIO pin to turn on/off, or a simple PWM to control the brightness via the duty
+cycle.</p>
+<p>In our case, the backlight pin is connected to <code>TIM1_CH3N</code>, which is alternate
+function 1:</p>
+<div class="codehilite"><pre><code class="language-c">GPIO_InitTypeDef gpio;
+gpio.Pin       <span class="o">=</span> GPIO_PIN_15;
+gpio.Mode      <span class="o">=</span> GPIO_MODE_AF_PP;
+gpio.Pull      <span class="o">=</span> GPIO_NOPULL;
+gpio.Speed     <span class="o">=</span> GPIO_SPEED_FREQ_LOW;
+gpio.Alternate <span class="o">=</span> GPIO_AF1_TIM1;
+<span class="nf">HAL_GPIO_Init</span>(GPIOB, <span class="o">&amp;</span>gpio);</code></pre></div>
+
+
+<p>ChatGPT can write the PWM configuration:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="nf">__HAL_RCC_TIM1_CLK_ENABLE</span>();
+
+htim1.Instance <span class="o">=</span> TIM1;
+htim1.Init.Prescaler         <span class="o">=</span> 99U;
+htim1.Init.CounterMode       <span class="o">=</span> TIM_COUNTERMODE_UP;
+htim1.Init.Period            <span class="o">=</span> 999U;
+htim1.Init.ClockDivision     <span class="o">=</span> TIM_CLOCKDIVISION_DIV1;
+htim1.Init.RepetitionCounter <span class="o">=</span> <span class="m">0</span>;
+htim1.Init.AutoReloadPreload <span class="o">=</span> TIM_AUTORELOAD_PRELOAD_DISABLE;
+<span class="nf">HAL_TIM_PWM_Init</span>(<span class="o">&amp;</span>htim1);
+
+TIM_OC_InitTypeDef oc;
+oc.OCMode       <span class="o">=</span> TIM_OCMODE_PWM1;
+oc.Pulse        <span class="o">=</span> 500U;
+oc.OCPolarity   <span class="o">=</span> TIM_OCPOLARITY_HIGH;
+oc.OCNPolarity  <span class="o">=</span> TIM_OCNPOLARITY_HIGH;
+oc.OCIdleState  <span class="o">=</span> TIM_OCIDLESTATE_RESET;
+oc.OCNIdleState <span class="o">=</span> TIM_OCNIDLESTATE_RESET;
+oc.OCFastMode   <span class="o">=</span> TIM_OCFAST_DISABLE;
+
+<span class="nf">HAL_TIM_PWM_ConfigChannel</span>(<span class="o">&amp;</span>htim1, <span class="o">&amp;</span>oc, TIM_CHANNEL_3);
+<span class="nf">HAL_TIMEx_PWMN_Start</span>(<span class="o">&amp;</span>htim1, TIM_CHANNEL_3);
+htim1.Instance<span class="o">-</span><span class="o">&gt;</span>BDTR <span class="o">|</span><span class="o">=</span> TIM_BDTR_MOE;</code></pre></div>
+
+
+<p>The only &ldquo;tricky&rdquo; part, or the part that AI got wrong, was that we have to use
+<code>HAL_TIMEx_PWMN_Start()</code> instead of <code>HAL_TIM_PWM_Start()</code>, since we&rsquo;re dealing
+with the complementary output. With that fixed, the brightness pin showed a
+clean square wave output, with duty cycle adjustable in units of <code>percent</code>:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="nf">__HAL_TIM_SET_COMPARE</span>(<span class="o">&amp;</span>htim1, TIM_CHANNEL_3, 
+      (htim1.Init.Period <span class="o">+</span> 1U) <span class="o">*</span> percent <span class="o">/</span> 100U);</code></pre></div>
+
+
+<p>Unfortunately, the PCB reversed all pins and the connector is single sided, so
+we cannot directly check if the above works on the actual display or not.
+Nonetheless, we can see a nice 2.088893 kHz square wave with 50 duty cycle, and
+we can tune it from 0% to 100%.</p>
+<h3 id="ctp-connections">CTP connections</h3>
+<p>The Rocktech <code>RK050HR01-CT</code> LCD display includes a capacitive touchpad (CTP),
+connecting to the <code>STM32MP135FAE</code> SoC, as follows:</p>
+<table><thead><tr><th style="text-align:left">CPT pin</th><th style="text-align:left">CPT signal</th><th style="text-align:left">SoC signal</th><th style="text-align:left">SoC pin</th><th style="text-align:left">Alt. Fn.</th></tr></thead><tbody>
+<tr><td style="text-align:left">1</td><td style="text-align:left"><code>SCL</code></td><td style="text-align:left"><code>PH13/I2C5_SCL</code></td><td style="text-align:left"><code>A10</code></td><td style="text-align:left">AF4</td></tr>
+<tr><td style="text-align:left">8</td><td style="text-align:left"><code>SDA</code></td><td style="text-align:left"><code>PF3/I2C5_SDA</code></td><td style="text-align:left"><code>B10</code></td><td style="text-align:left">AF4</td></tr>
+<tr><td style="text-align:left">4</td><td style="text-align:left"><code>RST</code></td><td style="text-align:left"><code>PB7</code></td><td style="text-align:left"><code>A4</code></td><td style="text-align:left">&mdash;</td></tr>
+<tr><td style="text-align:left">5</td><td style="text-align:left"><code>INT</code></td><td style="text-align:left"><code>PH12</code></td><td style="text-align:left"><code>C2</code></td><td style="text-align:left">&mdash;</td></tr>
+</tbody></table>
+<p>Luckily the 6-pin CTP connector, albeit wired in reverse, has contacts on both
+top and bottom sides, so we can simply flip the ribbon cable. With entirely
+usual I2C configuration it simply works. Check out the final result
+<a href="https://github.com/js216/stm32mp135-bootloader/blob/main/src/ctp.c">here</a>.</p>
+<p>My GT911 driver is just under 300 lines of code; it&rsquo;s very interesting that it
+takes ST almost 3,000 (yes, it has more features ... Whatever, I don&rsquo;t need
+them!)</p>
+<div class="codehilite"><pre><code class="language-sh">stm32cubemp13-v1-2-0/STM32Cube_FW_MP13_V1.2.0/Drivers/BSP/Components/gt911$ cloc .
+      12 text files.
+      12 unique files.
+       1 file ignored.
+
+github.com/AlDanial/cloc v 1.90  T=0.10 s (109.2 files/s, 48189.3 lines/s)
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+CSS                              1            209             56           1446
+C                                2            223            636            940
+C/C++ Header                     3            159            614            421
+Markdown                         2             24              0             62
+HTML                             1              0              3             56
+SVG                              2              0              0              4
+-------------------------------------------------------------------------------
+SUM:                            11            615           1309           2929
+-------------------------------------------------------------------------------</code></pre></div>
+
+
+<p>My example code prints out the touch coordinates whenever the touch interrupt
+fires. Not much more to do, since the CTP will be used within some application
+which will implement more advanced features. The only reason to include this in
+the bootloader code is to verify that the I2C connection works.</p>
+<h3 id="lcd">LCD</h3>
+<p>The custom board is wired backwards, but we can verify that the code is correct
+on the eval board. Besides forgetting to turn the <code>LCD_DISP</code> signal on, it all
+worked. You set up a framebuffer somewhere (I just used the beginning of the DDR
+memory), and write bits there, and magically the picture appears on the display.
+For example, to display solid colors:</p>
+<div class="codehilite"><pre><code class="language-c">volatile uint8_t <span class="o">*</span>lcd_fb <span class="o">=</span> (volatile uint8_t <span class="o">*</span>)DRAM_MEM_BASE;
+
+<span class="k">for</span> (uint32_t y <span class="o">=</span> <span class="m">0</span>; y <span class="o">&lt;</span> RK043FN48H_HEIGHT; y<span class="o">+</span><span class="o">+</span>) {
+   <span class="k">for</span> (uint32_t x <span class="o">=</span> <span class="m">0</span>; x <span class="o">&lt;</span> RK043FN48H_WIDTH; x<span class="o">+</span><span class="o">+</span>) {
+      uint32_t p    <span class="o">=</span> (y <span class="o">*</span> RK043FN48H_WIDTH <span class="o">+</span> x) <span class="o">*</span> 3U;
+      lcd_fb[p <span class="o">+</span> <span class="m">0</span>] <span class="o">=</span> b; <span class="c1">// blue</span>
+      lcd_fb[p <span class="o">+</span> <span class="m">1</span>] <span class="o">=</span> g; <span class="c1">// green</span>
+      lcd_fb[p <span class="o">+</span> <span class="m">2</span>] <span class="o">=</span> r; <span class="c1">// red</span>
+   }
+}
+
+<span class="cm">/* make sure CPU writes reach DDR before LTDC reads */</span>
+<span class="nf">L1C_CleanDCacheAll</span>();</code></pre></div>
+
+
+<h3 id="40-pin-adapter">40-pin adapter</h3>
+<p>Making use of an adapter from the 40-pin FFC ribbon cable to jumper wires, we
+can verify the signals also on the custom board. We see:</p>
+<pre><code>R[3:7] signal when screen set to red, otherwise low
+G[3:7] signal when screen set to green, otherwise low
+B[3:7] signal when screen set to blue, otherwise low
+DCLK:  10 MHz
+DISP:  3.3V
+HSYNC: 17.6688 kHz, 92.76% duty cycle
+VSYNC: 61.779 Hz, 96.5% duty cycle
+DE:    16.7--16.9 kHz, ~84% duty cycle</code></pre>
+<p>We can see the brightness change when adjusting the duty cycle of the backlight.</p>
+<p>Left ~2/3 of the screen shows white vertical stripes, the exact pattern of these
+stripes depending on what &ldquo;color&rdquo; the screen is set to. The right ~1/3 of the
+screen is black. This is to be expected, since we&rsquo;re using the same settings for
+both displays. Here&rsquo;s the settings which work fine on the eval board:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="cp">#define</span> LCD_WIDTH  480U <span class="c1">// LCD PIXEL WIDTH</span>
+<span class="cp">#define</span> LCD_HEIGHT 272U <span class="c1">// LCD PIXEL HEIGHT</span>
+<span class="cp">#define</span> LCD_HSYNC  41U  <span class="c1">// Horizontal synchronization</span>
+<span class="cp">#define</span> LCD_HBP    13U  <span class="c1">// Horizontal back porch</span>
+<span class="cp">#define</span> LCD_HFP    32U  <span class="c1">// Horizontal front porch</span>
+<span class="cp">#define</span> LCD_VSYNC  10U  <span class="c1">// Vertical synchronization</span>
+<span class="cp">#define</span> LCD_VBP    2U   <span class="c1">// Vertical back porch</span>
+<span class="cp">#define</span> LCD_VFP    2U   <span class="c1">// Vertical front porch</span></code></pre></div>
+
+
+<p>The custom board uses a different display, so let&rsquo;s try different settings:</p>
+<div class="codehilite"><pre><code class="language-c"><span class="cp">#define</span> LCD_WIDTH   800U
+<span class="cp">#define</span> LCD_HEIGHT  480U
+<span class="cp">#define</span> LCD_HSYNC   1U
+<span class="cp">#define</span> LCD_HBP     8U
+<span class="cp">#define</span> LCD_HFP     8U
+<span class="cp">#define</span> LCD_VSYNC   1U
+<span class="cp">#define</span> LCD_VBP     16U
+<span class="cp">#define</span> LCD_VFP     16U</code></pre></div>
+
+
+<p>Now the screen is totally white, regardless of which color we send it. We notice
+that the LCD datasheet specifies a minimum clock frequency of 10 MHz. Note that
+on the STM32MP135, the LCD clock comes from <code>PLL4Q</code>. Raising the <code>DCLK</code> to 24
+MHz, the screen works! We get to see all the colors. The <code>PLL4</code> configuration
+that works for me is</p>
+<div class="codehilite"><pre><code class="language-c">rcc_oscinitstructure.PLL4.PLLState  <span class="o">=</span> RCC_PLL_ON;
+rcc_oscinitstructure.PLL4.PLLSource <span class="o">=</span> RCC_PLL4SOURCE_HSE;
+rcc_oscinitstructure.PLL4.PLLM      <span class="o">=</span> <span class="m">2</span>;
+rcc_oscinitstructure.PLL4.PLLN      <span class="o">=</span> <span class="m">50</span>;
+rcc_oscinitstructure.PLL4.PLLP      <span class="o">=</span> <span class="m">12</span>;
+rcc_oscinitstructure.PLL4.PLLQ      <span class="o">=</span> <span class="m">25</span>;
+rcc_oscinitstructure.PLL4.PLLR      <span class="o">=</span> <span class="m">6</span>;
+rcc_oscinitstructure.PLL4.PLLRGE    <span class="o">=</span> RCC_PLL4IFRANGE_1;
+rcc_oscinitstructure.PLL4.PLLFRACV  <span class="o">=</span> <span class="m">0</span>;
+rcc_oscinitstructure.PLL4.PLLMODE   <span class="o">=</span>
+RCC_PLL_INTEGER;</code></pre></div>
+
+
+<h3 id="usb-stops-working">USB stops working</h3>
+<p>Unfortunately, just as the LCD becomes configured correctly and is able to
+display the solid red, green, or blue colors, I noticed that the USB MSC
+interface disappeared. If I comment out the LCD init code, so it does not run,
+then USB comes back. How could they possibly interact?</p>
+<p>Even more interesting, the USB stops working only if <em>both</em> of the following
+functions are called: <code>lcd_backlight_init()</code>, which configures the backlight
+brightness PWM, and <code>lcd_panel_init()</code>, which does panel timing and pin
+configuration.</p>
+<p>As it turns out, my 3.3V supply was set with a 0.1A current limit. Having
+enabled so many peripherals, the current draw can be a bit higher now.
+Increasing the current limit up to 0.2A, and everything works fine. In the
+steady state, after init is complete, the board draws just under 0.1A from the
+3.3V supply. (For the record, I&rsquo;m drawing about 0.26A from the combined 1.25V /
+1.35V supply.)</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>Bringing up the LCD on the custom board ultimately came down to matching the
+panel&rsquo;s exact timing and, critically, running the pixel clock within the range
+specified by the datasheet. Once the LTDC geometry and <code>PLL4Q</code> frequency were
+correct, the display worked immediately, confirming that the signal wiring and
+framebuffer logic were sound.</p>
+</div>
+</body>
+</html>

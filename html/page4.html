@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Articles on embedded Linux, STM32 development, low-level programming, and practical approaches to software productivity. Tutorials, experiments, and reflections on simplicity in computing.">
+<link rel="license" href="https://creativecommons.org/licenses/by/4.0/">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="favicon.ico">
+<title>embd.cc</title>
+</head>
+<body>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+
+<div class="article">
+<div class="article-topic">Incoherent Thoughts</div>
+<h2><a href="limitation-is-freedom">Limitation Is Freedom</a></h2>
+<div class="article-meta">Published 25 Nov 2025. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/nat.jpg"/></p>
+<p>Limitation is the only way to get anything done. The less one aims to do, the
+more gets done. By the time the aim becomes to do nothing at all, everything is
+accomplished.</p>
+<p>On a practical level, trying to do too many things at once results in not having
+enough time for any single one of them. Thus the paradox: the less one is trying
+to do, the more gets done. At any rate, it’s impossible to do more than one
+thing at a time. The closer one approaches to the ideal of unity, the more
+efficient the work becomes. Distraction is dissipation; limitation is focus.</p>
+<p>This is not a moral statement but a practical one: limitations free your energy
+for what matters.</p>
+</div>
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Embedded</div>
+<h2><a href="boot-stm32mp135-over-uart-with-python">Boot STM32MP135 Over UART With Python</a></h2>
+<div class="article-meta">Published 19 Nov 2025. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/brid.jpg"/></p>
+<p><em>This article is also available as a <a href="https://github.com/js216/mp135_boot/tree/main/uart_boot">Jupyter
+notebook.</a></em></p>
+<p><a href="stm32mp135-linux-cubeprog.md">Previously</a> we have explored how to flash the
+STM32MP135 using the STM32CubeProg over USB and remained puzzled why we need
+1.5G of code just to transfer some serial data. Here, we will flash the chip
+by talking to the built-in ROM bootloader over UART with a couple lines of
+Python, as explained in an ST app note<sup class="footnote-ref"><a href="#fn-a507063f-app" id="fnref-a507063f-app">[1]</a></sup>. The article is in three sections:
+(1) define the communication functions, (2) use them on the evaluation board,
+(3) use them on a custom board.</p>
+<h3 id="comm-functions">Comm Functions</h3>
+<p>This section documents how the STM32MP1 ROM bootloader communicates over UART,
+including the supported commands, packet formats, checksum rules, and Python
+helper functions used to implement the protocol. Skip to the <a href="#flash-the-evaluation-board">next
+section</a> to see how these functions are used.</p>
+<p>The supported commands are listed below:</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">interp_cmd</span>(b):
+    <span class="k">if</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x00</span>:
+        <span class="k">return</span> <span class="s">"Get"</span>
+    <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x01</span>:
+        <span class="k">return</span> <span class="s">"Get Version"</span>
+    <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x02</span>:
+        <span class="k">return</span> <span class="s">"Get ID"</span>
+    <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x03</span>:
+        <span class="k">return</span> <span class="s">"Get phase"</span>
+    <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x11</span>:
+        <span class="k">return</span> <span class="s">"Read Memory"</span>
+    <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x12</span>:
+        <span class="k">return</span> <span class="s">"Read Partition"</span>
+    <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x21</span>:
+        <span class="k">return</span> <span class="s">"Start (Go)"</span>
+    <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x31</span>:
+        <span class="k">return</span> <span class="s">"Download (Write Memory)"</span>
+    <span class="k">else</span>:
+        <span class="k">return</span> <span class="s">"???"</span></code></pre></div>
+<p>All communications from STM32CubeProgrammer (PC) to the device are verified as
+follows:</p>
+<ul>
+<li>
+<p>The UART/USART even parity is checked.</p>
+</li>
+</ul>
+<ul>
+<li>
+<p>For each command the host sends a byte and its complement (XOR = 0x00).</p>
+</li>
+</ul>
+<ul>
+<li>
+<p>The device performs a checksum on the sent/received datablocks. A byte
+containing the computed XOR of all previous bytes is appended at the end of
+each communication (checksum byte). By XORing all received bytes, data +
+checksum, the result at the end of the packet must be 0x00. A timeout must be
+managed in any waiting loop to avoid any blocking situation.</p>
+</li>
+</ul>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">pack_cmd</span>(cmd):
+    <span class="k">if</span> cmd <span class="k">not</span> <span class="k">in</span> [<span class="m">0x00</span>, <span class="m">0x01</span>, <span class="m">0x02</span>, <span class="m">0x03</span>, <span class="m">0x11</span>, <span class="m">0x12</span>, <span class="m">0x21</span>, <span class="m">0x31</span>]:
+        <span class="k">raise</span> <span class="nf">RuntimeError</span>(<span class="s">"Invalid cmd requested."</span>)
+    <span class="c1"># command followed by its complement</span>
+    <span class="k">return</span> struct.<span class="nf">pack</span>(<span class="s">"BB"</span>, cmd, <span class="m">0xff</span><span class="o">-</span>cmd)</code></pre></div>
+<p>Each command packet is either accepted (ACK answer), discarded (NACK answer) or
+aborted (unrecoverable error):</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">interp_byte</span>(b):
+    <span class="k">if</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x79</span>:
+        <span class="k">return</span> <span class="s">"ACK"</span>
+    <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x1F</span>:
+        <span class="k">return</span> <span class="s">"NACK"</span>
+    <span class="k">elif</span> b <span class="o">=</span><span class="o">=</span> <span class="m">0x5F</span>:
+        <span class="k">return</span> <span class="s">"ABORT"</span>
+    <span class="k">else</span>:
+        <span class="k">return</span> <span class="nf">format</span>(b, <span class="s">’#04x’</span>)
+
+<span class="k">def</span> <span class="nf">get_ack</span>(note<span class="o">=</span><span class="s">""</span>):
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\t{interp_byte(r)}{note}"</span>)
+    <span class="k">if</span> <span class="nf">interp_byte</span>(r) <span class="o">!</span><span class="o">=</span> <span class="s">"ACK"</span>:
+        <span class="k">raise</span> <span class="nf">RuntimeError</span>(<span class="s">"Did not receive ACK."</span>)</code></pre></div>
+<p>Once the serial boot mode is entered (boot pins set to 000), all the UART/USART
+instances are scanned by the ROM code, monitoring for each instance the
+<code>USARTx_RX</code> line pin, waiting to receive the 0x7F data frame (one start bit,
+0x7F data bits, none parity bit and one stop bit).</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">uart_init</span>():
+    mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"B"</span>, <span class="m">0x7F</span>))
+    <span class="nf">get_ack</span>(note<span class="o">=</span><span class="s">""</span>)</code></pre></div>
+<p>The Get command returns the bootloader version and the supported commands. When
+the device receives the Get command, it transmits the version and the supported
+command codes to the host. The commands not supported are removed from the list.</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">get</span>():
+    <span class="c1"># Get command</span>
+    mp1.<span class="nf">write_raw</span>(<span class="nf">pack_cmd</span>(<span class="m">0x00</span>))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>()
+
+    <span class="c1"># Response: number of following bytes – 1</span>
+    num_bytes <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="k">if</span> num_bytes <span class="o">&gt;</span><span class="o">=</span> <span class="m">0</span>:
+        <span class="nf">print</span>(f<span class="s">"{format(num_bytes, ‘#04x’)}\t\t{num_bytes} + 1 bytes to follow"</span>)
+    <span class="k">else</span>:
+        <span class="nf">print</span>(f<span class="s">"{format(num_bytes, ‘#04x’)}"</span>)
+        <span class="k">raise</span> <span class="nf">RuntimeError</span>(<span class="s">"Did not receive number of bytes to follow."</span>)
+
+    <span class="c1"># Response: Bootloader version</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\tversion {int(hex(0x10)[2:])/10}"</span>)
+    
+    <span class="c1"># Response: device ID</span>
+    <span class="k">for</span> i <span class="k">in</span> <span class="nf">range</span>(num_bytes):
+        r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+        <span class="nf">print</span>(f<span class="s">"{format(num_bytes, ‘#04x’)}\t\tcmd = {interp_cmd(r)}"</span>)
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>()</code></pre></div>
+<p>The Get version command is used to get the version of the running component.
+When the device receives the command, it transmits the version to the host.</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">get_version</span>():
+    <span class="c1"># Get version command</span>
+    mp1.<span class="nf">write_raw</span>(<span class="nf">pack_cmd</span>(<span class="m">0x01</span>))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>()
+    
+    <span class="c1"># Response: Bootloader version</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\tversion {int(hex(0x10)[2:])/10}"</span>)
+
+    <span class="c1"># Response: Option byte 1</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\tOption byte 1"</span>)
+    
+    <span class="c1"># Response: Option byte 2</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\tOption byte 2"</span>)
+
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>()</code></pre></div>
+<p>The Get ID command is used to get the version of the device ID (identification).
+When the device receives the command, it transmits the device ID to the host.</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">get_id</span>():
+    <span class="c1"># Get ID command</span>
+    mp1.<span class="nf">write_raw</span>(<span class="nf">pack_cmd</span>(<span class="m">0x02</span>))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>()
+
+    <span class="c1"># Response: number of following bytes – 1</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="k">if</span> r <span class="o">&gt;</span><span class="o">=</span> <span class="m">0</span>:
+        <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\t{r} + 1 bytes to follow"</span>)
+    <span class="k">else</span>:
+        <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}"</span>)
+        <span class="k">raise</span> <span class="nf">RuntimeError</span>(<span class="s">"Did not receive number of bytes to follow."</span>)
+
+    <span class="c1"># Response: device ID</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">2</span>)
+    <span class="k">if</span> r <span class="o">=</span><span class="o">=</span> b<span class="s">’\x05\x00’</span>:
+        <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">’#04x’</span>), <span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">’#04x’</span>), <span class="s">"\tSTM32MP15x"</span>)
+    <span class="k">elif</span> r <span class="o">=</span><span class="o">=</span> b<span class="s">’\x05\x01’</span>:
+        <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">’#04x’</span>), <span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">’#04x’</span>), <span class="s">"\tSTM32MP13x"</span>)
+    <span class="k">else</span>:
+        <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">’#04x’</span>), <span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">’#04x’</span>))
+        <span class="k">raise</span> <span class="nf">RuntimeError</span>(<span class="s">"Did not receive device ID."</span>)
+
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>()</code></pre></div>
+<p>The Get phase command enables the host to get the phase ID, in order to identify
+the next partition that is going to be downloaded.</p>
+<p>The download address, when present, provides the destination address in memory.
+A value of 0xFFFFFFFF means than the partition is going to be written in NVM.</p>
+<p>Phase ID = 0xFF corresponds to an answered value Reset, in this case the
+information bytes provide the cause of the error in a string just before
+executing the reset.</p>
+<p>The ROM code sends phase = TF-A</p>
+<div class="codehilite"><pre><code class="language-text">Byte 1: ACK
+Byte 2 N = 6
+Byte 3: phase ID (file containing FSBL = TF-A, 1)
+Byte 4-7: 0x2FFC2400 on STM32MP15x, 0x2FFDFE00 on STM32MP13x
+Byte 8: X = 1
+Byte 9: 0: reserved
+Byte 10: ACK</code></pre></div>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">get_phase</span>():
+    <span class="c1"># Get phase command</span>
+    mp1.<span class="nf">write_raw</span>(<span class="nf">pack_cmd</span>(<span class="m">0x03</span>))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>()
+
+    <span class="c1"># Response: number of following bytes – 1</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="k">if</span> r <span class="o">&gt;</span><span class="o">=</span> <span class="m">0</span>:
+        <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\t{r} + 1 bytes to follow"</span>)
+    <span class="k">else</span>:
+        <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}"</span>)
+        <span class="k">raise</span> <span class="nf">RuntimeError</span>(<span class="s">"Did not receive number of bytes to follow."</span>)
+
+    <span class="c1"># Response: phase ID</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\tPhase ID"</span>)
+
+    <span class="c1"># Response: download address</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">4</span>)
+    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">3</span>], <span class="s">’#04x’</span>), end<span class="o">=</span><span class="s">’’</span>)
+    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">2</span>], <span class="s">’02x’</span>), end<span class="o">=</span><span class="s">’’</span>)
+    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">1</span>], <span class="s">’02x’</span>), end<span class="o">=</span><span class="s">’’</span>)
+    <span class="nf">print</span>(<span class="nf">format</span>(r[<span class="m">0</span>], <span class="s">’02x’</span>), end<span class="o">=</span><span class="s">’’</span>)
+    <span class="nf">print</span>(<span class="s">"\tDownload address"</span>)
+
+    <span class="c1"># Response: number of additional bytes</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\t{r} additional bytes following"</span>)
+    
+    <span class="c1"># Response: reserved</span>
+    r <span class="o">=</span> mp1.<span class="nf">read_bytes</span>(<span class="m">1</span>)[<span class="m">0</span>]
+    <span class="nf">print</span>(f<span class="s">"{format(r, ‘#04x’)}\t\t{r} Reserved"</span>)
+
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>()</code></pre></div>
+<p>The download command is used to download a binary code (image) into the SRAM
+memory or to write a partition in NVM.</p>
+<p>Two types of operations are available:</p>
+<ul>
+<li>
+<p>Normal operation: download current partition binary to the device. For</p>
+</li>
+</ul>
+<p>initialization phase the partitions are loaded in SRAM, otherwise for writing
+phase the partition are written in NVM.</p>
+<ul>
+<li>
+<p>Special operation: download non-signed data to non-executable memory space</p>
+</li>
+</ul>
+<p>A Start command is necessary to finalize these operations after the download
+command.</p>
+<p>The Packet number is used to specify the type of operation and the number of the
+current packet. The table below gives the description of the packet number.</p>
+<table><thead><tr><th style="text-align:center">Byte</th><th style="text-align:center">Value</th><th style="text-align:left">Description</th></tr></thead><tbody>
+<tr><td style="text-align:center">3</td><td style="text-align:center">0x00</td><td style="text-align:left">Normal operation: write in current phase</td></tr>
+<tr><td style="text-align:center">.</td><td style="text-align:center">0xF2</td><td style="text-align:left">Special operation: OTP write</td></tr>
+<tr><td style="text-align:center">.</td><td style="text-align:center">0xF3</td><td style="text-align:left">Special operation: Reserved</td></tr>
+<tr><td style="text-align:center">.</td><td style="text-align:center">0xF4</td><td style="text-align:left">Special operation PMIC: NVM write</td></tr>
+<tr><td style="text-align:center">.</td><td style="text-align:center">Others</td><td style="text-align:left">Reserved</td></tr>
+<tr><td style="text-align:center">0-2</td><td style="text-align:center">—</td><td style="text-align:left">Packet number, increasing from 0 to 0xFFFFFF</td></tr>
+</tbody></table>
+<p>Packet number it is not an address as on STM32 MCU with only memory mapped
+flash, but the index of the received packet. The offset of the packet N the
+offset in the current partition/phase is N times 256 bytes when only full
+packets are used.</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">download</span>(num, data):
+    <span class="c1"># Data sanity check</span>
+    <span class="nf">print</span>(f<span class="s">"Packet number {num} of length {len(data)}:"</span>)
+    <span class="k">if</span> <span class="nf">len</span>(data) <span class="o">&gt;</span> <span class="m">256</span>:
+        <span class="k">raise</span> <span class="nf">RuntimeError</span>(<span class="s">"Too much data to send."</span>)
+        
+    <span class="c1"># Send "Download" command</span>
+    mp1.<span class="nf">write_raw</span>(<span class="nf">pack_cmd</span>(<span class="m">0x31</span>))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>(<span class="s">" command"</span>)
+    
+    <span class="c1"># Packet number</span>
+    i0 <span class="o">=</span> (num <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">0</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    i1 <span class="o">=</span> (num <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">1</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    i2 <span class="o">=</span> (num <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">2</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"BBBB"</span>, <span class="m">0x00</span>, i2, i1, i0))
+
+    <span class="c1"># Checksum byte: XOR (byte 3 to byte 6)</span>
+    mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"B"</span>, i2 <span class="o">^</span> i1 <span class="o">^</span> i0))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>(<span class="s">" packet number"</span>)
+    
+    <span class="c1"># Packet size (0 &lt; N &lt; 255)</span>
+    mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"B"</span>, <span class="nf">len</span>(data) <span class="o">-</span> <span class="m">1</span>))
+    
+    <span class="c1"># N-1 data bytes</span>
+    <span class="k">for</span> d <span class="k">in</span> data:
+        mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"B"</span>, d))
+        
+    <span class="c1"># Checksum byte: XOR (byte 8 to Last-1)</span>
+    checksum <span class="o">=</span> <span class="nf">len</span>(data) <span class="o">-</span> <span class="m">1</span>
+    <span class="k">for</span> d <span class="k">in</span> data:
+        checksum <span class="o">^</span><span class="o">=</span> d
+    mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"B"</span>, checksum))
+
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>(<span class="s">" data"</span>)</code></pre></div>
+<p>The Read memory command is used to read data from any valid memory address in
+the system memory.</p>
+<p>When the device receives the read memory command, it transmits the ACK byte to
+the application. After the transmission of the ACK byte, the device waits for an
+address (4 bytes) and a checksum byte, then it checks the received address. If
+the address is valid and the checksum is correct, the device transmits an ACK
+byte, otherwise it transmits a NACK byte and aborts the command.</p>
+<p>When the address is valid and the checksum is correct, the device waits for N (N
+= number of bytes to be received -1) and for its complemented byte (checksum).
+If the checksum is correct the device transmits the needed data (N+1 bytes) to
+the application, starting from the received address. If the checksum is not
+correct, it sends a NACK before aborting the command.</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">read_memory</span>(addr, num_bytes):
+    <span class="nf">print</span>(<span class="s">"Note: read memory command not supported by ROM code STM32MP13x."</span>)
+    
+    <span class="c1"># Data sanity check</span>
+    <span class="k">if</span> num_bytes <span class="o">&gt;</span> <span class="m">256</span>:
+        <span class="k">raise</span> <span class="nf">RuntimeError</span>(<span class="s">"Too much data to receive."</span>)
+        
+    <span class="c1"># Send "Read memory" command</span>
+    mp1.<span class="nf">write_raw</span>(<span class="nf">pack_cmd</span>(<span class="m">0x11</span>))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>(<span class="s">" command"</span>)
+
+    <span class="c1"># Start address</span>
+    i0 <span class="o">=</span> (addr <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">0</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    i1 <span class="o">=</span> (addr <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">1</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    i2 <span class="o">=</span> (addr <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">2</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"BBBB"</span>, <span class="m">0x00</span>, i2, i1, i0))
+
+    <span class="c1"># Checksum byte: XOR (byte 3 to byte 6)</span>
+    mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"B"</span>, i2 <span class="o">^</span> i1 <span class="o">^</span> i0))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>(<span class="s">" start address"</span>)
+    
+    <span class="c1"># Number of bytes to be received – 1 (N = [0, 255])</span>
+    <span class="c1"># (also Checksum byte: XOR)</span>
+    mp1.<span class="nf">write_raw</span>(<span class="nf">pack_cmd</span>(num_bytes <span class="o">-</span> <span class="m">1</span>))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>(<span class="s">" number of bytes"</span>)</code></pre></div>
+<p>The Start command is used:</p>
+<ul>
+<li>
+<p>To execute the code just downloaded in the memory or any other code by</p>
+</li>
+</ul>
+<p>branching to an address specified by the application. When the device receives
+the Start command, it transmits the ACK byte to the application. If the address
+is valid the device transmits an ACK byte and jumps to this address, otherwise
+it transmits a NACK byte and aborts the command.</p>
+<ul>
+<li>
+<p>To finalize the last download command, when the host indicates the address =</p>
+</li>
+</ul>
+<p>0xFFFFFFFF.</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">start</span>(addr):
+    <span class="c1"># Send "Start" command</span>
+    mp1.<span class="nf">write_raw</span>(<span class="nf">pack_cmd</span>(<span class="m">0x21</span>))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>(<span class="s">" command"</span>)
+
+    <span class="c1"># Start address</span>
+    i0 <span class="o">=</span> (addr <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">0</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    i1 <span class="o">=</span> (addr <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">1</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    i2 <span class="o">=</span> (addr <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">2</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    i3 <span class="o">=</span> (addr <span class="o">&gt;</span><span class="o">&gt;</span> <span class="m">3</span><span class="o">*</span><span class="m">8</span>) <span class="o">&amp;</span> <span class="m">0xff</span>
+    mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"BBBB"</span>, i3, i2, i1, i0))
+
+    <span class="c1"># Checksum byte: XOR (byte 3 to byte 6)</span>
+    mp1.<span class="nf">write_raw</span>(struct.<span class="nf">pack</span>(<span class="s">"B"</span>, i3 <span class="o">^</span> i2 <span class="o">^</span> i1 <span class="o">^</span> i0))
+    
+    <span class="c1"># Response: ACK</span>
+    <span class="nf">get_ack</span>(<span class="s">" address"</span>)</code></pre></div>
+<p>To download a complete file:</p>
+<div class="codehilite"><pre><code class="language-python"><span class="k">def</span> <span class="nf">down_file</span>(fname<span class="o">=</span><span class="s">’tf-a-stm32mp135f-dk.stm32’</span>):
+    <span class="c1"># size of each chunk (must be &lt;= 256 bytes)</span>
+    sz <span class="o">=</span> <span class="m">256</span>
+
+    <span class="c1"># open file with the bitstream</span>
+    <span class="k">with</span> <span class="nf">open</span>(fname, <span class="s">’rb’</span>) <span class="k">as</span> f:
+        fb <span class="o">=</span> f.<span class="nf">read</span>()
+
+    <span class="c1"># split file into this many chunks</span>
+    num_chunks <span class="o">=</span> <span class="nf">int</span>(np.<span class="nf">ceil</span>(<span class="nf">len</span>(fb) <span class="o">/</span> sz))
+
+    <span class="c1"># send each chunk one by one</span>
+    <span class="k">for</span> i <span class="k">in</span> <span class="nf">tqdm</span>(<span class="nf">range</span>(num_chunks)):
+        chunk <span class="o">=</span> fb[i<span class="o">*</span>sz : (i<span class="o">+</span><span class="m">1</span>)<span class="o">*</span>sz]
+        <span class="nf">download</span>(i, chunk)
+        
+    <span class="c1"># necessary to finalize download</span>
+    <span class="nf">start</span>(<span class="m">0xFFFFFFFF</span>)</code></pre></div>
+<h3 id="flash-the-evaluation-board">Flash the Evaluation Board</h3>
+<p>We simply run the functions one after the other and verify that the output
+printed matches what’s shown here.</p>
+<p>As an example, we will use the Blink program that we develop, compile, and
+package in <a href="https://github.com/js216/mp135_boot/tree/main/blink_noide">this repo.</a></p>
+<div class="codehilite"><pre><code class="language-text">&gt;&gt;&gt; uart_init()
+0x79		ACK
+
+&gt;&gt;&gt; get()
+0x79		ACK
+0x06		6 + 1 bytes to follow
+0x40		version 1.0
+0x06		cmd = Get
+0x06		cmd = Get Version
+0x06		cmd = Get ID
+0x06		cmd = Get phase
+0x06		cmd = Start (Go)
+0x06		cmd = Download (Write Memory)
+0x79		ACK
+
+&gt;&gt;&gt; get_version()
+0x79		ACK
+0x10		version 1.0
+0x00		Option byte 1
+0x00		Option byte 2
+0x79		ACK
+
+&gt;&gt;&gt; get_id()
+0x79		ACK
+0x01		1 + 1 bytes to follow
+0x05 0x01 	STM32MP13x
+0x79		ACK
+
+&gt;&gt;&gt; get_phase()
+0x79		ACK
+0x06		6 + 1 bytes to follow
+0x01		Phase ID
+0x2ffdfe00	Download address
+0x01		1 additional bytes following
+0x00		0 Reserved
+0x79		ACK
+
+&gt;&gt;&gt; down_file(fname=’blink.stm32’)
+Packet number 0 of length 256:
+0x79		ACK command
+0x79		ACK packet number
+0x79		ACK data
+...
+(skip over lots of packets)
+...
+Packet number 264 of length 156:
+0x79		ACK command
+0x79		ACK packet number
+0x79		ACK data
+0x79		ACK command
+0x79		ACK address</code></pre></div>
+<p>After a little bit, the red LED on the evaluation board will blink. Success!</p>
+<h3 id="flash-a-custom-board">Flash a Custom Board</h3>
+<p>Amazingly, the exact same procedure works on any custom board, so long as it
+breaks out the UART4 pin and applies 3.3V and 1.35V power supplies in the
+correct sequence. Find the schematics and layout files for my board in
+<a href="https://github.com/js216/stm32mp135_test_board">this repository.</a></p>
+<p>Since the custom board does not use STPMIC1, the code for the blink example is
+even simpler. Find it <a href="https://github.com/js216/stm32mp135_test_board/tree/main/baremetal/blink">here.</a></p>
+<p>The UART wires (green/yellow) and the two power supplies is all that needs to be
+connected, and then the red LED (middle of the PCB) will blink. Yes, the setup
+is that simple!</p>
+<p><img alt="" src="../images/first_blink.jpg"/></p>
+<hr/><section class="footnotes"><ol><li id="fn-a507063f-app" value="1">ST application note AN5275, “USB DFU/USART protocols used in STM32MP1 Series bootloaders”. <a href="#fnref-a507063f-app">↩</a></li></ol></section>
+</div>
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Philosophy</div>
+<h2><a href="always-mutate-the-entire-global-state">Always Mutate the Entire Global State</a></h2>
+<div class="article-meta">Published 17 Oct 2025. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/mask.jpg"/></p>
+<p>For the past month I had been stuck hunting down subtle bugs that happen when a
+particular sequence of commands is entered into a program. Sometimes even
+repeating the exact sequence would not be enough to reproduce the bug, since the
+program’s behavior depends on all commands that have been entered before as well
+as some saved state. Such chaos is to be expected when the user commands that a
+program exposes each modify one or more global state variables.</p>
+<p>The wizards of functional programming counsel us to use pure functions only,
+i.e., those whose output depends only on their inputs and that don’t change
+anything else in the system. That style of coding would have fixed my bugs, but
+is strictly speaking impossible. If no function modifies any global state, then
+how can it return values? The return values get passed back via the call stack,
+which is of course part of the global state and influences the execution of
+functions that follow. Even ignoring that, ultimately the program needs to
+output the values to the user or manipulate the hardware in some way, which is
+also part of the global state.</p>
+<p>The real solution indicated in this case is of the type “if you can’t beat them,
+you join them”. If you cannot have perfectly pure functions, then you should
+have functions that are <em>perfectly impure</em>. In other words, functions that
+mutate the global state to the largest extent possible.</p>
+<p>In the example from the first paragraphs, my program exposed a range of user
+commands: some change system parameters, and others work on one of several
+similar output channels of an instrument. The intuitive but buggy approach is
+for each command to change only the things it needs to change. The “perfectly
+impure” approach is to recompute the entire global state no matter how small the
+change that the command actually needs to make.</p>
+<p>This results in a tremendous simplification of the possible parameter space. For
+every set of user-visible parameter values, there is only one possible state the
+system or program can be in. Contrast that to the intuitive/buggy approach where
+there is an almost infinite number of system states corresponding to a given set
+of parameters!</p>
+<p>But isn’t this awfully inefficient? If an instrument has ten outputs, and each
+output has 25 parameters, then to change one parameter would take 250 times
+longer than it needs to! Not really. If all user commands eventually call the
+same function to effect a parameter change, that <em>one</em> function can do the
+optimization to not modify things that haven’t changed. In other words, instead
+of having to perform the optimization manually in each user-facing command, the
+optimization is done at the last possible moment in a single function
+automatically. For a reasonably complex program, it’s nearly impossible to
+manually keep track of this kind of “cache consistency”, but pretty easy to do
+automatically as described here.</p>
+<p>The actual result regarding the mysterious bugs I spent a month chasing? They
+were all gone, replaced by relatively shallow issues that were easy to reproduce
+and quick to fix. Besides, once I implemented the “inefficient” approach of
+updating the whole state on each command, the system became faster and more
+responsive, since the automatic optimization did a much better job than my
+bug-prone manual ones.</p>
+</div>
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Incoherent Thoughts</div>
+<h2><a href="from-fixing-to-creating">From Fixing to Creating</a></h2>
+<div class="article-meta">Published 9 Oct 2025. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/air.jpg"/></p>
+<p>If all your activities are about fixing problems, filling needs, and resolving
+pain, then your life requires problems, needs, pain, and conflict. If instead
+you pursue things meaningful in themselves, with an intrinsic joy, then the good
+life is more easily achieved.</p>
+<p>Move from a reactive mindset (“What needs fixing?”) to a generative one (“What
+do I love creating?”).</p>
+</div>
+
+<div class="article-sep"></div>
+
+<div class="article">
+<div class="article-topic">Incoherent Thoughts</div>
+<h2><a href="failure-is-not-personal">Failure Is Not Personal</a></h2>
+<div class="article-meta">Published 3 Oct 2025. By Jakob Kastelic.</div>
+<p><img alt="" src="../images/tube.jpg"/></p>
+<p>In a probabilistic world, it is unreasonable to expect any one thing to succeed.
+At most, you can hope that of the several that were attempted, at least one will
+turn out as expected. That’s the genetic algorithm: try a countless number of
+things, and remember which ones work and which ones don’t.</p>
+<p>There’s nothing personal about things that fail—or, for that matter, those
+that succeed. It is just the unfolding of a complex system, so better not be
+attached to any one outcome.</p>
+<p>Success and failure are signals, not verdicts on your worth.</p>
+</div>
+
+    <div class="nav-links" style="display:flex; justify-content:space-between;">
+        <div><a class="older" href="page5.html">← Older articles</a></div>
+        <div><a class="newer" href="page3.html">Newer articles →</a></div>
+    </div>
+    
+<footer class="license-footer">
+<p>Content licensed under
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+</p>
+</footer>
+</body>
+</html>

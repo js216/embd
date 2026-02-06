@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="author" content="Jakob Kastelic">
+<meta name="date" content="3 Sep 2025">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content=">">
+<link rel="stylesheet" href="style.css">
+<title>STM32MP135 Default Buildroot Configuration</title>
+</head>
+<header class="site-banner">
+<div class="logo">
+<a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc</a>
+</div>
+<nav class="site-nav">
+<a href="archive">Archive</a>
+<a href="about">About</a>
+</nav>
+</header>
+<body>
+<div class="article">
+<div class="article-topic">Linux</div>
+<h2>STM32MP135 Default Buildroot Configuration</h2>
+<div class="article-meta">Published 3 Sep 2025. By Jakob Kastelic.</div>
+<p><img src="../images/vax.jpg" alt=""></p>
+<p><em>This is Part 1 in the series: Linux on STM32MP135. <a href="#series-list">See other
+articles.</a></em></p>
+<p>Wouldn&rsquo;t it be great to have a single board computer that runs <em>just Linux</em>?
+That is, no external libraries, tools, driver modules&mdash;just the kernel binary,
+and whichever programs you <em>choose</em> to run under it. After all, Linux is just a
+C program, so how hard can it be to compile and run it? Read on to get started
+exploring the wild world of embedded Linux.</p>
+<h3 id="tutorial">Tutorial</h3>
+<p>In this tutorial, we show how to get a basic &ldquo;minimal&rdquo; Linux installed on the
+<a href="https://www.st.com/en/evaluation-tools/stm32mp135f-dk.html">STM32MP135 evaluation
+board</a> with a
+minimum of steps or obscure scripts. For detailed explanations, refer to the
+excellent writeup from <a href="
+https://bootlin.com/blog/building-a-linux-system-for-the-stm32mp1-basic-system/">Bootlin.</a></p>
+<ol>
+<li>
+<p>Get a copy of Buildroot:</p>
+<div class="codehilite"><pre><code class="language-sh">   $ git clone https://gitlab.com/buildroot.org/buildroot.git
+   $ cd buildroot</code></pre></div>
+
+
+<p>As of this writing, the latest commit in this repository is</p>
+<div class="codehilite"><pre><code class="language-sh">   $ git rev-parse HEAD
+   bbb0164de08f761a3399c961700db44befff5c70</code></pre></div>
+
+
+</li>
+</ol>
+<ol>
+<li>
+<p>Find the default configuration appropriate for this board:</p>
+<div class="codehilite"><pre><code class="language-sh">   $ make list-defconfigs | grep stm32mp135</code></pre></div>
+
+
+<p>This shows that <code>stm32mp135f_dk_defconfig</code> is available. Install it by calling
+make on it:</p>
+<div class="codehilite"><pre><code class="language-sh">   $ make stm32mp135f_dk_defconfig</code></pre></div>
+
+
+<p>Let&rsquo;s enable the USB mode for Arm Trusted Firmware (TF-A) so that we will be
+able to use USB flashing in the future. Open</p>
+<div class="codehilite"><pre><code class="language-sh">   $ make menuconfig</code></pre></div>
+
+
+<p>Navigate under <code>Bootloaders ---&gt;  ARM Trusted Firmware (ATF)</code> and add the
+following at the end of the &ldquo;Additional ATF build variables&rdquo; string:</p>
+<div class="codehilite"><pre><code class="language-text">   STM32MP_USB_PROGRAMMER=1</code></pre></div>
+
+
+<p>Then select &ldquo;OK&rdquo;, and &ldquo;Esc&rdquo; your way out of the menuconfig. Make sure to say
+&ldquo;Yes&rdquo; when asked whether to save the new configuration.</p>
+</li>
+</ol>
+<ol>
+<li>
+<p>Run the build, and collect logs into a file:</p>
+<div class="codehilite"><pre><code class="language-sh">   $ time make &gt;log.txt 2&gt;&amp;1</code></pre></div>
+
+
+<p>On my dual-core i5-7300U laptop, this took about an hour and a half.</p>
+<p>Watch the build from another terminal:</p>
+<div class="codehilite"><pre><code class="language-sh">   $ tail -f log.txt</code></pre></div>
+
+
+</li>
+</ol>
+<ol>
+<li>
+<p>Copy the generated image to an SD card (assumed to be at <code>/dev/sdb</code>):</p>
+<div class="codehilite"><pre><code class="language-sh">   $ sudo dd if=output/images/sdcard.img of=dev/sdb bs=1M</code></pre></div>
+
+
+</li>
+</ol>
+<ol>
+<li>
+<p>Time to run it on the evaluation board! Set it up as follows:</p>
+<ul>
+<li>
+<p>Insert the SD card into the slot</p>
+</li>
+<li>
+<p>Connect the USB-C port to the right of the screen (<code>CN12</code>, labelled <code>PWR_IN</code>)
+to a powered USB hub</p>
+</li>
+<li>
+<p>Connect the Micro USB (<code>CN10</code>, left of the screen) to a desktop computer,
+which will enumerate as a serial port (<code>/dev/ttyACM0</code> on my computer).</p>
+</li>
+<li>
+<p>Open a serial console (115200 baud, no parity) to listen</p>
+</li>
+</ul>
+<p><img src="../images/board.jpg" alt=""></p>
+<p>Set the DIP switches to boot from the SD card as shown in the image below. In
+this orientation, press in on the upper side of the rockers of <code>BOOT0</code> and
+<code>BOOT2</code>, and on the lower side for <code>BOOT1</code>.</p>
+<p><img src="../images/buttons.jpg" alt=""></p>
+<p>Press the black reset button and if everything went right, you should see the
+kernel boot messages displayed on the serial monitor, until the login prompt
+gets displayed. Done!</p>
+<div class="codehilite"><pre><code class="language-text">   Welcome to Buildroot
+   buildroot login: root
+   # uname -a
+   Linux buildroot 6.12.22 #1 SMP PREEMPT Wed Sep  3 20:23:46 PDT 2025 armv7l GNU/Linux</code></pre></div>
+
+
+</li>
+</ol>
+<h3 id="discussion">Discussion</h3>
+<p>This is, to my knowledge, the fastest way to get started with embedded Linux on
+&ldquo;real&rdquo; hardware in terms of number of steps. However, it does not result in the
+most minimal distribution. Besides the Linux kernel, the default configuration
+pulls in a number of large programs, such as U-Boot, ATF, OP-TEE, and more.
+(Examine <code>buildroot/dl</code>) after building to see all the stuff that got downloaded
+in the build process.)</p>
+<p>For someone used to bare-metal embedded work, the size and complexity of this
+auxiliary software is utterly baffling. A bootloader with more lines of code
+than my whole project? Several different compilers and interpreters (C, Rust,
+Perl, Python) needed for a &ldquo;Hello, world!?&rdquo;</p>
+<p>In my mind I hold an ideal of the &ldquo;pure&rdquo; essence of Unix: there is one kernel,
+which at the end of its boot process invokes one user-space program (<code>init</code>),
+which then does anything it wants to. I believe in the simplicity of the Linux
+boot process, as outlined by Russell King in the 2002 masterpiece, <a href="https://www.kernel.org/doc/Documentation/arm/Booting">&rdquo;Booting ARM
+Linux&rdquo;</a>:</p>
+<ol>
+<li>
+<p>Initialize RAM and copy the kernel into it</p>
+</li>
+<li>
+<p>Initialise one serial port</p>
+</li>
+<li>
+<p>Load the device tree blob (DTB) into RAM, and place its address in <code>r2</code></p>
+</li>
+<li>
+<p>Pass control to Linux and watch it boot like magic!</p>
+</li>
+</ol>
+<p>It is time we regain the pristine uncomplicated state that used to exist before
+everything became bundled and containerized and wrapped inside countless layers
+of abstraction that are supposed to make things simpler, but in the end serve
+only to confuse everyone.</p>
+<p>In the next articles, we will take this &ldquo;primordial mess&rdquo; and cut it down to
+size. Stay tuned!</p>
+<div class="series-box">
+<h3 id="series-list">All Articles in This Series</h3>
+<ul>
+  <li><em>1. This article</em></li>
+  <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
+  <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
+  <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
+  <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
+  <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
+  <li><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">7. Build Linux for STM32MP135 in under 50 Lines of Makefile</a></li>
+  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
+</ul>
+</div>
+</div>
+</body>
+</html>
