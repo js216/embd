@@ -35,7 +35,7 @@ and my list of <a href="#patches">patches</a>.</em></p>
 
 PATCHES = """
 <div class="article-topic"></div>
-<h2 id="patches">Patches</h2>
+<h2 id="patches">Patches</h2><br>
 <table>
   <thead>
     <tr>
@@ -110,7 +110,7 @@ PATCHES = """
       <td>17 Sep 25</td>
       <td>&#x21B3;</td>
       <td>v2</td>
-      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786595.html">Sub</a> <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786596.html">Sub</a> <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html">Sub</a></td>
+      <td><a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786595.html">Sub 1</a> <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786596.html">2</a> <a href="https://lists.buildroot.org/pipermail/buildroot/2025-September/786597.html">3</a></td>
     </tr>
     <tr>
       <td>4 Feb 26</td>
@@ -146,7 +146,7 @@ PATCHES = """
       <td>12 Dec 24</td>
       <td>mc</td>
       <td>fix ETA calculation overflow</td>
-      <td><a href="https://github.com/MidnightCommander/mc/issues/4613">Sub/Mege</a></td>
+      <td><a href="https://github.com/MidnightCommander/mc/issues/4613">Sub/Merge</a></td>
     </tr>
     <tr>
       <td>15 Aug 24</td>
