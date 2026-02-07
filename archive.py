@@ -227,13 +227,22 @@ def get_articles(folder):
 # ---------- Render chronological listing ----------
 
 def render_chronological(articles):
-    lines = ["<h2>Chronological listing</h2>",
-             '<div class="chronology">']
-    for a in sorted(articles, key=lambda x: x["date_obj"], reverse=True):
-        fname = a["path"].with_suffix("").name
-        lines.append(
-            f'<div><span class="date">{a["date"]}</span> <a href="{fname}">{a["title"]}</a></div>'
-        )
+    lines = ["<h2>Chronological listing</h2>", '<div class="chronology">']
+
+    # group articles by date
+    articles_by_date = defaultdict(list)
+    for a in articles:
+        articles_by_date[a["date_obj"]].append(a)
+
+    # iterate dates descending
+    for date in sorted(articles_by_date.keys(), reverse=True):
+        # sort articles by title within the same date
+        for a in sorted(articles_by_date[date], key=lambda x: x["title"]):
+            fname = a["path"].with_suffix("").name
+            lines.append(
+                f'<div><span class="date">{a["date"]}</span> <a href="{fname}">{a["title"]}</a></div>'
+            )
+
     lines.append("</div>")
     return "\n".join(lines)
 
