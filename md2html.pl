@@ -206,18 +206,21 @@ sub render_lists {
 
 sub render_inline {
     my ($text) = @_;
+    
+    # 1. Protect existing HTML tags (especially code/pre) to prevent dash substitution inside them
+    $text =~ s/(<(code|pre).*?>.*?<\/\2>|<[^>]+>)/push(@inline_data, $1); "\x01P" . $#inline_data . "\x01"/egis;
+    
+    # 2. Existing backtick logic
     $text =~ s/`([^`]+)`/push(@inline_data, '<code>' . html_escape($1) . '<\/code>'); "\x01P" . $#inline_data . "\x01"/eg;
     
     # Images and links: parse with balanced brackets
     my $result = '';
     my $pos = 0;
     while ($pos < length($text)) {
-        # Look for image marker
         if (substr($text, $pos, 2) eq '![') {
             my $bracket_pos = $pos + 2;
             my $depth = 1;
             my $alt_text = '';
-            # Find matching ]
             while ($bracket_pos < length($text) && $depth > 0) {
                 my $c = substr($text, $bracket_pos, 1);
                 if ($c eq '[') { $depth++; }
@@ -225,7 +228,6 @@ sub render_inline {
                 $alt_text .= $c unless ($depth == 0);
                 $bracket_pos++;
             }
-            # Check for (url)
             if ($depth == 0 && $bracket_pos < length($text) && substr($text, $bracket_pos, 1) eq '(') {
                 my $url_start = $bracket_pos + 1;
                 my $url_end = index($text, ')', $url_start);
@@ -238,12 +240,10 @@ sub render_inline {
                 }
             }
         }
-        # Look for link marker
         elsif (substr($text, $pos, 1) eq '[') {
             my $bracket_pos = $pos + 1;
             my $depth = 1;
             my $link_text = '';
-            # Find matching ]
             while ($bracket_pos < length($text) && $depth > 0) {
                 my $c = substr($text, $bracket_pos, 1);
                 if ($c eq '[') { $depth++; }
@@ -251,7 +251,6 @@ sub render_inline {
                 $link_text .= $c unless ($depth == 0);
                 $bracket_pos++;
             }
-            # Check for (url)
             if ($depth == 0 && $bracket_pos < length($text) && substr($text, $bracket_pos, 1) eq '(') {
                 my $url_start = $bracket_pos + 1;
                 my $url_end = index($text, ')', $url_start);
@@ -277,7 +276,7 @@ sub render_inline {
     $text =~ s/__([\s\S]*?)__/<strong>$1<\/strong>/g;
     $text =~ s/\*([\s\S]*?)\*/<em>$1<\/em>/g;
     $text =~ s/_([\s\S]*?)_/<em>$1<\/em>/g;
-    # Multi-pass restoration for nested elements
+    
     while ($text =~ /\x01P(\d+)\x01/) { $text =~ s/\x01P(\d+)\x01/$inline_data[$1]/eg; }
     return $text;
 }
@@ -285,9 +284,12 @@ sub render_inline {
 sub smartquotes {
     my ($text) = @_;
     my @prot;
-    $text =~ s/(<[^>]+>|<code>.*?<\/code>|<pre>.*?<\/pre>)/push(@prot, $1); "\x02P" . $#prot . "\x02"/egs;
+    # Updated regex to handle attributes in <code> and <pre> tags and case-insensitivity
+    $text =~ s/(<(code|pre).*?>.*?<\/\2>|<[^>]+>)/push(@prot, $1); "\x02P" . $#prot . "\x02"/egis;
+    
     $text =~ s/(^|[\s\(\[\{>]|\x02)"/$1&ldquo;/g; $text =~ s/"/&rdquo;/g;
     $text =~ s/(^|[\s\(\[\{>]|\x02)'/$1&lsquo;/g; $text =~ s/'/&rsquo;/g;
+    
     while ($text =~ /\x02P(\d+)\x02/) { $text =~ s/\x02P(\d+)\x02/$prot[$1]/egs; }
     return $text;
 }
