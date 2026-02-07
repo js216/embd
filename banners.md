@@ -240,3 +240,10 @@ Bob Flandrena:
 [Source](https://spinroot.com/pico/pjw.html)
 [Link](https://spinroot.com/pico/eye_chart.jpg)
 ![](../images/pjw.jpg)
+
+Jackson Chung:
+*ADSP-2181 under a microscope*
+(Dec 27, 2021)
+[Source](https://www.techeblog.com/analog-devices-adsp-2181-chip-hidden-sonic/)
+[Link](https://i.imgur.com/6G8Y342.jpeg)
+![](../images/sn.jpg)
