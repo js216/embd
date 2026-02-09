@@ -330,5 +330,5 @@ evaluation, potentially affecting broader adoption among engineers.
 [^ref]: Analog Devices: *ADSP-21562/3/5/6/7/9 SHARC+ Processor Hardware
   Reference*. Revision 1.1, October 2022. Part Number 82-100137-01.
 
-[^ccref]: Analog Devices: CrossCore® Embedded Studio 3.0.2 > SHARC-FX
+[^ccref]: Analog Devices: CrossCore Embedded Studio 3.0.2 > SHARC-FX
   Development Tools Documentation > Loader and Utilities Manual > Loader.

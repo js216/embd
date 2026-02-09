@@ -247,3 +247,8 @@ Jackson Chung:
 [Source](https://www.techeblog.com/analog-devices-adsp-2181-chip-hidden-sonic/)
 [Link](https://i.imgur.com/6G8Y342.jpeg)
 ![](../images/sn.jpg)
+
+Sora:
+*In the style of ancient Japanese black ink drawing, portray the vlsi mask of adsp-21569*
+(Feb 9, 2026)
+![](../images/jp.jpg)
