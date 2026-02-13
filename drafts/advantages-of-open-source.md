@@ -1,0 +1,8 @@
+- anti-Gumption Trap
+- push for hugher quality thru public exposure
+- feeding AI models so they help you later
+- the vision/dream of usefulness instead of being locked in drawer
+- the drive to innovate
+- modularity of testing
+- self-contained building blocks
+- more systematic reasoning

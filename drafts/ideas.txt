@@ -1,0 +1,98 @@
+- algorithms from alg.nw
+- UVM/VMM applied to test & measurement instruments
+- describe reg.c
+- efficient use of multiple desktops: dwm/tmux vs Windows slowness
+- Accidental complexity: we bring it upon ourselves
+- Interview John about free sharing of knowledge and SRS educational mission
+- On Gumption Traps
+- Backups with tar
+- Folders vs directories, files have no names
+- Reading code used to be common wisdom? Quote Knuth. Read a simple v7 program
+- rewrite the manual for the Pro-800
+   - first check if it's been done yet
+   - Portlandia quote: "dream of the 80s ..."
+- collect quotes for about page:
+   - Knuth: email is for people who stay on top
+   - Locke: underworker in knowledge ...
+- how I use the sc spreadsheet
+   - Quote from Raymond: SC interface is not "discoverable", but that's fine if
+     you use it often and know how to get started
+- Neuroscience of focus
+   - The Problem
+   - The Science
+   - The 6-factor Analysis
+   - The Silver Bullets
+   - Ten-Item Sprint Sheet
+- quantifying software efficiency: normally it's defined as effect divided by
+  energy in, but in software there's only emotional vague terms like
+  "lightweight" and "fast"; why not put software on a per-joule basis as well?
+- can we return to the software tools philosophy, where programs are small and
+  modular, and the documentation tells how to turn it into a turnkey solution,
+  so you can read the docs to know how to use the programs instead of having to
+  read the millions of lines of source code of some useless turnkey demos to
+  understand how the documentation is supposed to work?
+- some thoughts, perhaps the best ones, are fragile, diaphanous, and easily
+  wiped out by distractions: big colored buttons, social pressures, etc., that's
+  why meditation is great, or restricted environemnts (command line, Freewrite
+  Alpha)
+- Describe my "agile for one" system, and what I've learned and what I'm trying
+  now
+- What It Can Do and What It Can't Do: the tension between people who start by
+  pointing out all the things that are wrong with a {tool, philosophy,
+  religion}, and those who acknowledge limitations and proceed to make the most
+  of the possibility (quote by Ford: "Whether you believe you can do a thing or
+  not, you are right."). Examples: AI agents, LLMs, Osho philosophy, embedded
+  Linux, "computers will never" mentality. Contrast between (useless) spending
+  of time looking for reasons why the thing cannot work, instead of spending the
+  same time and effort looking for reasons it can work, and applications in
+  which it can do the most good.
+- Tracing my Unix obsession: it started with Bach
+- Write a response piece to my LLM article, Why I Need Humans, incl. experience,
+  building something together, opportunity to help ala Seneca "why sage needs a
+  friend"
+- you cannot fall behind if you think of things to do in terms of a single
+  simple flat list, like in my "agile for one", but if you think of it as a
+  calendar, as things you have to do on a particular day, then yes of course
+  things can move on faster than you can process them
+- explain #include DAG analyzer, and mention how ST thinks #includes are a
+  nuisance and packages them all in to a single "God header", but they are a
+  very important and intentional part of the C language design, since they bring
+  out the dependencies in a program in a very clear, machine analyzable way
+  (e.g. my Python script), and the point of "include what you use" is to reduce
+  accidental complexity by reducing coupling between layers/modules/parts of the
+  program
+- write about how I set up the Milk-V Duo to measure air quality
+- how I use the classic unix sc spreadsheet program
+- type up the rest of the little black book from p. 102 onwards
+   - incoherent thoughts
+   - regular journal entries too
+- Best Books
+   - Software tools
+   - other 5 star books from Goodreads
+- Small Programs
+   - timetree as statement of purpose and focus
+   - rand.c
+      - give it a better name
+      - put it on Github
+      - talk about SMART disk utilities and long uptime etc
+- why are you so afraid of AI scrapers? isn't that the best way to serve the
+  most people? let go of your monetization schemes, they're after all what made
+  the web so awful in 2010-2020s.
+- forms of "negativity" (cf. Alan Watts TV programme): morning meditation with
+  coffee, sleep, listening to "pure" music, silent church meditation of with
+  perfectly predictable liturgy (tridentine rite), hiking without talking (cf.
+  James Clear book about Abraham Lincoln retreating into silence, away from
+  other people's words), having tea or alcohol in the evening without
+  talking/reading/watching; compare with modern excuses about holiness in the
+  midst of activity (Escriva, etc.); go, flying, biking, doing dishes ... really
+  an activity with sole focus, no distractions, no peoplecrashing in, no keeping
+  of a mental stack of things to do next/after; case study: Linus repeatedly
+  writes how he did Linux because he had nothing else to do; but why so much
+  self-deprecation? The amazing focus he had is a rare thing, much to be
+  marvelled
+- computers are now fast enough (cf. Linus Torvalds book from 25 years ago,
+  saying the same thing!)
+- article series: my config files
+- bell labs "selective enthusiasm" vs damning with faint praise
+- the Absolute--Relative Fallacy
+- Temptation to Optimize
