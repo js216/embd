@@ -192,8 +192,8 @@ seconds it took over UART.
 
 With a bootstream of only about 62 kB, the boot time is not a significant
 consideration. For larger binaries, ADI offers estimates[^bt] of how long the
-boot will take as a function the binary size. Here's some representative numbers
-from the SPI2 figure:
+boot will take as a function of the binary size. Here's some representative
+numbers from the SPI2 figure:
 
 | Size / kB | Single | Dual   | Quad   |
 | --------- | ------ | ------ | ------ |

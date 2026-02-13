@@ -311,15 +311,46 @@ sub wrap_loose_paragraphs {
 
 sub render_blocks {
     my ($text) = @_;
+
+    # --- HTML INCLUDE DIRECTIVE ---
+    my @includes;
+    $text =~ s{^([ \t]*)!include\[(.*?)\][ \t]*$}{
+        my ($indent, $path) = ($1, $2);
+        my $content;
+
+        if (open my $fh, '<:encoding(UTF-8)', $path) {
+            local $/;
+            $content = <$fh>;
+            close $fh;
+        } else {
+            $content = "<!-- include failed: $path -->";
+        }
+
+        push @includes, $content . "\n\n";
+        $indent . "\x00INCLUDE" . $#includes . "\x00";
+    }mge;
+
     $text = render_lists($text);
     $text = render_indented_code_blocks($text);
     $text = render_blockquotes($text);
     $text = render_tables($text);
+
+    # --- HEADINGS ---
     $text =~ s{^(#{1,6})\s+(.*)$}{
-        my $lvl = length($1); my $txt = $2; $txt =~ s/^\s+|\s+$//g;
-        my $hid = lc($txt); $hid =~ s/\s+/-/g; $hid =~ s/[^\w\-]//g;
+        my $lvl = length($1);
+        my $txt = $2;
+        $txt =~ s/^\s+|\s+$//g;
+
+        my $hid = lc($txt);
+        $hid =~ s/\s+/-/g;
+        $hid =~ s/[^\w\-]//g;
+
         "<h$lvl id=\"$hid\">" . render_inline($txt) . "</h$lvl>\n\n";
     }mge;
+
+    # --- RESTORE INCLUDE BLOCKS ---
+    $text =~ s/\x00INCLUDE(\d+)\x00/$includes[$1]/g;
+
     return $text;
 }
 

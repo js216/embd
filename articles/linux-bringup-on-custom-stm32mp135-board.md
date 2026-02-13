@@ -309,16 +309,4 @@ that is supposed to run the operating system. It's what makes engineering a
 rewarding experience, but the mental jitter of it can also interfere with
 getting things done. After all, this is just routine work!
 
-<div class="series-box">
-<h3 id="series-list">All Articles in This Series</h3>
-<ul>
-  <li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
-  <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
-  <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
-  <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
-  <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
-  <li><em>6. This article</em></li>
-  <li><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">7. Build Linux for STM32MP135 in under 50 Lines of Makefile</a></li>
-  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
-</ul>
-</div>
+!include[articles/linux-on-stm32mp135.html]

@@ -173,19 +173,7 @@ But ... You may object, we need U-Boot anyways, otherwise how are we to load
 Linux? As we will explain in a future article, that is not so. U-Boot is
 entirely unnecessary for a large class of embedded Unix applications.
 
-<div class="series-box">
-<h3 id="series-list">All Articles in This Series</h3>
-<ul>
-  <li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
-  <li><em>2. This article</em></li>
-  <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
-  <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
-  <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
-  <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
-  <li><a href="build-linux-for-stm32mp135-in-under-50-lines-of-makefile">7. Build Linux for STM32MP135 in under 50 Lines of Makefile</a></li>
-  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
-</ul>
-</div>
+!include[articles/linux-on-stm32mp135.html]
 
 [^pract]:  B. Kernighan and R. Pike Overview: The Practice of Programming.
     Addison-Wesley, 1999.

@@ -172,7 +172,7 @@ Interestingly the corruption affects only every other byte, and if it is
 corrupted, it's always just off by 2 (i.e., only bit number 1 is affected).
 
 Adding the external 3.3V 10k pullup on DAT0 (when running in `SDMMC_BUS_WIDE_1B`
-mode) did not fux the corruption either. At any rate, scope traces show very
+mode) did not fix the corruption either. At any rate, scope traces show very
 clean data and clock waveforms (as is to be expected at such a low frequency).
 
 #### Aligned writes to RAM!

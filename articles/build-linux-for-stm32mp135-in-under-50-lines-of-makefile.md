@@ -241,19 +241,7 @@ expect a Linux distribution to approach to the ideal of [Unix
 philosophy](https://embd.cc/unix-contributions) much more closely, all the more
 so in an embedded, resource-constrained, highly reliable application.
 
-<div class="series-box">
-<h3 id="series-list">All Articles in This Series</h3>
-<ul>
-  <li><a href="stm32mp135-linux-default-buildroot">1. STM32MP135 Default Buildroot Configuration</a></li>
-  <li><a href="stm32mp135-linux-cubeprog">2. STM32MP135 Flashing via USB with STM32CubeProg</a></li>
-  <li><a href="stm32mp135-without-u-boot">3. STM32MP135 Without U-Boot (TF-A Falcon Mode)</a></li>
-  <li><a href="linux-tfa-bl33-qemu">4. Linux as TF-A BL33 on Qemu (No U-Boot)</a></li>
-  <li><a href="stm32mp135-without-optee">5. STM32MP135 Without OP-TEE</a></li>
-  <li><a href="linux-bringup-on-custom-stm32mp135-board">6. Linux Bring-Up on a Custom STM32MP135 Board</a></li>
-  <li><em>7. This article</em></li>
-  <li><a href="debugging-stm32mp135-kernel-decompression">8. Debugging STM32MP135 Kernel Decompression</a></li>
-</ul>
-</div>
+!include[articles/linux-on-stm32mp135.html]
 
 [^talk]: Anna-Lena Marx (inovex GmbH): *Your Vendor's BSP Is Probably Not Built
   for Product Longevity*. Yocto Project Summit, December 2025. Quoted on

@@ -252,3 +252,36 @@ Sora:
 *In the style of ancient Japanese black ink drawing, portray the vlsi mask of adsp-21569*
 (Feb 9, 2026)
 ![](../images/jp.jpg)
+
+Digital:
+*PDP-11 Architecture Handbook: The J-11 chipset*
+(1983)
+[Source](https://www.techeblog.com/analog-devices-adsp-2181-chip-hidden-sonic/)
+[Link](https://wwcm.synology.me/pdf/EB-23657-18%20PDP-11%20Architecture%20Handbook.pdf)
+![](../images/ah.jpg)
+
+---
+
+Digital:
+*PDP-11 Architecture Handbook*
+(1983)
+[Link](https://wwcm.synology.me/pdf/EB-23657-18%20PDP-11%20Architecture%20Handbook.pdf)
+![](../images/w.jpg)
+
+Digital:
+*LSI11 PDP11/03 Processor Handbook*
+(1975)
+[Link](https://wwcm.synology.me/pdf/EB-23657-18%20PDP-11%20Architecture%20Handbook.pd://bitsavers.org/pdf/dec/pdp11/handbooks/LSI-11_Processor_Handbook_1975-76.pdf)
+![](../images/ls.jpg)
+
+Digital:
+*PDP-11/34 Processor Handbook*
+(1976)
+[Link](https://bitsavers.org/pdf/dec/pdp11/handbooks/PDP-11_34_Processor_Handbook_1976.pdf)
+![](../images/34.jpg)
+
+Digital:
+*PDP-11/34 Processor Handbook*
+(1976)
+[Link](https://bitsavers.org/pdf/dec/pdp11/handbooks/PDP-11_34_Processor_Handbook_1976.pdf)
+![](../images/rc.jpg)

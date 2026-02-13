@@ -1,10 +1,11 @@
 ARTICLES_MARK := $(wildcard articles/*.md)
+ARTICLES_BOXS := $(wildcard articles/*.html)
 ARTICLES_HTML := $(patsubst articles/%.md,html/%.html,$(ARTICLES_MARK))
 
 all: html/index.html html/style.css html/robots.txt html/favicon.ico \
 	html/about.html html/archive.html
 
-html/%.html: articles/%.md template.html md2html.pl | html
+html/%.html: articles/%.md template.html md2html.pl $(ARTICLES_BOXS) | html
 	perl md2html.pl $< template.html > $@
 
 html:
