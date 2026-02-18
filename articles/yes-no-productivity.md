@@ -2,6 +2,7 @@
 title: Yes/No Productivity
 author: Jakob Kastelic
 date: 24 Aug 2025
+modified: 18 Feb 2026
 topic: Productivity
 description: >
    Discover a simple productivity method that organizes tasks into Yes and No
@@ -31,14 +32,14 @@ Until the project is complete and delivered to where is has to go, only work on
 the things from the Yes list. If anyone asks about their request that you're put
 on the No list, tell them you'll get to it later.
 
-You cannot focus on more than one thing at a time, although you can [try], at a
+You cannot focus on more than one thing at a time, although you can try, at a
 great cost to your sanity and productivity. The Yes list enforces your unity of
 purpose.
 
 Then, hopefully, the project is out: paper published, product shipping to
 customers, system running and being useful. Do not discard the No list just yet!
 It's full of potentially good ideas which you have subconsciously been working
-on (in [true parallelism] with the main project) for many weeks, months, even
+on (in true parallelism with the main project) for many weeks, months, even
 years. Scan it for these ideas, form new projects out of them, present or assign
 them to others to work on. Of course, many of these will be obsolete by now, or
 simply not good. Graciously let go of them --- throw them away.
