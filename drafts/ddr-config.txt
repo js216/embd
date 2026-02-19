@@ -1,0 +1,573 @@
+02/20/2026
+================================================================================
+
+[  368.740676] 8<--- cut here ---
+[  368.741319] Unable to handle kernel paging request at virtual address e0802000
+[  368.744054] [e0802000] *pgd=c1884811, *pte=00000000, *ppte=00000000
+[  368.746396] Internal error: Oops: 7 [#1] PREEMPT SMP ARM
+[  368.748323] Modules linked in:
+[  368.749544] CPU: 0 PID: 166 Comm: memtester Not tainted 6.1.28-dirty #22
+[  368.751976] Hardware name: STM32 (Device Tree Support)
+[  368.753900] PC is at stmmac_interrupt+0xe4/0x160
+[  368.755631] LR is at __raise_softirq_irqoff+0x28/0xcc
+[  368.757559] pc : [<c0801540>]    lr : [<c012744c>]    psr: 80000193
+[  368.759887] sp : e0801f18  ip : 00000000  fp : c2d63d40
+[  368.761812] r10: c1d48300  r9 : 00000001  r8 : 00000001
+[  368.763837] r7 : c1b7c580  r6 : e0801f1c  r5 : c1b7e000  r4 : 00000039
+[  368.766266] r3 : c0b3fea0  r2 : 00000008  r1 : 1eaf6000  r0 : 0000000c
+[  368.768695] Flags: Nzcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment none
+[  368.771330] Control: 10c5387d  Table: c2b5406a  DAC: 00000051
+[  368.773556] Register r0 information: non-paged memory
+[  368.775384] Register r1 information: non-paged memory
+[  368.777310] Register r2 information: non-paged memory
+[  368.779136] Register r3 information: non-slab/vmalloc memory
+[  368.781265] Register r4 information: non-paged memory
+[  368.783191] Register r5 information: non-slab/vmalloc memory
+[  368.785320] Register r6 information: 2-page vmalloc region starting at 0xe0800000 allocated at start_kernel+0x468/0x648
+[  368.789371] Register r7 information: non-slab/vmalloc memory
+[  368.791400] Register r8 information: non-paged memory
+[  368.793326] Register r9 information: non-paged memory
+[  368.795252] Register r10 information: slab kmalloc-256 start c1d48300 pointer offset 0 size 256
+[  368.798504] Register r11 information: slab task_struct start c2d63d40 pointer offset 0
+[  368.801449] Register r12 information: NULL pointer
+[  368.803174] Process memtester (pid: 166, stack limit = 0x88e78711)
+[  368.805505] Stack: (0xe0801f18 to 0xe0802000)
+[  368.807129] 1f00:                                                       00000000 0000000c
+[  368.810267] 1f20: 00000000 00000055 dfb4ea00 da9de100 dfb4580c c01b866c 00000000 92395e47
+[  368.813306] 1f40: da1bb3fc c2acdd80 c1d4836c 00000000 c121cf20 c121cf00 0000002f c0176bf4
+[  368.816343] 1f60: da9de100 dfb45950 c1104d14 c121c6db da1bb3fc c1d48300 c1d4836c c1d4836c
+[  368.819382] 1f80: e0801fa8 e080600c e0801fc8 01010101 e0d55fa8 c0176e18 c1d48300 c1d4836c
+[  368.822419] 1fa0: c0c3fecc c017ba58 c1105510 c11b8cb8 e0806000 c10544c0 e080600c c0176498
+[  368.825558] 1fc0: c1105510 c05afd54 c1054f40 c0e4bed0 c0e209e0 e0d55fb0 00000000 000131c0
+[  368.828596] 1fe0: 01010101 c0b7f6a4 00011ed8 20000010 ffffffff c2d63d40 c104e044 c0b3fea0
+[  368.831636]  stmmac_interrupt from __handle_irq_event_percpu+0x7c/0x228
+[  368.834078]  __handle_irq_event_percpu from handle_irq_event+0x38/0x80
+[  368.836518]  handle_irq_event from handle_fasteoi_irq+0xb4/0x21c
+[  368.838756]  handle_fasteoi_irq from generic_handle_domain_irq+0x28/0x38
+[  368.841294]  generic_handle_domain_irq from gic_handle_irq+0x74/0x88
+[  368.843633]  gic_handle_irq from generic_handle_arch_irq+0x58/0x78
+[  368.845969]  generic_handle_arch_irq from call_with_stack+0x18/0x20
+[  368.848305]  call_with_stack from __irq_usr+0x78/0xa0
+[  368.850235] Exception stack(0xe0d55fb0 to 0xe0d55ff8)
+[  368.852062] 5fa0:                                     ae0ba8e0 9ffbb0d8 014b9435 00000001
+[  368.855201] 5fc0: 00000074 00015128 000131b4 a8dd580c 9acd6008 000131c0 01010101 0383fe01
+[  368.858238] 5fe0: 74747474 beabbb60 b6f0919c 00011ed8 20000010 ffffffff
+[  368.860670] Code: 0a00000c e2844001 e1580004 8affffd0 (e7963104)
+[  368.863000] ---[ end trace 0000000000000000 ]---
+[  368.864724] Kernel panic - not syncing: Fatal exception in interrupt
+[  368.867055] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+
+02/20/2026
+================================================================================
+
+# memtester 10M
+memtester version 4.7.1 (32-bit)
+Copyright (C) 2001-2024 Charles Cazabon.
+Licensed under the GNU General Public License version 2 (only).
+
+pagesize is 4096
+pagesizemask is 0xfffff000
+want 10MB (10485760 bytes)
+got  10MB (10485760 bytes), trying mlock ...locked.
+Loop 1:
+  Stuck Address       : ok
+  Random Value        : ok
+  Compare XOR         : ok
+  Compare SUB         : ok
+  Compare MUL         : ok
+  Compare DIV         : ok
+  Compare OR          : ok
+  Compare AND         : ok
+  Sequential Increment: ok
+  Solid Bits          : ok
+  Block Sequential    : ok
+  Checkerboard        : ok
+  Bit Spread          : setting  34[  311.518699] Alignment trap: not handling ldm with s-bit set
+[  311.522942] Alignment trap: not handling instruction e9530005 at [<c07fca80>]
+[  311.530047] 8<--- cut here ---
+[  311.533002] Unhandled fault: alignment exception (0x001) at 0xfffffff9
+[  311.539599] [fffffff9] *pgd=dfffd861, *pte=00000000, *ppte=00000000
+[  311.545826] Internal error: : 1 [#1] PREEMPT SMP ARM
+[  311.550806] Modules linked in:
+[  311.553767] CPU: 0 PID: 163 Comm: memtester Not tainted 6.1.28-dirty #23
+[  311.560468] Hardware name: STM32 (Device Tree Support)
+[  311.565645] PC is at stmmac_napi_check+0xb4/0x1b8
+[  311.570245] LR is at __raise_softirq_irqoff+0x28/0xcc
+[  311.575332] pc : [<c07fca80>]    lr : [<c012744c>]    psr: 20000193
+[  311.581521] sp : e0801ee8  ip : c08103cc  fp : c1b7d61c
+[  311.586799] r10: 00000008  r9 : c1b7d340  r8 : c1b7d440
+[  311.591976] r7 : 00000000  r6 : 0000000c  r5 : 00000000  r4 : c1b7c580
+[  311.598469] r3 : 00000001  r2 : 00000008  r1 : 1eaf6000  r0 : 00000001
+[  311.604962] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment none
+[  311.612170] Control: 10c5387d  Table: c29f806a  DAC: 00000051
+[  311.617952] Register r0 information: non-paged memory
+[  311.622939] Register r1 information: non-paged memory
+[  311.628020] Register r2 information: non-paged memory
+[  311.633001] Register r3 information: non-paged memory
+[  311.638082] Register r4 information: non-slab/vmalloc memory
+[  311.643671] Register r5 information: NULL pointer
+[  311.648348] Register r6 information: non-paged memory
+[  311.653429] Register r7 information: NULL pointer
+[  311.658106] Register r8 information: non-slab/vmalloc memory
+[  311.663795] Register r9 information: non-slab/vmalloc memory
+[  311.669383] Register r10 information: non-paged memory
+[  311.674464] Register r11 information: non-slab/vmalloc memory
+[  311.680253] Register r12 information: non-slab/vmalloc memory
+[  311.685943] Process memtester (pid: 163, stack limit = 0xbd254100)
+[  311.692141] Stack: (0xe0801ee8 to 0xe0802000)
+[  311.696519] 1ee0:                   c18c6900 20000193 e0801f34 00000001 c1b7e000 e0801f18
+[  311.704638] 1f00: c1b7c580 00000001 00000001 c1d45300 c1b1abc0 c080150c 00000000 c089eb59
+[  311.712757] 1f20: c121d5e0 dfb4bac0 20000113 c123980c c121d5e0 c1104d14 c1b1abc0 c089eb59
+[  311.720978] 1f40: c1b1abc0 c2acdd00 c1d4536c 00000000 c121d020 c121d000 0000002f c0176bf4
+[  311.729097] 1f60: 00000008 00000009 c1104d14 c121c7db 00000000 c1d45300 c1d4536c c1d4536c
+[  311.737317] 1f80: e0801fa8 e080600c e0801fc8 00000024 e0d35fa8 c0176e18 c1d45300 c1d4536c
+[  311.745436] 1fa0: c0c3fecc c017ba58 c1105510 c11b8cb8 e0806000 c10544c0 e080600c c0176498
+[  311.753556] 1fc0: c1105510 c05afd54 c1054f40 c0e4bed0 c0e209e0 e0d35fb0 00000000 b6c8b690
+[  311.761776] 1fe0: 00000024 c0b7f6a4 000123e4 20000010 ffffffff c1b1abc0 c104e044 c0b3fea0
+[  311.769902]  stmmac_napi_check from stmmac_interrupt+0xb0/0x160
+[  311.775817]  stmmac_interrupt from __handle_irq_event_percpu+0x7c/0x228
+[  311.782438]  __handle_irq_event_percpu from handle_irq_event+0x38/0x80
+[  311.788859]  handle_irq_event from handle_fasteoi_irq+0xb4/0x21c
+[  311.794873]  handle_fasteoi_irq from generic_handle_domain_irq+0x28/0x38
+[  311.801590]  generic_handle_domain_irq from gic_handle_irq+0x74/0x88
+[  311.807907]  gic_handle_irq from generic_handle_arch_irq+0x58/0x78
+[  311.814116]  generic_handle_arch_irq from call_with_stack+0x18/0x20
+[  311.820325]  call_with_stack from __irq_usr+0x78/0xa0
+[  311.825318] Exception stack(0xe0d35fb0 to 0xe0d35ff8)
+[  311.830401] 5fa0:                                     b6c8b690 b678be8c b6c8b694 a0000000
+[  311.838520] 5fc0: 00000022 b678be90 b6a5c80c b655d008 0013fe01 b6c8b690 00000024 a0000000
+[  311.846739] 5fe0: 0008bba1 bedcabf0 b678be8c 000123e4 20000010 ffffffff
+[  311.853341] Code: 0a000004 e2843a02 e5933a00 e5933078 (e9530005)
+[  311.859333] ---[ end trace 0000000000000000 ]---
+[  311.864008] Kernel panic - not syncing: Fatal exception in interrupt
+[  311.870307] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+
+02/20/2026
+================================================================================
+
+# memtester 10M
+memtester version 4.7.1 (32-bit)
+Copyright (C) 2001-2024 Charles Cazabon.
+Licensed under the GNU General Public License version 2 (only).
+
+pagesize is 4096
+pagesizemask is 0xfffff000
+want 10MB (10485760 bytes)
+got  10MB (10485760 bytes), trying mlock ...locked.
+Loop 1:
+  Stuck Address       : ok
+  Random Value        : ok
+  Compare XOR         : ok
+[  691.941118] 8<--- cut here ---
+[  691.942835] Unable to handle kernel paging request at virtual address fffffffe
+[  691.950044] [fffffffe] *pgd=dfffd861, *pte=00000000, *ppte=00000000
+[  691.956274] Internal error: Oops: 80000007 [#1] PREEMPT SMP ARM
+[  691.962167] Modules linked in:
+[  691.965229] CPU: 0 PID: 128 Comm: memtester Not tainted 6.1.28-dirty #23
+[  691.971830] Hardware name: STM32 (Device Tree Support)
+[  691.977006] PC is at 0xfffffffe
+[  691.980072] LR is at arch_timer_handler_virt+0x28/0x30
+[  691.985266] pc : [<fffffffe>]    lr : [<c095a0a4>]    psr: 200001b3
+[  691.991455] sp : e0801fa0  ip : 00000051  fp : e0d11fa8
+[  691.996633] r10: 0001302c  r9 : e0801fc8  r8 : e0801fa8
+[  692.001912] r7 : c1889080  r6 : 0000001a  r5 : c0c3fecc  r4 : c1888200
+[  692.008405] r3 : ffffffff  r2 : 1eaf6000  r1 : dfb4ea00  r0 : dfb4ea00
+[  692.014898] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA Thumb  Segment none
+[  692.022308] Control: 10c5387d  Table: c29f406a  DAC: 00000051
+[  692.027991] Register r0 information: non-slab/vmalloc memory
+[  692.033586] Register r1 information: non-slab/vmalloc memory
+[  692.039275] Register r2 information: non-paged memory
+[  692.044257] Register r3 information: non-paged memory
+[  692.049338] Register r4 information: slab kmalloc-256 start c1888200 pointer offset 0 size 256
+[  692.057895] Register r5 information: non-slab/vmalloc memory
+[  692.063584] Register r6 information: non-paged memory
+[  692.068566] Register r7 information: slab kmalloc-64 start c1889080 pointer offset 0 size 64
+[  692.077015] Register r8 information: 2-page vmalloc region starting at 0xe0800000 allocated at start_kernel+0x468/0x648
+[  692.087778] Register r9 information: 2-page vmalloc region starting at 0xe0800000 allocated at start_kernel+0x468/0x648
+[  692.098536] Register r10 information: non-paged memory
+[  692.103619] Register r11 information: 2-page vmalloc region starting at 0xe0d10000 allocated at copy_process+0x1ac/0x1228
+[  692.114586] Register r12 information: non-paged memory
+[  692.119670] Process memtester (pid: 128, stack limit = 0xdeffe6ad)
+[  692.125867] Stack: (0xe0801fa0 to 0xe0802000)
+[  692.130246] 1fa0: c1888200 c017c68c c1105510 c11b8cb8 e0806000 c10544c0 e080600c c0176498
+[  692.138365] 1fc0: c1105510 c05afd54 c1054f40 c0e4bed0 c0e209e0 e0d11fb0 00000000 b6563008
+[  692.146485] 1fe0: 0001302c c0b7f6a4 0001198c 20000010 ffffffff c1b1bd40 c104e044 c0b3fea0
+[  692.154709]  arch_timer_handler_virt from handle_percpu_devid_irq+0xa4/0x250
+[  692.161736]  handle_percpu_devid_irq from generic_handle_domain_irq+0x28/0x38
+[  692.168762]  generic_handle_domain_irq from gic_handle_irq+0x74/0x88
+[  692.175182]  gic_handle_irq from generic_handle_arch_irq+0x58/0x78
+[  692.181290]  generic_handle_arch_irq from call_with_stack+0x18/0x20
+[  692.187499]  call_with_stack from __irq_usr+0x78/0xa0
+[  692.192592] Exception stack(0xe0d11fb0 to 0xe0d11ff8)
+[  692.197575] 1fa0:                                     effec7bd b65afd7c b6aaf584 b6aaf580
+[  692.205795] 1fc0: b65afd80 b6563008 b6a6280c 0013fe01 00015128 b6563008 0001302c 00000000
+[  692.213913] 1fe0: ffffffff bead4c18 0001335e 0001198c 20000010 ffffffff
+[  692.220512] Code: bad PC value
+[  692.223574] ---[ end trace 0000000000000000 ]---
+[  692.228148] Kernel panic - not syncing: Fatal exception in interrupt
+[  692.234447] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+
+02/20/2026
+================================================================================
+
+# memtester 4M
+memtester version 4.7.1 (32-bit)
+Copyright (C) 2001-2024 Charles Cazabon.
+Licensed under the GNU General Public License version 2 (only).
+
+pagesize is 4096
+pagesizemask is 0xfffff000
+want 4MB (4194304 bytes)
+got  4MB (4194304 bytes), trying mlock ...locked.
+Loop 1:
+  Stuck Address       : ok
+  Random Value        : ok
+  Compare XOR         : ok
+  Compare SUB         : ok
+  Compare MUL         : ok
+  Compare DIV         : ok
+  Compare OR          : ok
+  Compare AND         : ok
+  Sequential Increment: ok
+  Solid Bits          : ok
+  Block Sequential    : ok
+  Checkerboard        : testing  25[  314.987882] Alignment trap: not handling ldm with s-bit set
+[  314.992115] Alignment trap: not handling instruction e9530005 at [<c07fca80>]
+[  314.999218] 8<--- cut here ---
+[  315.002272] Unhandled fault: alignment exception (0x001) at 0xfffffff9
+[  315.008768] [fffffff9] *pgd=dfffd861, *pte=00000000, *ppte=00000000
+[  315.014993] Internal error: : 1 [#1] PREEMPT SMP ARM
+[  315.019973] Modules linked in:
+[  315.023035] CPU: 0 PID: 151 Comm: memtester Not tainted 6.1.28-dirty #23
+[  315.029636] Hardware name: STM32 (Device Tree Support)
+[  315.034812] PC is at stmmac_napi_check+0xb4/0x1b8
+[  315.039513] LR is at __raise_softirq_irqoff+0x28/0xcc
+[  315.044498] pc : [<c07fca80>]    lr : [<c012744c>]    psr: 20000193
+[  315.050788] sp : e0801ee8  ip : c08103cc  fp : c1b7d61c
+[  315.055966] r10: 00000008  r9 : c1b7d340  r8 : c1b7d440
+[  315.061144] r7 : 00000000  r6 : 0000000c  r5 : 00000000  r4 : c1b7c580
+[  315.067738] r3 : 00000001  r2 : 00000008  r1 : 1eaf6000  r0 : 00000001
+[  315.074231] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment none
+[  315.081439] Control: 10c5387d  Table: c2d9006a  DAC: 00000051
+[  315.087121] Register r0 information: non-paged memory
+[  315.092207] Register r1 information: non-paged memory
+[  315.097189] Register r2 information: non-paged memory
+[  315.102270] Register r3 information: non-paged memory
+[  315.107251] Register r4 information: non-slab/vmalloc memory
+[  315.112941] Register r5 information: NULL pointer
+[  315.117619] Register r6 information: non-paged memory
+[  315.122600] Register r7 information: NULL pointer
+[  315.127277] Register r8 information: non-slab/vmalloc memory
+[  315.132965] Register r9 information: non-slab/vmalloc memory
+[  315.138553] Register r10 information: non-paged memory
+[  315.143735] Register r11 information: non-slab/vmalloc memory
+[  315.149424] Register r12 information: non-slab/vmalloc memory
+[  315.155213] Process memtester (pid: 151, stack limit = 0x945cc20f)
+[  315.161310] Stack: (0xe0801ee8 to 0xe0802000)
+[  315.165687] 1ee0:                   dfb45840 20000193 dfb45800 00000001 c1b7e000 e0801f18
+[  315.173806] 1f00: c1b7c580 00000001 00000001 c1d45300 c1f9c600 c080150c 00000000 7fffffff
+[  315.182027] 1f20: 00000000 00000049 dfb4ea00 56ddf780 dfb4580c c01b866c 00000000 f03fc4a0
+[  315.190147] 1f40: 56458ac3 c2ad1a40 c1d4536c 00000000 c121d020 c121d000 0000002f c0176bf4
+[  315.198367] 1f60: 56ddf780 dfb45950 c1104d14 c121c7db 56458ac3 c1d45300 c1d4536c c1d4536c
+[  315.206488] 1f80: e0801fa8 e080600c e0801fc8 00015138 e0d49fa8 c0176e18 c1d45300 c1d4536c
+[  315.214609] 1fa0: c0c3fecc c017ba58 c1105510 c11b8cb8 e0806000 c10544c0 e080600c c0176498
+[  315.222830] 1fc0: c1105510 c05afd54 c1054f40 c0e4bed0 c0e209e0 e0d49fb0 00000000 00015168
+[  315.230950] 1fe0: 00015138 c0b7f6a4 000114dc 20000010 ffffffff c1f9c600 c104e044 c0b3fea0
+[  315.239176]  stmmac_napi_check from stmmac_interrupt+0xb0/0x160
+[  315.244989]  stmmac_interrupt from __handle_irq_event_percpu+0x7c/0x228
+[  315.251610]  __handle_irq_event_percpu from handle_irq_event+0x38/0x80
+[  315.258132]  handle_irq_event from handle_fasteoi_irq+0xb4/0x21c
+[  315.264145]  handle_fasteoi_irq from generic_handle_domain_irq+0x28/0x38
+[  315.270762]  generic_handle_domain_irq from gic_handle_irq+0x74/0x88
+[  315.277180]  gic_handle_irq from generic_handle_arch_irq+0x58/0x78
+[  315.283289]  generic_handle_arch_irq from call_with_stack+0x18/0x20
+[  315.289498]  call_with_stack from __irq_usr+0x78/0xa0
+[  315.294591] Exception stack(0xe0d49fb0 to 0xe0d49ff8)
+[  315.299573] 9fa0:                                     00000000 b6c9d80c 55555555 55555555
+[  315.307794] 9fc0: 00045c4a b6bb5130 b6db4934 0007fe01 00013178 00015168 00015138 aaaaaaaa
+[  315.315912] 9fe0: 00117124 bed19bd8 00011e04 000114dc 20000010 ffffffff
+[  315.322514] Code: 0a000004 e2843a02 e5933a00 e5933078 (e9530005)
+[  315.328608] ---[ end trace 0000000000000000 ]---
+[  315.333182] Kernel panic - not syncing: Fatal exception in interrupt
+[  315.339583] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+
+02/21/2026
+================================================================================
+
+# memtester 100M
+memtester version 4.7.1 (32-bit)
+Copyright (C) 2001-2024 Charles Cazabon.
+Licensed under the GNU General Public License version 2 (only).
+
+pagesize is 4096
+pagesizemask is 0xfffff000
+want 100MB (104857600 bytes)
+got  100MB (104857600 bytes), trying mlock ...locked.
+
+...
+
+Loop 34:
+  Stuck Address       : ok
+  Random Value        : ok
+  Compare XOR         : ok
+  Compare SUB         : ok
+  Compare MUL         : ok
+  Compare DIV         : ok
+  Compare OR          : ok
+  Compare AND         : ok
+  Sequential Increment: ok
+  Solid Bits          : ok
+  Block Sequential    : ok
+  Checkerboard        : ok
+  Bit Spread          : setting  34[54573.185144] Alignment trap: not handling ldm with s-bit set
+[54573.189378] Alignment trap: not handling instruction e9530005 at [<c07fca80>]
+[54573.196482] 8<--- cut here ---
+[54573.199536] Unhandled fault: alignment exception (0x001) at 0xfffffff9
+[54573.206032] [fffffff9] *pgd=dfffd861, *pte=00000000, *ppte=00000000
+[54573.212257] Internal error: : 1 [#1] PREEMPT SMP ARM
+[54573.217238] Modules linked in:
+[54573.220199] CPU: 0 PID: 12 Comm: ksoftirqd/0 Not tainted 6.1.28-dirty #23
+[54573.227002] Hardware name: STM32 (Device Tree Support)
+[54573.232178] PC is at stmmac_napi_check+0xb4/0x1b8
+[54573.236777] LR is at __raise_softirq_irqoff+0x28/0xcc
+[54573.241863] pc : [<c07fca80>]    lr : [<c012744c>]    psr: 20000193
+[54573.248153] sp : e0801ee8  ip : c08103cc  fp : c1b7d61c
+[54573.253331] r10: 00000008  r9 : c1b7d340  r8 : c1b7d440
+[54573.258509] r7 : 00000000  r6 : 0000000c  r5 : 00000000  r4 : c1b7c580
+[54573.265002] r3 : 00000001  r2 : 00000008  r1 : 1eaf6000  r0 : 00000001
+[54573.271495] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment none
+[54573.278704] Control: 10c5387d  Table: c2b2806a  DAC: 00000051
+[54573.284486] Register r0 information: non-paged memory
+[54573.289472] Register r1 information: non-paged memory
+[54573.294554] Register r2 information: non-paged memory
+[54573.299536] Register r3 information: non-paged memory
+[54573.304617] Register r4 information: non-slab/vmalloc memory
+[54573.310207] Register r5 information: NULL pointer
+[54573.314884] Register r6 information: non-paged memory
+[54573.319965] Register r7 information: NULL pointer
+[54573.324643] Register r8 information: non-slab/vmalloc memory
+[54573.330331] Register r9 information: non-slab/vmalloc memory
+[54573.335920] Register r10 information: non-paged memory
+[54573.341102] Register r11 information: non-slab/vmalloc memory
+[54573.346792] Register r12 information: non-slab/vmalloc memory
+[54573.352481] Process ksoftirqd/0 (pid: 12, stack limit = 0xf7489fc0)
+[54573.358780] Stack: (0xe0801ee8 to 0xe0802000)
+[54573.363158] 1ee0:                   dfb4b300 20000193 dfb4b340 00000001 c1b7e000 e0801f18
+[54573.371277] 1f00: c1b7c580 00000001 00000001 c1d45300 c18c6040 c080150c e0801f2c c0150494
+[54573.379398] 1f20: dfb4b300 c18c6040 e0801f44 c01504b0 c18c6040 dfb4b300 e0801f7c edbd51dc
+[54573.387618] 1f40: e0801f7c c1889f80 c1d4536c 00000000 c121d020 c121d000 0000002f c0176bf4
+[54573.395739] 1f60: 00000000 00000003 c1104d14 c121c7db c0deab58 c1d45300 c1d4536c c1d4536c
+[54573.403960] 1f80: e0801fa8 e080600c e0801fc8 0052d078 e083de18 c0176e18 c1d45300 c1d4536c
+[54573.412081] 1fa0: c0c3fecc c017ba58 c1105510 c11b8cb8 e0806000 c10544c0 e080600c c0176498
+[54573.420201] 1fc0: c1105510 c05afd54 c1054f40 c0e4bed0 c0e209e0 e083de20 00000000 c18c6040
+[54573.428422] 1fe0: 0052d078 c0b7f6a4 c0b89044 60000013 ffffffff e083de54 00000000 c0b3fea0
+[54573.436548]  stmmac_napi_check from stmmac_interrupt+0xb0/0x160
+[54573.442463]  stmmac_interrupt from __handle_irq_event_percpu+0x7c/0x228
+[54573.448984]  __handle_irq_event_percpu from handle_irq_event+0x38/0x80
+[54573.455506]  handle_irq_event from handle_fasteoi_irq+0xb4/0x21c
+[54573.461519]  handle_fasteoi_irq from generic_handle_domain_irq+0x28/0x38
+[54573.468235]  generic_handle_domain_irq from gic_handle_irq+0x74/0x88
+[54573.474553]  gic_handle_irq from generic_handle_arch_irq+0x58/0x78
+[54573.480662]  generic_handle_arch_irq from call_with_stack+0x18/0x20
+[54573.486972]  call_with_stack from __irq_svc+0x98/0xc8
+[54573.491965] Exception stack(0xe083de20 to 0xe083de68)
+[54573.497051] de20: c1b7d61c 20000013 00000001 0000aaad c1b7d61c 00000005 20000013 c1b7c580
+[54573.505170] de40: 00000000 c081039c 0052d078 dfb4be40 00000000 e083de70 c0803e64 c0b89044
+[54573.513385] de60: 60000013 ffffffff
+[54573.516848]  __irq_svc from _raw_spin_unlock_irqrestore+0x20/0x4c
+[54573.522859]  _raw_spin_unlock_irqrestore from stmmac_napi_poll_rx+0xa4/0xac
+[54573.529778]  stmmac_napi_poll_rx from __napi_poll+0x2c/0x204
+[54573.535480]  __napi_poll from net_rx_action+0x14c/0x2f8
+[54573.540673]  net_rx_action from __do_softirq+0x150/0x41c
+[54573.545968]  __do_softirq from run_ksoftirqd+0x38/0x40
+[54573.551060]  run_ksoftirqd from smpboot_thread_fn+0x164/0x23c
+[54573.556763]  smpboot_thread_fn from kthread+0xd8/0xf4
+[54573.561862]  kthread from ret_from_fork+0x14/0x2c
+[54573.566550] Exception stack(0xe083dfb0 to 0xe083dff8)
+[54573.571532] dfa0:                                     00000000 00000000 00000000 00000000
+[54573.579751] dfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[54573.587868] dfe0: 00000000 00000000 00000000 00000000 00000013 00000000
+[54573.594470] Code: 0a000004 e2843a02 e5933a00 e5933078 (e9530005)
+[54573.600563] ---[ end trace 0000000000000000 ]---
+[54573.605138] Kernel panic - not syncing: Fatal exception in interrupt
+[54573.611537] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+
+02/23/2026
+eth1 "disabled" in DTS
+================================================================================
+
+# memtester 100M
+memtester version 4.7.1 (32-bit)
+Copyright (C) 2001-2024 Charles Cazabon.
+Licensed under the GNU General Public License version 2 (only).
+
+pagesize is 4096
+pagesizemask is 0xfffff000
+want 100MB (104857600 bytes)
+got  100MB (104857600 bytes), trying mlock ...locked.
+Loop 1:
+  Stuck Address       : ok
+  Random Value        : ok
+  Compare XOR         : ok
+  Compare SUB         : ok
+  Compare MUL         : ok
+  Compare DIV         : ok
+  Compare OR          : ok
+  Compare AND         : ok
+  Sequential Increment: ok
+  Solid Bits          : setting   1[  311.215729] random: crng init done                                                   ok
+  Block Sequential    : ok
+  Checkerboard        : testing  51[  551.935655] 8<--- cut here ---
+[  551.937356] Unable to handle kernel paging request at virtual address aaaae2ca
+[  551.944565] [aaaae2ca] *pgd=00000000
+[  551.948144] Internal error: Oops: 805 [#1] PREEMPT SMP ARM
+[  551.953531] Modules linked in:
+[  551.956592] CPU: 0 PID: 126 Comm: memtester Not tainted 6.1.28-dirty #23
+[  551.963293] Hardware name: STM32 (Device Tree Support)
+[  551.968369] PC is at mmiocpy+0xf8/0x334
+[  551.972255] LR is at 0x48
+[  551.974809] pc : [<c0b41f78>]    lr : [<00000048>]    psr: 60000193
+[  551.981099] sp : e0d15ec8  ip : 00000002  fp : e0d15ec8
+[  551.986276] r10: 00015138  r9 : c1b1a300  r8 : c125dc50
+[  551.991454] r7 : 000007fc  r6 : c69a91c0  r5 : 00000004  r4 : 00000011
+[  551.997948] r3 : 00003820  r2 : 000007bc  r1 : c0007822  r0 : aaaae2ca
+[  552.004442] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment none
+[  552.011750] Control: 10c5387d  Table: c297c06a  DAC: 00000051
+[  552.017433] Register r0 information: non-paged memory
+[  552.022419] Register r1 information: non-slab/vmalloc memory
+[  552.028110] Register r2 information: non-paged memory
+[  552.033092] Register r3 information: non-paged memory
+[  552.038173] Register r4 information: non-paged memory
+[  552.043155] Register r5 information: non-paged memory
+[  552.048235] Register r6 information: non-slab/vmalloc memory
+[  552.053824] Register r7 information: non-paged memory
+[  552.058905] Register r8 information: non-slab/vmalloc memory
+[  552.064494] Register r9 information: slab task_struct start c1b1a300 pointer offset 0
+[  552.072335] Register r10 information: non-paged memory
+[  552.077417] Register r11 information: 2-page vmalloc region starting at 0xe0d14000 allocated at copy_process+0x1ac/0x1228
+[  552.088387] Register r12 information: non-paged memory
+[  552.093471] Process memtester (pid: 126, stack limit = 0xbe8ccbe2)
+[  552.099668] Stack: (0xe0d15ec8 to 0xe0d16000)
+[  552.104045] 5ec0:                   aaaae2ca c115d2c8 e0d15f3c c01167f8 dfb4b300 c18ce040
+[  552.112165] 5ee0: c1b1a300 00000000 c1105140 c0b81538 c2999240 e0d15f80 c063bffc 00000016
+[  552.120385] 5f00: 00000000 c0b81638 00000000 c1b1a300 00000000 711e7202 01010006 c1b1a300
+[  552.128505] 5f20: e0d15fb0 00000000 c1b1a960 00000000 c1b1a300 00015138 e0d15f4c c0b81638
+[  552.136625] 5f40: c1b1a300 e0d15fb0 aaaaaaaa c010b948 00000000 00000000 b6fb10ac 711e7202
+[  552.144846] 5f60: c2999240 c2999240 00000000 00000000 c01002c4 c1b1a300 00000004 c02aa384
+[  552.152966] 5f80: 00000000 00000000 06400000 711e7202 000114ec 20000010 ffffffff c1b1a300
+[  552.161087] 5fa0: 00000000 c1b1a300 00015138 c01000cc 00000000 b3d3580c aaaaaaaa aaaaaaaa
+[  552.169307] 5fc0: 007debea b2ab0fb0 b5cb07b4 00c7fe01 00013178 00015168 00015138 aaaaaaaa
+[  552.177428] 5fe0: 01f7afa8 bebdabd8 00011e04 000114ec 20000010 ffffffff 00000000 00000000
+[  552.185555]  mmiocpy from __check_vmalloc_seq+0x50/0x68
+[  552.190760]  __check_vmalloc_seq from __schedule+0x694/0x73c
+[  552.196463]  __schedule from schedule+0x58/0xb0
+[  552.200950]  schedule from do_work_pending+0x30/0x248
+[  552.205943]  do_work_pending from slow_work_pending+0xc/0x20
+[  552.211637] Exception stack(0xe0d15fb0 to 0xe0d15ff8)
+[  552.216620] 5fa0:                                     00000000 b3d3580c aaaaaaaa aaaaaaaa
+[  552.224841] 5fc0: 007debea b2ab0fb0 b5cb07b4 00c7fe01 00013178 00015168 00015138 aaaaaaaa
+[  552.232959] 5fe0: 01f7afa8 bebdabd8 00011e04 000114ec 20000010 ffffffff
+[  552.239561] Code: c4d13001 a4d14001 e4d1e001 c4c03001 (a4c04001)
+[  552.245653] ---[ end trace 0000000000000000 ]---
+[  552.250224] note: memtester[126] exited with irqs disabled
+
+02/24/2026
+Back to 533 MHz. Running an optimized mandelbrot.
+================================================================================
+
+# [ 7756.100937] 8<--- cut here ---
+[ 7756.102634] Unable to handle kernel paging request at virtual address 0c000144
+[ 7756.109843] [0c000144] *pgd=00000000
+[ 7756.113428] Internal error: Oops: 80000005 [#1] PREEMPT SMP ARM
+[ 7756.119321] Modules linked in:
+[ 7756.122283] CPU: 0 PID: 291 Comm: sine Not tainted 6.1.28-dirty #23
+[ 7756.128579] Hardware name: STM32 (Device Tree Support)
+[ 7756.133655] PC is at 0xc000144
+[ 7756.136720] LR is at __handle_irq_event_percpu+0x7c/0x228
+[ 7756.142123] pc : [<0c000144>]    lr : [<c0176bf4>]    psr: 600f01b3
+[ 7756.148313] sp : e0801f60  ip : e0de9f1c  fp : c2d92300
+[ 7756.153491] r10: c1d45300  r9 : 0000002f  r8 : c121d000
+[ 7756.158769] r7 : c121d020  r6 : 00000000  r5 : c1d4536c  r4 : c2acdd80
+[ 7756.165262] r3 : 0c000145  r2 : 00010000  r1 : 0c110c00  r0 : 0000002f
+[ 7756.171756] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA Thumb  Segment none
+[ 7756.179166] Control: 10c5387d  Table: c2ef406a  DAC: 00000051
+[ 7756.184848] Register r0 information: non-paged memory
+[ 7756.189934] Register r1 information: non-paged memory
+[ 7756.194916] Register r2 information: non-paged memory
+[ 7756.199997] Register r3 information: non-paged memory
+[ 7756.204977] Register r4 information: slab kmalloc-64 start c2acdd80 pointer offset 0 size 64
+[ 7756.213433] Register r5 information: slab kmalloc-256 start c1d45300 pointer offset 108 size 256
+[ 7756.222186] Register r6 information: NULL pointer
+[ 7756.226864] Register r7 information: non-slab/vmalloc memory
+[ 7756.232452] Register r8 information: non-slab/vmalloc memory
+[ 7756.238141] Register r9 information: non-paged memory
+[ 7756.243122] Register r10 information: slab kmalloc-256 start c1d45300 pointer offset 0 size 256
+[ 7756.251873] Register r11 information: slab task_struct start c2d92300 pointer offset 0
+[ 7756.259710] Register r12 information: 2-page vmalloc region starting at 0xe0de8000 allocated at copy_process+0x1ac/0x1228
+[ 7756.270678] Process sine (pid: 291, stack limit = 0xe111af66)
+[ 7756.276370] Stack: (0xe0801f60 to 0xe0802000)
+[ 7756.280750] 1f60: db95d900 dfb45950 c1104d14 c121c7db dafd504b c1d45300 c1d4536c c1d4536c
+[ 7756.288869] 1f80: e0801fa8 e080600c e0801fc8 c121ea80 e0de9e78 c0176e18 c1d45300 c1d4536c
+[ 7756.297090] 1fa0: c0c3fecc c017ba58 c1105510 c11b8cb8 e0806000 c10544c0 e080600c c0176498
+[ 7756.305210] 1fc0: c1105510 c05afd54 c1054f40 c0e4bed0 c0e209e0 e0de9e80 00000000 c2d92300
+[ 7756.313330] 1fe0: c121ea80 c0b7f6a4 c026588c 800f0113 ffffffff e0de9eb4 e0de9fb0 c0b3fea0
+[ 7756.321558]  __handle_irq_event_percpu from handle_irq_event+0x38/0x80
+[ 7756.327984]  handle_irq_event from handle_fasteoi_irq+0xb4/0x21c
+[ 7756.333997]  handle_fasteoi_irq from generic_handle_domain_irq+0x28/0x38
+[ 7756.340714]  generic_handle_domain_irq from gic_handle_irq+0x74/0x88
+[ 7756.347031]  gic_handle_irq from generic_handle_arch_irq+0x58/0x78
+[ 7756.353141]  generic_handle_arch_irq from call_with_stack+0x18/0x20
+[ 7756.359451]  call_with_stack from __irq_svc+0x98/0xc8
+[ 7756.364444] Exception stack(0xe0de9e80 to 0xe0de9ec8)
+[ 7756.369432] 9e80: e0de9ee8 00000000 c2ef6da0 c2ef6da0 c2edc1b0 00000254 b698b000 c2d92300
+[ 7756.377653] 9ea0: e0de9fb0 00000040 c121ea80 c2ecb578 e0de9f1c e0de9ed0 c0265828 c026588c
+[ 7756.385766] 9ec0: 800f0113 ffffffff
+[ 7756.389229]  __irq_svc from handle_mm_fault+0x118/0x2bc
+[ 7756.394430]  handle_mm_fault from do_page_fault+0x158/0x438
+[ 7756.400031]  do_page_fault from do_DataAbort+0x3c/0xb0
+[ 7756.405120]  do_DataAbort from __dabt_usr+0x54/0x60
+[ 7756.410005] Exception stack(0xe0de9fb0 to 0xe0de9ff8)
+[ 7756.414987] 9fa0:                                     ffffffff 00000078 00000000 00000000
+[ 7756.423207] 9fc0: ffffffff 00000000 b698b0d0 00000680 00000000 000001e0 00000320 000007e0
+[ 7756.431325] 9fe0: 00000036 bea37a28 000104dd 000104e2 600f0030 ffffffff
+[ 7756.437923] Code: bad PC value
+[ 7756.440983] ---[ end trace 0000000000000000 ]---
+[ 7756.445558] Kernel panic - not syncing: Fatal exception in interrupt
+[ 7756.451857] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+
+02/24/2026
+533 MHz
+================================================================================
+No kernel panic but the SR835 GUI app seems to have gone crazy.
+Could have been also because of the insecure power supply cables, shake them a
+little bit and the voltage drops.
+
+02/25/2026
+================================================================================
+Freezes in minutes:
+   1 GHz CPU
+   DDR 533 MHz
+   enable "Relaxed Timing Mode" and "Temperature case over 85°C support"
+   Impedance During Read = Ron 40 ohm / ODT = 80 ohms (Default)
+   Impedance During Write = Ron 53 ohm / ODT = 60 ohms (Default)
+
+Freezes in seconds:
+   1 GHz CPU
+   DDR 533 MHz
+   disable "Relaxed Timing Mode" and "Temperature case over 85°C support"
+   Impedance During Read = Ron 34 ohm / ODT = 60 ohms
+   Impedance During Write = Ron 34 ohm / ODT = 60 ohms
+
+Freezes in seconds:
+   1 GHz CPU
+   DDR 533 MHz
+   disable "Relaxed Timing Mode" and "Temperature case over 85°C support"
+   Impedance During Read = Ron 40 ohm / ODT = 60 ohms
+   Impedance During Write = Ron 69 ohm / ODT = 60 ohms
+
+Freezes in seconds:
+   1 GHz CPU
+   DDR 533 MHz
+   disable "Relaxed Timing Mode" and "Temperature case over 85°C support"
+   Impedance During Read = Ron 40 ohm / ODT = 80 ohms (Default)
+   Impedance During Write = Ron 34 ohm / ODT = 60 ohms

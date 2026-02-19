@@ -82,7 +82,7 @@ such as BusyBox. We can easily enough build it as follows:
     make menuconfig # select static build
     make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 
-But when wee copy the resulting binary as `init`, we discover that it would
+But when we copy the resulting binary as `init`, we discover that it would
 really like to have a proper `inittab`, and a couple device files. With the
 "Hello, world!" `init`, we created the root filesystem as follows:
 
@@ -140,7 +140,8 @@ all the packages compiled from Buildroot and included in the target system.
 So far, installing a new DTB required rebuilding the SD image and writing it to
 the target using our bootloader. Since DTB is a tiny file, it's much faster if
 we could just change the DTB and not the whole SD card image. Let's do it over
-ssh so as to easily automate it from the "50 line Makefile".
+ssh so as to easily automate it from the ["50 line
+Makefile"](build-linux-for-stm32mp135-in-under-50-lines-of-makefile).
 
 First we need to make sure the target has an SSH server. This is provided by the
 Dropbear package that we have added to the Buildroot configuration. By default,
