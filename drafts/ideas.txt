@@ -35,8 +35,14 @@
   wiped out by distractions: big colored buttons, social pressures, etc., that's
   why meditation is great, or restricted environemnts (command line, Freewrite
   Alpha)
-- Describe my "agile for one" system, and what I've learned and what I'm trying
-  now
+- Write: Agile in a One-Person Team; yes/no; discovering blockers; combine all
+  todos; main loop: 1. pull 10 items, 2. do them one by one, 3. queue new
+  discoveries at the end or stack on top if urgent, 4. archive things done in a
+  visible spot; The Power of One: one todo list, one task at a time; harnessing
+  negativity: block out all that's not essential (queue for a much later time at
+  the bottom of the big todo list), leave infinite open space for just what
+  needs to be done, eep direction like a horse running in a straight line across
+  desert
 - What It Can Do and What It Can't Do: the tension between people who start by
   pointing out all the things that are wrong with a {tool, philosophy,
   religion}, and those who acknowledge limitations and proceed to make the most
