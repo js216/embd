@@ -1,5 +1,5 @@
 ---
-title: Seeing God, or the Pretentiousness of Purity
+title: Seeing God and the Pretentiousness of Purity
 author: Jakob Kastelic
 date: 
 topic: Theology

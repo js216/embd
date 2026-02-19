@@ -1,7 +1,7 @@
 ---
 title: One Move at a Time
 author: Jakob Kastelic
-date:
+date: 14 Feb 2026
 topic: Incoherent Thoughts
 description: >
    Complex problems are solved through small steps. Focus on your next move, not

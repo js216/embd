@@ -102,3 +102,10 @@
 - bell labs "selective enthusiasm" vs damning with faint praise
 - the Absolute--Relative Fallacy
 - Temptation to Optimize
+- Leader supplies a catchy story for a decision; praise someone's future action
+  to make it happen; ask for help. Leader constrains.
+- Magic-1 CPU on FPGA
+- RISC-V with 74 series chips
+- Get cut, get apadravya
+- Ball bearing and a solar cell: a wheel that spins in the sun
+- Bandwidth over latency, or, the death of real-time computing
