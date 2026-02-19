@@ -2,7 +2,7 @@
 title: Build Linux for STM32MP135 in under 50 Lines of Makefile
 author: Jakob Kastelic
 date: 6 Jan 2026
-modified: 9 Jan 2026
+modified: 13 Feb 2026
 topic: Linux
 description: >
    Step-by-step guide to build a minimal Linux root filesystem for the
@@ -53,21 +53,21 @@ Let's apply some patches (mainly to allow non-secure boot without
 the Device Tree Source (DTS), and the kernel configuration:
 
 ```sh
-git clone git@github.com:js216/stm32mp135_test_board.git
+git clone --recurse-submodules git@github.com:js216/stm32mp135_test_board.git
 
 cd linux
-git linux apply ../configs/evb/patches/linux/*.patch
+git linux apply ../bootloader/test/linux/patches/*.patch
 cd ..
 
-cp config/evb/linux.config linux/.config
-cp config/evb/board.dts linux/arch/arm/boot/dts/
+cp bootloader/test/linux/linux.config linux/.config
+cp config/custom.dts linux/arch/arm/boot/dts/
 ```
 
 Now we can build the Device Tree Blob (DTB) and the kernel itself:
 
 ```sh
 cd linux
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- board.dtb
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- custom.dtb
 make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage
 cd ..
 ```
@@ -85,7 +85,7 @@ with it:
 
 ```sh
 arm-linux-gnueabihf-gcc -Os -nostdlib -static -fno-builtin \
-   -Wl,--gc-sections config/init.c -o build/init
+   -Wl,--gc-sections bootloader/test/linux/init.c -o build/init
 ```
 
 Now that we have an init program, we need a root filesystem to put it on:
@@ -110,7 +110,8 @@ python3 bootloader/scripts/sdimage.py build/sdcard.img \
 
 Write this image to the SD card and start the system, and prepare to be greeted
 by the very useless shell implemented in the minimal
-[init program](https://github.com/js216/stm32mp135_test_board/blob/main/configs/evb/init.c)):
+[init
+program](https://github.com/js216/stm32mp135-bootloader/blob/9cc63614864888377c57de91ef8eb8337c215348/test/linux/init.c)):
 
 ```sh
 [    1.940577] Run /sbin/init as init process
@@ -125,42 +126,40 @@ That's it!
 
 ### The Makefile
 
-Here's the full 49 lines:
+Here's the full 49 lines (latest version
+[here](https://github.com/js216/stm32mp135_test_board/blob/main/Makefile)):
 
 ```makefile
-CONFIG_DIR := configs/custom
 CROSS_COMPILE = arm-linux-gnueabihf-
-LINUX_OPTS = ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE)
-
-all: boot config dtb kernel init root sd
+all: boot config dtb init kernel root sd
 
 boot:
-	$(MAKE) -C bootloader -j$(shell nproc) CFLAGS_EXTRA=-DUSE_STPMIC1x=1
+	$(MAKE) -C bootloader -j$(shell nproc)
 
 patch:
-	for p in $(CONFIG_DIR)/patches/linux/*.patch; do \
+	for p in bootloader/test/linux/patches/*.patch; do \
 		if git -C linux apply --check ../$$p; then \
 			git -C linux apply ../$$p; \
 		fi \
 	done
 
 config:
-	cp $(CONFIG_DIR)/linux.config linux/.config
+	cp bootloader/test/linux/linux.config linux/.config
 
 dtb:
-	cp $(CONFIG_DIR)/board.dts linux/arch/arm/boot/dts/
-	$(MAKE) -C linux $(LINUX_OPTS) board.dtb
+	cp config/custom.dts linux/arch/arm/boot/dts/
+	$(MAKE) -C linux ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE) custom.dtb
 
 kernel:
-	$(MAKE) -C linux $(LINUX_OPTS) -j$(shell nproc) zImage
+	$(MAKE) -C linux ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE) \
+		-j$(shell nproc) zImage
 
 init:
 	mkdir -p build
 	$(CROSS_COMPILE)gcc -Os -nostdlib -static -fno-builtin \
-		-Wl,--gc-sections $(CONFIG_DIR)/init.c -o build/init
+		-Wl,--gc-sections bootloader/test/linux/init.c -o build/init
 
 root:
-	rm -rf build/rootfs.dir
 	mkdir -p build/rootfs.dir/sbin
 	cp build/init build/rootfs.dir/sbin/init
 	dd if=/dev/zero of=build/rootfs bs=1M count=10
@@ -168,15 +167,18 @@ root:
 
 sd:
 	python3 bootloader/scripts/sdimage.py build/sdcard.img \
-		bootloader/build/main.stm32
-		linux/arch/arm/boot/dts/board.dtb \
+		bootloader/build/main.stm32 \
+		linux/arch/arm/boot/dts/custom.dtb \
 		linux/arch/arm/boot/zImage \
 		--partition build/rootfs
 
+copy:
+	cp build/sdcard.img /mnt/c/Users/Jkastelic/Downloads
+
 clean:
-	$(MAKE) -C linux $(LINUX_OPTS) clean
-	$(MAKE) -C bootloader clean
 	rm -rf build
+	$(MAKE) -C bootloader clean
+	$(MAKE) -C linux ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE) clean
 ```
 
 ### Discussion

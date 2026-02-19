@@ -1,9 +1,12 @@
 ---
 title: Debugging the Late Boot of STM32MP135
 author: Jakob Kastelic
-date:
+date: 19 Feb 2026
 topic: Linux
 description: >
+   Bringing a custom STM32MP135 board through late Linux boot: fixing the device
+   tree, enabling BusyBox with Buildroot, deploying DTBs over SSH, and
+   implementing a minimal RCC-based restart handler.
 ---
 
 ![](../images/ah.jpg)
@@ -16,7 +19,7 @@ board](https://github.com/js216/stm32mp135_test_board) through the end of the
 Linux boot process. In a [previous
 article](linux-bringup-on-custom-stm32mp135-board) we saw the "Booting Linux"
 message for the first time; now it's time to run our own programs *under* the
-OS and configure the devices.
+OS and configure some of the devices.
 
 ### Device Tree Source (DTS)
 
@@ -178,17 +181,56 @@ in the `GRSTCSETR` register. As we can read in the RM0475 reference manual for
 this SoC, that register has only one bit, called `MPSYSRST`, where writing '1'
 generates a system reset.
 
-### Backlight
-
-The display backlight is controlled via a single GPIO and so it can be turned on
-and off as follows:
+Notice that the device tree already defines a driver to talk to the RCC unit:
 
 ```
-# echo 1 > /sys/class/backlight/panel-backlight/brightness
-# echo 0 > /sys/class/backlight/panel-backlight/brightness
+rcc: rcc@50000000 {
+	compatible = "st,stm32mp13-rcc", "syscon";
+	reg = <0x50000000 0x1000>;
+	#clock-cells = <1>;
+	#reset-cells = <1>;
+	clock-names = "hse", "hsi", "csi", "ck_lse", "lsi";
+	clocks = <&clk_hse>,
+		 <&clk_hsi>,
+		 <&clk_csi>,
+		 <&clk_lse>,
+		 <&clk_lsi>;
+};
 ```
 
-To control the brightness, we need to enable the PWM corresponding to this GPIO
-pin and make sure the panel backlight is controlled by this PWM.
+This `st,stm32mp13-rcc` driver is to be found under
+`drivers/clk/stm32/clk-stm32mp13.c`. First we define the register and bit needed
+to execute the reset:
+
+```c
+#define RCC_MP_GRSTCSETR                0x114
+#define RCC_MP_GRSTCSETR_MPSYSRST       BIT(0)
+```
+
+Then the reset handler is very simple:
+
+```c
+static int stm32mp1_restart(struct sys_off_data *data)
+{
+	void __iomem *rcc_base = data->cb_data;
+
+	pr_info("System reset requested...\n");
+	dsb(sy);
+	writel(RCC_MP_GRSTCSETR_MPSYSRST, rcc_base + RCC_MP_GRSTCSETR);
+
+	while (1)
+		wfe();
+
+	return NOTIFY_DONE;
+}
+```
+
+Finally, we need to register this reset handler. A good place is at the bottom
+of `stm32mp1_rcc_init()`:
+
+```c
+devm_register_sys_off_handler(dev, SYS_OFF_MODE_RESTART,
+	SYS_OFF_PRIO_HIGH, stm32mp1_restart, rcc_base);
+```
 
 !include[articles/linux-on-stm32mp135.html]
