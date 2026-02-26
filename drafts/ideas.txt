@@ -109,3 +109,23 @@
 - Get cut, get apadravya
 - Ball bearing and a solar cell: a wheel that spins in the sun
 - Bandwidth over latency, or, the death of real-time computing
+- The wastefulness of generality and the efficiency of limitation (DSP vs FPGA,
+  sc vs Sheets, Linux vs Unix v7, ...)
+- Write about the decomposition of the continuo trainer into small, Unix-like
+  programs, and how that facilitates vibecoding and motivates me with solid
+  progress and completed steps, and narrow text-based interfaces and
+  one-directional data flow without binary interfaces, and vastly reduces the
+  "startup time" for me to re-acquaint myself with the codebase, and be able to
+  get work done even though I only have an hour or two in the evening, or else
+  even small AI agents are able to work on it without requiring a huge context
+  and lots of tokens since it's just simple text filtering
+- The IDE Mentality: the obsession with making huge programs that do everything,
+  as opposed to the Unix philosophy; the obsession for plugins/hooks (cf. Chuck
+  Moore) which rely on a binary API instead of simple
+  text-is-universal-interface; the resulting never-finished state of the
+  program, constantly new bugs introduced in parts that were thought stable; the
+  idea of orthogonal/lean/minimal interfaces becomes just wishful thinking since
+  it's unenforcable compared to text-interface which forces
+  compression/bottleneck/choke-point; code becomes stuck in the ide project and
+  can never leave it or be reused elsewhere (maybe exception: somel libraries
+  may have been created in some IDE-like project?)
