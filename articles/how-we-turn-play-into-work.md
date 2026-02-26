@@ -9,7 +9,7 @@ description: >
    futility.
 ---
 
-![](../images/w.jpg)
+![](../images/ls.jpg)
 
 Most of the things we abandon were once exciting---they began as play. Then,
 almost without noticing, we turned them into work. Track them, schedule them,

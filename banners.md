@@ -266,13 +266,13 @@ Digital:
 [Link](https://wwcm.synology.me/pdf/EB-23657-18%20PDP-11%20Architecture%20Handbook.pdf)
 ![](../images/w.jpg)
 
----
-
 Digital:
 *LSI11 PDP11/03 Processor Handbook*
 (1975)
 [Link](https://wwcm.synology.me/pdf/EB-23657-18%20PDP-11%20Architecture%20Handbook.pd://bitsavers.org/pdf/dec/pdp11/handbooks/LSI-11_Processor_Handbook_1975-76.pdf)
 ![](../images/ls.jpg)
+
+---
 
 Digital:
 *PDP-11/34 Processor Handbook*
