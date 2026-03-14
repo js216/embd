@@ -1,7 +1,7 @@
 ---
 title: NAND Flash on STM32MP135
 author: Jakob Kastelic
-date: 13 Mar 2025
+date: 13 Mar 2026
 topic: Linux
 description: >
    Bringing up raw NAND flash on the STM32MP135: wiring, FMC configuration,
