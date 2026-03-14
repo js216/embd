@@ -558,7 +558,7 @@ Freezes in seconds:
    Impedance During Read = Ron 34 ohm / ODT = 60 ohms
    Impedance During Write = Ron 34 ohm / ODT = 60 ohms
 
-Freezes in seconds:
+Freezes in minutes:
    1 GHz CPU
    DDR 533 MHz
    disable "Relaxed Timing Mode" and "Temperature case over 85°C support"
@@ -568,6 +568,271 @@ Freezes in seconds:
 Freezes in seconds:
    1 GHz CPU
    DDR 533 MHz
-   disable "Relaxed Timing Mode" and "Temperature case over 85°C support"
-   Impedance During Read = Ron 40 ohm / ODT = 80 ohms (Default)
-   Impedance During Write = Ron 34 ohm / ODT = 60 ohms
+   enable "Relaxed Timing Mode" and "Temperature case over 85°C support"
+   Impedance During Read = Ron 34 ohm / ODT = 60 ohms
+   Impedance During Write = Ron 40 ohm / ODT = 60 ohms
+
+Even 405 MHz DDR, 1 GHz CPU froze in less than an hour.
+
+Now trying both boards at 666 MHz CPU, 405 MHz DDR.
+
+02/26/2026
+================================================================================
+
+Board #2 froze after 81886 seconds (almost a day). I don't think there was a
+kernel message visible on the UART4 console. Board #2 is connected to the power
+supply using a single ground wire, via the 24V power supply. Maybe #2 fails more
+often because of the bad board power?
+
+Now trying, on board #2, 1 GHz CPU, 300 MHz DDR. No change of wiring yet. Froze
+in 829 seconds. Given how quickly it froze it makes me think that maybe it's
+just a power issue, since board #1 is still running? (Albeit not at 1 GHz. Board
+#1 is still at 666 MHz.)
+
+Now board #2 with CPU @ 666 MHz and DDR @ 300 MHz.
+
+03/04/2026
+================================================================================
+
+Board #2 still running fine.
+
+Board #1 (with 405 MHz DDR) prints the panic below, but ssh, memtester, GUI, and
+iper3 keep running (only the RS-232 console is missing a shell, meaning I can
+type things and they appear on the console, but no prompt and commands don't get
+executed):
+
+# while true; do printf "\r%s" "$(date '+%Y-%m-%d %H:%M:%S')"; sleep 1; done
+2026-02-26 17:36:18[107269.823079] 8<--- cut here ---
+[107269.825319] Unable to handle kernel NULL pointer dereference at virtual
+address 00000004
+[107269.866560] [00000004] *pgd=00000000
+[107269.868955] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+[107269.874351] Modules linked in:
+[107269.877519] CPU: 0 PID: 26083 Comm: sleep Not tainted 6.1.28-dirty #23
+[107269.884023] Hardware name: STM32 (Device Tree Support)
+[107269.889303] PC is at __rb_erase_color+0x14/0x25c
+[107269.894000] LR is at unlink_anon_vmas+0xc0/0x210
+[107269.898688] pc : [<c0b5ce84>]    lr : [<c027440c>]    psr: 60000013
+[107269.904981] sp : e0ec9e28  ip : 00001000  fp : c2f20c18
+[107269.910262] r10: c125dc60  r9 : c2f20c3c  r8 : 00000000
+[107269.915544] r7 : c2e4102c  r6 : c0257964  r5 : dd0b4040  r4 : 00000000
+[107269.922142] r3 : 000000b9  r2 : 00000000  r1 : c2e4102c  r0 : 00000000
+[107269.928739] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment
+none
+[107269.935950] Control: 10c5387d  Table: dd22806a  DAC: 00000051
+[107269.941736] Register r0 information: NULL pointer
+[107269.946523] Register r1 information: slab anon_vma start c2e41000 pointer
+offset 44
+[107269.954271] Register r2 information: NULL pointer
+[107269.959054] Register r3 information: non-paged memory
+[107269.964139] Register r4 information: NULL pointer
+[107269.968919] Register r5 information: slab anon_vma_chain start dd0b4040
+pointer offset 0
+[107269.977063] Register r6 information: non-slab/vmalloc memory
+[107269.982856] Register r7 information: slab anon_vma start c2e41000 pointer
+offset 44
+[107269.990595] Register r8 information: NULL pointer
+[107269.995276] Register r9 information: slab vm_area_struct start c2f20c18
+pointer offset 36
+[107270.003621] Register r10 information: non-slab/vmalloc memory
+[107270.009414] Register r11 information: slab vm_area_struct start c2f20c18
+pointer offset 0
+[107270.017658] Register r12 information: non-paged memory
+[107270.022844] Process sleep (pid: 26083, stack limit = 0xe21cc77e)
+[107270.028945] Stack: (0xe0ec9e28 to 0xe0eca000)
+[107270.033325] 9e20:                   c2f20c34 dd0b4040 c2e41000 c2e41000
+00000000 c027440c
+[107270.041551] 9e40: c121c9b8 c0dfe24c 00000000 c2f20c18 c2f20900 ffffffff
+00010000 e0ec9ef0
+[107270.049875] 9e60: 00002000 00000000 c2f20c18 c026036c 00000000 00000001
+00000003 c2e05700
+[107270.058100] 9e80: 000ca000 000cafff c2ac890c 00000000 ffffffff 00000000
+00000301 18b3a4b7
+[107270.066324] 9ea0: c121ea80 c2f20870 00000000 c2e05700 c121ea40 c2e05738
+c121ea60 000000f8
+[107270.074548] 9ec0: 00000000 c026be38 00000000 c02658a8 c2e05700 00010000
+000c8fff c2ac890c
+[107270.082773] 9ee0: 00000000 ffffffff 00000000 00000101 c2e05700 00010000
+ffffffff 00000009
+[107270.091097] 9f00: 00000001 dd1f6000 dd1f6000 00000008 00000008 dffec2a8
+dffe7ebc dff8722c
+[107270.099321] 9f20: dfb9eec4 dffe7d78 dffe7d9c dfb7b320 dffe78d4 18b3a4b7
+c2e05700 c2e05700
+[107270.107546] 9f40: 00000000 c2d8b268 c2e05738 c01002c4 c2d8abc0 c011bf08
+c2e05700 c2d8abc0
+[107270.115769] 9f60: c2d8b268 c0125ae0 c2d8abc0 00000000 00000000 c18f1a40
+c01002c4 c0125cec
+[107270.123994] 9f80: c2d8abc0 c18f1a40 00000000 18b3a4b7 c18f1a40 c0126270
+000000f8 c01262d0
+[107270.132318] 9fa0: 00000000 c0100060 00000000 b6f692a0 00000000 b6f69144
+00000000 00000002
+[107270.140542] 9fc0: 00000000 b6f692a0 b6f68bfc 000000f8 00000000 00000000
+b6f79f70 00000000
+[107270.148766] 9fe0: b6f70490 be826c68 b6f24a10 b6ee4d5c 60000010 00000000
+00000000 00000000
+[107270.156994]  __rb_erase_color from unlink_anon_vmas+0xc0/0x210
+[107270.162908]  unlink_anon_vmas from free_pgtables+0xa8/0x130
+[107270.168516]  free_pgtables from exit_mmap+0x148/0x378
+[107270.173621]  exit_mmap from mmput+0x48/0x110
+[107270.178018]  mmput from exit_mm+0xf4/0x154
+[107270.182211]  exit_mm from do_exit+0x1ac/0x5b0
+[107270.186609]  do_exit from do_group_exit+0x34/0x84
+[107270.191411]  do_group_exit from __wake_up_parent+0x0/0x18
+[107270.196829] Code: e1a04000 e1a06002 e1a07001 e3a02000 (e5945004)
+[107271.396765] ---[ end trace 0000000000000000 ]---
+[107271.400730] Fixing recursive fault but reboot is needed!
+[107271.446690] BUG: using smp_processor_id() in preemptible [00000000] code:
+sleep/26083
+[107271.454464] caller is __schedule+0x38/0x73c
+[107271.458367] CPU: 0 PID: 26083 Comm: sleep Tainted: G      D
+6.1.28-dirty #23
+[107271.465602] Hardware name: STM32 (Device Tree Support)
+[107271.470797]  unwind_backtrace from show_stack+0x10/0x14
+[107271.476115]  show_stack from dump_stack_lvl+0x40/0x4c
+[107271.481214]  dump_stack_lvl from check_preemption_disabled+0xf8/0xfc
+[107271.487624]  check_preemption_disabled from __schedule+0x38/0x73c
+[107271.493731]  __schedule from do_task_dead+0x44/0x48
+[107271.498730]  do_task_dead from make_task_dead+0xdc/0x13c
+[107271.504138]  make_task_dead from die+0x2cc/0x2d8
+[107271.508834]  die from die_kernel_fault+0x64/0x74
+[107271.513423]  die_kernel_fault from do_page_fault+0x0/0x438
+
+03/05/2026
+================================================================================
+
+On eval board:
+
+# ./gui /dev/fb0 480x272:32 /dev/input/event
+FB: 480x272  bpp=32  stride=1920  (/dev/fb0)
+/dev/input/event: No such file or directory
+Warning: could not open evdev /dev/input/event
+[ 8734.560080] Alignment trap: not handling instruction e1901f9f at [<c0b886f0>]
+[ 8734.567611] 8<--- cut here ---
+[ 8734.569644] Unhandled fault: alignment exception (0x001) at 0xff19192e
+[ 8734.576220] 8<--- cut here ---
+[ 8734.576232] Unable to handle kernel paging request at virtual address ff191a1a
+[ 8734.576244] [ff191a1a] *pgd=00000000
+[ 8734.576262] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+[ 8734.576272] Modules linked in:
+[ 8734.576281] CPU: 0 PID: 195 Comm: tmux: server Not tainted 6.1.28-dirty #23
+[ 8734.576292] Hardware name: STM32 (Device Tree Support)
+[ 8734.576297] PC is at __kmem_cache_alloc_node+0xe8/0x4c0
+[ 8734.576320] LR is at __kmem_cache_alloc_node+0x30/0x4c0
+[ 8734.576329] pc : [<c0296768>]    lr : [<c02966b0>]    psr: a0000113
+[ 8734.576335] sp : e0801a18  ip : 008c6d9a  fp : 00000200
+[ 8734.576342] r10: ffffffff  r9 : c1105198  r8 : 00082a20
+[ 8734.576348] r7 : c125f9f4  r6 : ff19191a  r5 : 00000000  r4 : c1801480
+[ 8734.576355] r3 : 00000100  r2 : dfb48f38  r1 : 1eaf1000  r0 : e0801a18
+[ 8734.576362] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment none
+[ 8734.576372] Control: 10c5387d  Table: c2df006a  DAC: 00000051
+[ 8734.576377] Register r0 information: 2-page vmalloc region starting at 0xe0800000 allocated at start_kernel+0x468/0x648
+[ 8734.576400] Register r1 information: non-paged memory
+[ 8734.576408] Register r2 information: non-slab/vmalloc memory
+[ 8734.576417] Register r3 information: non-paged memory
+[ 8734.576424] Register r4 information: slab kmem_cache start c1801480 pointer offset 0
+[ 8734.576446] Register r5 information: NULL pointer
+[ 8734.576453] Register r6 information: non-paged memory
+[ 8734.576461] Register r7 information: non-slab/vmalloc memory
+[ 8734.576469] Register r8 information: non-paged memory
+[ 8734.576476] Register r9 information: non-slab/vmalloc memory
+[ 8734.576483] Register r10 information: non-paged memory
+[ 8734.576490] Register r11 information: non-paged memory
+[ 8734.576498] Register r12 information: non-paged memory
+[ 8734.576505] Process tmux: server (pid: 195, stack limit = 0x8a5cd497)
+[ 8734.576517] Stack: (0xe0801a18 to 0xe0802000)
+[ 8734.576526] 1a00:                                                       00000006 00000000
+[ 8734.576538] 1a20: 00000000 ffffffff 00000000 00000200 00082a20 ffffffff c09afbdc c1801480
+[ 8734.576549] 1a40: c09afbdc c2a395c0 00000a20 c0250e98 c09afbdc e0801a88 c2820000 c1eddc00
+[ 8734.576559] 1a60: c2e26e30 c1ba7800 80080006 c2e26a80 00000000 00010148 00000200 00000100
+[ 8734.576570] 1a80: c09afbdc c2a395c0 00000a20 c09aaf64 83126e97 c2a395c0 c2e26300 c2e26a80
+[ 8734.576581] 1aa0: 00000b50 00010148 c2f0ac00 c2f0ad00 00000000 c2a395c0 c2e26a80 c09afbdc
+[ 8734.576592] 1ac0: c2e26a80 00000b50 c2a395c0 e0801b98 cb9d0e0e c0a59114 0000002d c2b3bf00
+[ 8734.576603] 1ae0: cb9d0e0e c0a51064 00003f82 e0801bc0 00000000 00000000 00000001 00000000
+[ 8734.576614] 1b00: 00000001 cb9d0e0e e0801b98 c2b3bf00 00000000 00000000 cb9f0b1e c2a396bc
+[ 8734.576625] 1b20: 00000000 00000000 cb9d0e0e cb9d0866 e0801bc0 c121cd73 c1103d40 c09a1648
+[ 8734.576636] 1b40: c2a395c0 f236c5fc 00000006 c2a395c0 c2b3bf00 00000402 cb9d195e cb9d0e0e
+[ 8734.576647] 1b60: e0801bc0 0000005a c1103d40 c0a53b5c e0801b98 00000000 03a17d50 cb9d0e0e
+[ 8734.576657] 1b80: 00000000 00000008 c2b3b3c0 00000402 000005a8 00000000 00000000 00000000
+[ 8734.576668] 1ba0: c2d8fc50 c2a395c0 c2a395c0 00000000 00000100 000005a8 e0801bc0 c2f0b900
+[ 8734.576679] 1bc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+[ 8734.576689] 1be0: 00000000 00000000 00000000 00000000 0000005a 00000000 00000000 00000000
+[ 8734.576700] 1c00: 00000000 f236c5fc c2d8f850 c2a395c0 c2b3bf00 c2d8f864 00000020 00000020
+[ 8734.576711] 1c20: 00000000 c2d8f864 c2d8f850 c0a55b7c c1273800 f236c5fc 8e0019ac c2a395c0
+[ 8734.576722] 1c40: c2b3bf00 c1ab6f80 00000001 c09a120c 00000000 c2d8f864 c2d8f850 c0a61930
+[ 8734.576733] 1c60: c2b3bf00 c2a395c0 c2a3963c c0a632f0 8e0019ac 00001451 00000003 00000000
+[ 8734.576744] 1c80: 0000002d 000025b0 00000000 c2b3bf30 00000008 8e0019ac c1274384 316019ac
+[ 8734.576754] 1ca0: 00002ec6 00001451 8e0019ac c0a3c9a0 00000000 f236c5fc c2820000 00000000
+[ 8734.576766] 1cc0: c2b3bf00 c1107420 c1273800 c1ab6f80 e0801d64 c2b3b000 c1273800 c0a31f24
+[ 8734.576776] 1ce0: 00000000 f236c5fc c1273800 c2b3bf00 c1273800 00000000 e0801d2c c0a32154
+[ 8734.576787] 1d00: c2b3b0c0 e0801d2c 00000000 c0a31254 e0801d64 e0801d64 e0801d64 c0a3188c
+[ 8734.576798] 1d20: 00000000 c1ab6f80 d744fcc9 c2b3b0c0 c2b3b0c0 f236c5fc c1273800 c2b3b0c0
+[ 8734.576809] 1d40: e0801dac c2820000 c1273800 e0801dac c2820000 c1273800 e0801d64 c0a322d4
+[ 8734.576820] 1d60: e0801da4 e0801d64 e0801d64 f236c5fc 007e48c7 c28213c4 c0a321f4 c110790c
+[ 8734.576831] 1d80: e0801dac c110790c 00000000 c2820000 c2820000 c09c88e4 c28213c4 00000000
+[ 8734.576842] 1da0: 00000010 c28213c4 c110790c e0801dac e0801dac f236c5fc 00000000 00000000
+[ 8734.576853] 1dc0: c28213c4 c28213c4 e0801dec 00000000 c2a36040 c1273788 c11065f0 c09c8fcc
+[ 8734.576864] 1de0: 00000020 e0801de4 e0801de4 c2820580 c2820580 f236c5fc 00000000 00000000
+[ 8734.576875] 1e00: c2821340 00000003 c28213c4 c2a60dfc 000000b4 c2820580 c2820580 c09fb9a8
+[ 8734.576886] 1e20: 00000000 c2b3b0c0 00000000 00000042 c2a60dfc c0803a08 00000000 c01b866c
+[ 8734.576896] 1e40: e0d13b30 00000dfc c2820580 c2a60000 c2b3b0c0 c2822580 00000000 e0d13b40
+[ 8734.576907] 1e60: 00000000 00000008 00000002 00000040 00000000 00000000 c2821340 c125dc40
+[ 8734.576918] 1e80: 00001000 c2820700 00000000 c2bed000 c2bed042 00000001 00000000 c0e82bdc
+[ 8734.576929] 1ea0: c2821440 c09bdf7c 00000033 c2bed000 c2bed042 c2bed001 c2bed000 c2820700
+[ 8734.576940] 1ec0: c2820f00 00001000 00000000 f236c5fc c2820580 c2821340 c2821340 00000040
+[ 8734.576951] 1ee0: c2820580 00000000 c1103d40 000cdec3 dfb46e40 c0803df0 00000001 c2821340
+[ 8734.576962] 1f00: 00000040 e0801f43 e0801f44 c1103d40 000cdec3 c09c9934 00000000 0000000c
+[ 8734.576973] 1f20: dfb46c80 00000125 c2821340 00000000 e0801f44 c09c9d60 1eaf1000 c1055c80
+[ 8734.576984] 1f40: 003e0152 e0801f44 e0801f44 e0801f4c e0801f4c f236c5fc 00000031 c110308c
+[ 8734.576995] 1f60: 00000004 00000003 c121d000 00000101 c0deab58 00000008 c2a36040 c0101410
+[ 8734.577006] 1f80: 00000001 c1d5656c e0d49938 c1103080 c104e3a8 c1104d14 0000000a c104e31c
+[ 8734.577017] 1fa0: c1054f80 c1054f80 c0e4bed0 000cdec2 c1103d40 c0b88f2c 00400040 c0c022f4
+[ 8734.577028] 1fc0: c1105510 c2a36040 c1054f80 ffffffff e0d49974 00000000 c2a36040 c1242be0
+[ 8734.577039] 1fe0: e0d49938 c0127324 c01729e8 60000013 ffffffff c012741c c01729e8 c0b3fea0
+[ 8734.577054]  __kmem_cache_alloc_node from __kmalloc_node_track_caller+0x44/0x1e0
+[ 8734.577080]  __kmalloc_node_track_caller from pskb_expand_head+0x78/0x2fc
+[ 8734.577105]  pskb_expand_head from __skb_unclone_keeptruesize+0x24/0x78
+[ 8734.577128]  __skb_unclone_keeptruesize from tcp_trim_head+0x3c/0x144
+[ 8734.577154]  tcp_trim_head from tcp_clean_rtx_queue.constprop.0+0x780/0xabc
+[ 8734.577177]  tcp_clean_rtx_queue.constprop.0 from tcp_ack+0x3fc/0x9ac
+[ 8734.577197]  tcp_ack from tcp_rcv_established+0x678/0x7fc
+[ 8734.577217]  tcp_rcv_established from tcp_v4_do_rcv+0x188/0x254
+[ 8734.577235]  tcp_v4_do_rcv from tcp_v4_rcv+0x9dc/0xadc
+[ 8734.577249]  tcp_v4_rcv from ip_protocol_deliver_rcu+0x2c/0x1b8
+[ 8734.577267]  ip_protocol_deliver_rcu from ip_local_deliver+0xa4/0xf0
+[ 8734.577284]  ip_local_deliver from ip_sublist_rcv_finish+0x3c/0x50
+[ 8734.577300]  ip_sublist_rcv_finish from ip_list_rcv_finish.constprop.0+0xfc/0x124
+[ 8734.577317]  ip_list_rcv_finish.constprop.0 from ip_list_rcv+0xe0/0x108
+[ 8734.577334]  ip_list_rcv from __netif_receive_skb_list_core+0x18c/0x1fc
+[ 8734.577352]  __netif_receive_skb_list_core from netif_receive_skb_list_internal+0x1b8/0x2b4
+[ 8734.577369]  netif_receive_skb_list_internal from napi_gro_receive+0x178/0x27c
+[ 8734.577393]  napi_gro_receive from stmmac_rx+0x6b4/0xa6c
+[ 8734.577415]  stmmac_rx from stmmac_napi_poll_rx+0x30/0xac
+[ 8734.577429]  stmmac_napi_poll_rx from __napi_poll+0x2c/0x204
+[ 8734.577443]  __napi_poll from net_rx_action+0x14c/0x2f8
+[ 8734.577458]  net_rx_action from __do_softirq+0x150/0x41c
+[ 8734.577476]  __do_softirq from __irq_exit_rcu+0xc0/0x10c
+[ 8734.577492]  __irq_exit_rcu from irq_exit+0x8/0x10
+[ 8734.577504]  irq_exit from call_with_stack+0x18/0x20
+[ 8734.577522]  call_with_stack from __irq_svc+0x98/0xc8
+[ 8734.577536] Exception stack(0xe0d49940 to 0xe0d49988)
+[ 8734.577549] 9940: 60000093 1eaf1000 00000000 c104e438 00000000 c1242670 00000001 60000013
+[ 8734.577560] 9960: 00000000 e0d49a43 c1242be0 0000004a 44e69980 e0d49990 c01729e4 c01729e8
+[ 8734.577567] 9980: 60000013 ffffffff
+[ 8734.577574]  __irq_svc from console_emit_next_record.constprop.0+0x198/0x2a0
+[ 8734.577595]  console_emit_next_record.constprop.0 from console_unlock+0xf8/0x218
+[ 8734.577616]  console_unlock from vprintk_emit+0x140/0x258
+[ 8734.577636]  vprintk_emit from vprintk_default+0x20/0x28
+[ 8734.577655]  vprintk_default from _printk+0x2c/0x5c
+[ 8734.577681]  _printk from do_DataAbort+0x70/0xb0
+[ 8734.577700]  do_DataAbort from __dabt_svc+0x4c/0x80
+[ 8734.577712] Exception stack(0xe0d49af8 to 0xe0d49b40)
+[ 8734.577720] 9ae0:                                                       ff19192e 7fffffff
+[ 8734.577731] 9b00: 7fffffff c2af3380 ff19191a ff19192e ff19191a e0d49cf0 e0d49cf0 e0d49c40
+[ 8734.577742] 9b20: 00000000 00000000 00000000 e0d49b48 c0643bc0 c0b886f4 a0000013 ffffffff
+[ 8734.577749]  __dabt_svc from ldsem_down_read+0x10/0x48
+[ 8734.577770]  ldsem_down_read from 0x19
+[ 8734.577794] Code: e3560000 13530000 0a0000a7 e594301c (e7963003)
+[ 8734.577802] ---[ end trace 0000000000000000 ]---
+[ 8734.577810] Kernel panic - not syncing: Fatal exception in interrupt
+[ 8735.417736] ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+
