@@ -1,5 +1,5 @@
 ---
-title: Talking with Claude
+title: The Zen of Claude
 author: Jakob Kastelic
 date: 14 Mar 2026
 topic: Incoherent Thoughts
