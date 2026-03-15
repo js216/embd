@@ -3,7 +3,7 @@ ARTICLES_BOXS := $(wildcard articles/*.html)
 ARTICLES_HTML := $(patsubst articles/%.md,html/%.html,$(ARTICLES_MARK))
 
 all: html/index.html html/style.css html/robots.txt html/favicon.ico \
-	html/about.html html/archive.html
+	html/projects.html html/about.html html/archive.html
 
 html/%.html: articles/%.md template.html md2html.pl $(ARTICLES_BOXS) | html
 	perl md2html.pl $< template.html > $@
@@ -16,16 +16,7 @@ clean:
 
 # Special items
 
-html/style.css: style.css
-	cp $< $@
-
-html/robots.txt: robots.txt
-	cp $< $@
-
-html/favicon.ico: favicon.ico
-	cp $< $@
-
-html/about.html: about.html
+html/%: %
 	cp $< $@
 
 html/index.html: $(ARTICLES_HTML) concat.py

@@ -251,24 +251,75 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .il { color: #ae81ff } /* Literal.Number.Integer.Long */
 
 @media print {
-   /* reset the container */
    .codehilite {
       background: none !important;
       color: #000 !important;
-      border: 1px solid #999;  /* optional */
+      border: 1px solid #999;
       padding: 0.1em 0.5em;
       border-radius: 0;
    }
 
-   /* reset all Pygments token colors */
    .hll, .c, .err, .esc, .g, .k, .l, .n, .o, .x, .p, .ch, .cm, .cp, .cpf, .c1, .cs,
    .gd, .ge, .gr, .gh, .gi, .go, .gp, .gs, .gu, .gt, .kc, .kd, .kn, .kp, .kr, .kt,
    .ld, .m, .s, .na, .nb, .nc, .no, .nd, .ni, .ne, .nf, .nl, .nn, .nx, .py, .nt,
    .nv, .ow, .w, .mb, .mf, .mh, .mi, .mo, .sa, .sb, .sc, .dl, .sd, .s2, .se, .sh,
    .si, .sx, .sr, .s1, .ss, .bp, .fm, .vc, .vg, .vi, .vm,
    .il {
-      color: #000 !important;  /* all tokens become black */
-      background: none !important; /* remove any background */
+      color: #000 !important;
+      background: none !important;
    }
 }
 
+/* ── Project list ── */
+
+.project-list {
+   list-style: none;
+   padding: 0;
+   margin: 2em 0;
+   display: flex;
+   flex-direction: column;
+   gap: 1.5em;
+}
+
+.project-card {
+   display: flex;
+   align-items: flex-start;
+}
+
+/* New wrapper to handle the full-width link and layout */
+.project-link {
+   display: flex;
+   width: 100%;
+   text-decoration: none;
+   color: inherit;
+   gap: 1em;
+}
+
+.project-icon {
+   font-size: 1.8em;
+   line-height: 1;
+   flex-shrink: 0;
+   width: 2em;
+   text-align: center;
+   padding-top: 0.1em;
+}
+
+.project-info {
+   flex: 1; /* This allows the info box to push the year to the far right */
+}
+
+.project-card h2 {
+   display: flex;
+   justify-content: space-between;
+   align-items: baseline;
+   font-size: 1.1em;
+   margin: 0 0 0.2em 0;
+   border-bottom: none;
+   padding-bottom: 0;
+   color: #000;
+}
+
+.project-card p {
+   margin: 0;
+   color: #333;
+}

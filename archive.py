@@ -25,6 +25,7 @@ HTML_INTRO = """<!DOCTYPE html>
 <a href="http://embd.cc"><img src="favicon.ico" alt="logo">embd.cc : Archive</a>
 </div>
 <nav class="site-nav">
+<a href="projects">Projects</a>
 <a href="archive">Archive</a>
 <a href="about">About</a>
 </nav>
