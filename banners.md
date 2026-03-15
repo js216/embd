@@ -278,8 +278,6 @@ Digital:
 [Link](https://bitsavers.org/pdf/dec/pdp11/handbooks/PDP-11_34_Processor_Handbook_1976.pdf)
 ![](../images/34.jpg)
 
----
-
 Digital:
 *PDP-11/34 Processor Handbook*
 (1976)
