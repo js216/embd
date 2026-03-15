@@ -129,3 +129,18 @@
   compression/bottleneck/choke-point; code becomes stuck in the ide project and
   can never leave it or be reused elsewhere (maybe exception: somel libraries
   may have been created in some IDE-like project?)
+- The App is a Graph (run.rs)
+- projects page: timetree, continuo trainer, CG792, ...
+- on watches: reliable, accurate, legible
+- what's good for a company to sell (shiny, new features all the time) is not
+  good for the customer to buy (who wants a stable UI, no bugs, no breaking
+  features): the market forces conspire to cause conflict between seller and
+  buyer
+- software must be reliable so it doesn't crash, and stable so new versions
+  don't break things, and precise in accomplishing exactly the task I give it
+- Doing Inhibits Done: pointless optimizations, taking on useless tasks, etc.,
+  while just "doing nothing" you get clarity and see what really needs to be
+  done
+- Let's define lightweight, bloat-free
+- make param_gui public under js216 and write: LVGL with a single source of truth
+- How to use a smartphone without getting distracted
