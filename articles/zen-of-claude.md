@@ -2,7 +2,7 @@
 title: The Zen of Claude
 author: Jakob Kastelic
 date: 14 Mar 2026
-topic: Incoherent Thoughts
+topic: Agents
 description: >
    A conversation with Claude on non-attachment.
 ---
