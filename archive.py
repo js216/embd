@@ -26,7 +26,6 @@ HTML_INTRO = """<!DOCTYPE html>
 </div>
 <nav class="site-nav">
 <a href="projects">Projects</a>
-<a href="archive">Archive</a>
 <a href="about">About</a>
 </nav>
 </header>
