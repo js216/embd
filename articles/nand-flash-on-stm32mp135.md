@@ -2,6 +2,7 @@
 title: NAND Flash on STM32MP135
 author: Jakob Kastelic
 date: 13 Mar 2026
+modified: 20 Mar 2026
 topic: Linux
 description: >
    Bringing up raw NAND flash on the STM32MP135: wiring, FMC configuration,
@@ -656,6 +657,49 @@ Welcome to Buildroot
 buildroot login:
 ```
 
-Success!
+### Reimplement with sequencer
+
+Instead of the CPU-based read/write commands, the ST HAL also supports the use
+of the DMA sequencer. This makes erase faster:
+
+```
+> fmc_erase
+FMC: erasing 2048 blocks
+skip 309 (pre-marked bad)
+skip 359 (pre-marked bad)
+skip 639 (pre-marked bad)
+skip 969 (pre-marked bad)
+skip 1211 (pre-marked bad) 0 new-bad)  136.8 MB/s
+skip 1239 (pre-marked bad)
+skip 1305 (pre-marked bad)
+skip 1365 (pre-marked bad)
+skip 1405 (pre-marked bad)
+skip 1467 (pre-marked bad)
+skip 1477 (pre-marked bad)
+skip 1566 (pre-marked bad)
+skip 1586 (pre-marked bad)
+skip 1611 (pre-marked bad)
+skip 1684 (pre-marked bad)
+skip 1731 (pre-marked bad)
+skip 1769 (pre-marked bad)
+skip 1822 (pre-marked bad)
+skip 1884 (pre-marked bad)
+skip 1934 (pre-marked bad)
+done: 20 pre-marked bad, 0 newly bad, 3 s, avg 139.5 MB/s
+```
+
+Also test read and write are a bit faster:
+
+```
+> fmc_test_write
+FMC write: 2048 blocks
+blk 2028/2048  6.6 MB/s  (0 errs)
+done: 0 errs, 77 s, avg 6.6 MB/s
+
+> fmc_test_read
+FMC read: 2048 blocks
+blk 2009/2048  6.0 MB/s  (1249748419 bit errs)
+done: 0 rd errs, 1273918958 bit errs (post-ECC), 84 s, avg 6.0 MB/s
+```
 
 !include[articles/linux-on-stm32mp135.html]
