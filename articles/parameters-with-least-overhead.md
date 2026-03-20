@@ -96,7 +96,7 @@ We have a choice of several synchronization methods:
   anything larger (such as the struct above), we'd get torn reads. Nonetheless,
   this gives the absolute floor for the overhead measurement.
 
-- **Mutex.**: The straightforward approach: one `pthread_mutex_t` with
+- **Mutex.** The straightforward approach: one `pthread_mutex_t` with
   `PTHREAD_PROCESS_SHARED` per table or per parameter. Readers and writers both
   lock/unlock. Simple, correct, but a single global mutex becomes a bottleneck
   when many processes contend — everyone blocks on every access.
@@ -210,10 +210,8 @@ methods:
 | ------- | ---------- | ---------- | ------------ | -------------- | -------- |
 | mutex   | param      | 1.8        | 1.2          | 0.9            | 3.43     |
 | mutex   | table      | 2.2        | 0.7          | 1.3            | 3.61     |
-|         |            |            |              |                |          |
 | rwlock  | param      | 2.0        | 0.7          | 0.3            | 2.81     |
 | rwlock  | table      | 2.6        | 0.3          | 0.6            | 2.55     |
-|         |            |            |              |                |          |
 | seqlock | param      | 0.0 to 1.5 | 0.8          | 1.4            | 4.03     |
 | seqlock | table      | 1.2 to 5.0 | 0.8          | 1.4            | 4.06     |
 
