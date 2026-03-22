@@ -86,8 +86,6 @@ Gollwitzer shows that publicly stating goals can create a premature sense of
 completion through social recognition; silence preserves motivation by
 preventing this substitution of talk for action.[^11]
 
-## References
-
 [^1]: Eliphas Levi, *Transcendental Magic: Its Doctrine and Ritual* (1856).
     [link](https://www.sacred-texts.com/eso/tm/index.htm)
 
