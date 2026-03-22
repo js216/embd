@@ -86,39 +86,37 @@ Gollwitzer shows that publicly stating goals can create a premature sense of
 completion through social recognition; silence preserves motivation by
 preventing this substitution of talk for action.[^11]
 
----
-
 ## References
 
 [^1]: Eliphas Levi, *Transcendental Magic: Its Doctrine and Ritual* (1856).
-[link](https://www.sacred-texts.com/eso/tm/index.htm)
+    [link](https://www.sacred-texts.com/eso/tm/index.htm)
 
 [^2]: Aleister Crowley, *Magick in Theory and Practice* (1929-1930).
-[link](https://www.sacred-texts.com/oto/aba/index.htm)
+    [link](https://www.sacred-texts.com/oto/aba/index.htm)
 
 [^3]: Franz Bardon, *Initiation Into Hermetics* (1956).
-[link](https://archive.org/details/initiation-into-hermetics)
+    [link](https://archive.org/details/initiation-into-hermetics)
 
 [^4]: Napoleon Hill, *Think and Grow Rich* (1937).
-[link](https://archive.org/details/ThinkAndGrowRichNapoleonHill)
+    [link](https://archive.org/details/ThinkAndGrowRichNapoleonHill)
 
 [^5]: Neville Goddard, *Feeling Is the Secret* (1944).
-[link](https://archive.org/details/feeling-is-the-secret-neville-goddard)
+    [link](https://archive.org/details/feeling-is-the-secret-neville-goddard)
 
 [^6]: Gospel of Matthew 6:1-18, *The Bible*.
-[link](https://www.biblegateway.com/passage/?search=Matthew+6%3A1-18&version=KJV)
+    [link](https://www.biblegateway.com/passage/?search=Matthew+6%3A1-18&version=KJV)
 
 [^7]: St. John of the Cross, *The Ascent of Mount Carmel* (c. 1579).
-[link](https://www.ccel.org/ccel/john_cross/ascent)
+    [link](https://www.ccel.org/ccel/john_cross/ascent)
 
 [^8]: *The Cloud of Unknowing* (late 14th century, anonymous).
-[link](https://www.ccel.org/ccel/anonymous2/cloud)
+    [link](https://www.ccel.org/ccel/anonymous2/cloud)
 
 [^9]: *Majjhima Nikaya*, early Buddhist discourses (Pali Canon).
-[link](https://suttacentral.net/mn)
+    [link](https://suttacentral.net/mn)
 
 [^10]: Dogen, *Shobogenzo* (13th century).
-[link](https://www.sotozen.com/eng/library/key_terms/shobogenzo.html)
+    [link](https://www.sotozen.com/eng/library/key_terms/shobogenzo.html)
 
-[^11]: Peter M. Gollwitzer, "Implementation Intentions," *American Psychologist* (1999).
-[link](https://psycnet.apa.org/record/1999-11145-001)
+[^11]: Peter M. Gollwitzer, "Implementation Intentions," *American Psychologist*
+    (1999).  [link](https://psycnet.apa.org/record/1999-11145-001)
