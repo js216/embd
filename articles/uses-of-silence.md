@@ -1,6 +1,6 @@
 ---
 title: The Uses of Silence
-author: Jakob Kastelic and GPT-5.3.
+author: Jakob Kastelic and GPT-5.3
 date: 22 Mar 2026
 topic: Incoherent Thoughts
 description: >
