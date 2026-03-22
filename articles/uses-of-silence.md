@@ -87,16 +87,16 @@ completion through social recognition; silence preserves motivation by
 preventing this substitution of talk for action.[^11]
 
 [^1]: Eliphas Levi, *Transcendental Magic: Its Doctrine and Ritual* (1856).
-    [link](https://www.sacred-texts.com/eso/tm/index.htm)
+    [link](https://archive.org/details/transcendentalma00leviuoft)
 
 [^2]: Aleister Crowley, *Magick in Theory and Practice* (1929-1930).
-    [link](https://www.sacred-texts.com/oto/aba/index.htm)
+    [link](https://archive.org/details/magickintheorypr00crow)
 
 [^3]: Franz Bardon, *Initiation Into Hermetics* (1956).
-    [link](https://archive.org/details/initiation-into-hermetics)
+    [link](https://en.wikipedia.org/wiki/Franz_Bardon)
 
 [^4]: Napoleon Hill, *Think and Grow Rich* (1937).
-    [link](https://archive.org/details/ThinkAndGrowRichNapoleonHill)
+    [link](https://archive.org/details/thinkgrowrich00hill)
 
 [^5]: Neville Goddard, *Feeling Is the Secret* (1944).
     [link](https://archive.org/details/feeling-is-the-secret-neville-goddard)
@@ -114,7 +114,7 @@ preventing this substitution of talk for action.[^11]
     [link](https://suttacentral.net/mn)
 
 [^10]: Dogen, *Shobogenzo* (13th century).
-    [link](https://www.sotozen.com/eng/library/key_terms/shobogenzo.html)
+    [link](https://en.wikipedia.org/wiki/Sh%C5%8Db%C5%8Dgenz%C5%8D)
 
 [^11]: Peter M. Gollwitzer, "Implementation Intentions," *American Psychologist*
-    (1999).  [link](https://psycnet.apa.org/record/1999-11145-001)
+    (1999).  [link](https://en.wikipedia.org/wiki/Implementation_intention)
