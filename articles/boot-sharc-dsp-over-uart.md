@@ -2,6 +2,7 @@
 title: Boot SHARC+ DSP Over UART
 author: Jakob Kastelic
 date: 6 Feb 2026
+modified: 11 Apr 2026
 topic: DSP
 description: >
    The ADSP-21569 SHARC+ can boot without CCES or debug hardware. Learn how UART
@@ -82,6 +83,21 @@ Only the `LEDBlink` project remains; compile it (Project -> Build All) and run
 it (Run -> Debug, followed by Run -> Resume). With some luck, all three yellow
 LEDs on the SOM board will start blinking. Great!
 
+### Boot mode selection
+
+Table 7 in the ADSP-2156x datasheet details the available boot modes:
+
+| SYS_BMODE[n] Setting | Boot Mode |
+| -------------------- | --------- |
+| 000                  | No boot |
+| 001                  | SPI2 flash |
+| 010                  | External SPI2 host |
+| 011                  | External UART0 host |
+| 100                  | External LP0 host |
+| 101                  | Octal SPI flash |
+
+In our case, we need to set the rotary switch to 3 (= 011 binary).
+
 ### Boot from UART
 
 Previously we have run the code through the "Debug Agent", which is an
@@ -93,6 +109,9 @@ the Analog Devices logo. Locate the two top right pins, labelled `SPI0` `CLK`
 and `MISO`. Cross-referencing with the datasheet, we learn that these two pins
 are `UART0_TX` and `UART0_RX`, respectively. Connect them to a 3.3V UART to USB
 adapter (I'm using the `UMFT230XB-01` adapter).
+
+Instead of using a separate UART adapter, can also connect a USB cable to the
+SOM board itself---the USB connector is also connected to UART0.
 
 The Processor Hardware Reference[^ref] describes the UART Slave Boot Mode. In
 particular, the part supports Autobaud Detection which works as follows:
