@@ -283,3 +283,7 @@ Digital:
 (1976)
 [Link](https://bitsavers.org/pdf/dec/pdp11/handbooks/PDP-11_34_Processor_Handbook_1976.pdf)
 ![](../images/rc.jpg)
+
+*Lantern in Japanese Tea Garden, SF*
+(JK, 18 Apr 2026)
+![](../images/lmp.jpg)

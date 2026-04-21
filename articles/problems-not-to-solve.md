@@ -1,7 +1,7 @@
 ---
 title: Problems Not to Solve
 author: Jakob Kastelic
-date:
+date: 21 Apr 2026
 topic: Incoherent Thoughts
 description: >
    Some problems cannot---or should not---be solved. Learn to let them go and
