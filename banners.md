@@ -287,3 +287,7 @@ Digital:
 *Lantern in Japanese Tea Garden, SF*
 (JK, 18 Apr 2026)
 ![](../images/lmp.jpg)
+
+*Rainbow at Mountain View Shoreline Amphitheater*
+(JK, 21 Apr 2026)
+![](../images/rb.jpg)
