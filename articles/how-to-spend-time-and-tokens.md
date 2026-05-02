@@ -56,8 +56,8 @@ you lose all your data.
 Luckily, the tools also offer the far more sensible alternative: grant the
 agents all permissions to do anything whatsoever they want to do:
 
-    claude --dangerously-skip-permissions codex
-    --dangerously-bypass-approvals-and-sandbox
+    claude --dangerously-skip-permissions
+    codex --dangerously-bypass-approvals-and-sandbox
 
 I thought it goes without saying that with agents off the leash in this way,
 they need to be contained in a restricted environment:
