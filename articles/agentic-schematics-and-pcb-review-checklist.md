@@ -4,10 +4,21 @@ author: Jakob Kastelic
 date: 13 Jul 2026
 topic: Agents
 description: >
+   A comprehensive checklist for automated schematic and PCB review, covering
+   connectivity, power, components, signal integrity, layout, and
+   manufacturability.
 ---
 
 ![](../images/mp.jpg)
 
+Automated schematic and PCB review can catch subtle design errors long before
+they become expensive prototype failures. These checks examine connectivity,
+power distribution, component ratings, datasheet compliance, signal integrity,
+controlled impedance, layout, manufacturability, and documentation. They are
+intended to complement ERC, DRC, simulation, and experienced engineering review
+by systematically identifying inconsistencies, missing protections, incorrect
+footprints, routing problems, and other issues that conventional design tools
+may overlook.
 
 ### 1. Schematic: connectivity and correctness
 
