@@ -291,3 +291,7 @@ Digital:
 *Rainbow at Mountain View Shoreline Amphitheater*
 (JK, 21 Apr 2026)
 ![](../images/rb.jpg)
+
+*Cows Below Mission Peak*
+(JK, 10 Jul 2026)
+![](../images/mp.jpg)

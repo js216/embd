@@ -46,14 +46,14 @@ open-source development toolchain.
 
 I'm connecting the QSPI signals to the J3 jumper of the iCEstick as follows:
 
-| `QUADSPI_` | CN8 pin | J3 pin | FPGA signal | FPGA pin |
-|------------|---------|--------|-------------| ---------|
-| `BK1_NCS`  | 5       | 10     | `PIO2_10`   | 44       |
-| `CLK`      | 26      | 9      | `PIO2_11`   | 45       |
-| `BK1_IO0`  | 19      | 8      | `PIO2_12`   | 47       |
-| `BK1_IO1`  | 33      | 7      | `PIO2_13`   | 48       |
-| `BK1_IO2`  | 3       | 6      | `PIO2_14`   | 56       |
-| `BK1_IO3`  | 23      | 5      | `PIO2_15`   | 60       |
+| `QUADSPI_` | CN8 pin | J3 pin | FPGA pin |
+|------------|---------|--------|----------|
+| `CLK`      | 26      | 6      | 56       |
+| `BK1_NCS`  | 5       | 9      | 45       |
+| `BK1_IO0`  | 19      | 8      | 47       |
+| `BK1_IO1`  | 33      | 5      | 60       |
+| `BK1_IO2`  | 3       | 10     | 44       |
+| `BK1_IO3`  | 23      | 7      | 48       |
 
 Running a simple demo bitstream, the FPGA can easily printout over UART which
 pins are high and which are low as we scan the GPIO pins from the STM32.
