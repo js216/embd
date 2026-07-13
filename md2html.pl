@@ -173,16 +173,18 @@ sub render_lists {
                     $marker = $1; $spacing = $2; @current_item = ($3); $i++;
                     $blank_after_list = 0;
                 } elsif ($lines[$i] =~ /^\s*$/) {
-                    # Only consume blank line if next non-blank line is indented
+                    # Consume blank line if next non-blank line is indented continuation or another list item
                     my $next = $i + 1;
                     while ($next < @lines && $lines[$next] =~ /^\s*$/) { $next++; }
-                    if ($next < @lines && $lines[$next] =~ /^(\s+)/ && length($1) > $indent_len) {
+                    my $is_continuation = $next < @lines && $lines[$next] =~ /^(\s+)/ && length($1) > $indent_len;
+                    my $is_next_item = $next < @lines && $lines[$next] =~ /^\Q$indent_str\E(?:\d+\.|[*+-])\s/;
+                    if ($is_continuation || $is_next_item) {
                         push @current_item, map { "" } ($i .. $next - 1); $i = $next;
                         $blank_after_list = 0;
-                    } else { 
+                    } else {
                         # Count blank lines after list ends
                         $blank_after_list = $next - $i;
-                        last; 
+                        last;
                     }
                 } elsif ($lines[$i] =~ /^(\s+)/ && length($1) > $indent_len) {
                     my $l = $lines[$i];
