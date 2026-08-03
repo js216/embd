@@ -295,3 +295,11 @@ Digital:
 *Below Mission Peak*
 (JK, 10 Jul 2026)
 ![](../images/mp.jpg)
+
+*Clouds Under Mission Peak*
+(JK, 10 Jul 2026)
+![](../images/cl.jpg)
+
+*Mission Dolores Park*
+(JK, 2 Aug 2026)
+![](../images/sf.jpg)
