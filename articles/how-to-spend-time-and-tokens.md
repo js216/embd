@@ -1,5 +1,5 @@
 ---
-title: How to Spent Time and Tokens
+title: How to Spend Time and Tokens
 author: Jakob Kastelic
 date: 2 May 2026
 topic: Agents
