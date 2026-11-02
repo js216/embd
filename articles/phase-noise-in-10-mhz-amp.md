@@ -1,17 +1,20 @@
 ---
-title: Designing a Low Phase Noise Amplifier for 10 MHz Signals
+title: Phase Noise in a 10 MHz Amplifier
 author: Jakob Kastelic
-date:
+date: 5 Nov 2026
 topic: Electronics
 description: >
+   Design and analysis of a low-noise 10 MHz multi-output amplifier, covering
+   circuit topology, LTspice simulation, channel crosstalk, phase pulling,
+   additive phase noise, thermal effects, and microphonics.
 ---
 
 ![](../images/cl.jpg)
 
-These are the steps I've taken to create a circuit that takes a 10 MHz sine-wave
-input and outputs several copies of the same, with a minimum of added phase
-noise or distortion. First, select a topology and simulate it. Then, build the
-circuit and measure the key specs: noise, crosstalk, distortion.
+These are some notes I've taken when creating a circuit that takes a 10 MHz
+sine-wave input and outputs several copies of the same, with a minimum of added
+phase noise or distortion. First, select a topology and simulate it. Then, build
+the circuit and measure the key specs: noise, crosstalk, distortion.
 
 ### Basic Idea
 

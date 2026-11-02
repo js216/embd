@@ -4,6 +4,7 @@ author: Jakob Kastelic
 date: 4 Nov 2026
 topic: Agents
 description: >
+   Different banners coming out of the same AI prompt.
 ---
 
 ![](../images/pa.jpg)
