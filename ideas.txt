@@ -156,3 +156,5 @@
     - being able to refer to things after I had forgotten (doesn't happen with
       closed-source documentation since it's not "beginner friendly", and after 6
       months away from a given project I automatically reset to being a beginner)
+- Schiff moment derivation from my thesis
+- collect my notes about Ronald Fairbairn

@@ -1,9 +1,12 @@
 ---
 title: Seeing God and the Pretentiousness of Purity
 author: Jakob Kastelic
-date: 
+date: 6 Nov 2026
 topic: Theology
 description: >
+   Examining John Cassian's claim that purity of heart and freedom from worldly
+   affections permit the contemplation of God. Does being dead to the world mean
+   being able to see God, and does Cassian really imply that it does?
 ---
 
 ![](../images/jp.jpg)
@@ -36,25 +39,3 @@ Since I'm not at this point interested in studying perpetuity, i.e., eternity or
 afterlife, so let's pass on to the other option: Cassian *did* mean the
 "reversed claim": purify your heart and you'll be able to see God now and
 forever.
-
-To get any further, we need to clarify two phrases which, to my mind, have lost
-all their meaning through overuse: carnal affections; being dead to the world.
-
-### What's a Carnal Affection?
-
-Over the centuries, claiming that "carnal affections are bad" acquired the
-status of a near truism in a certain vein of writings. A good starting point
-would be the Rom 8:6--8:
-
-> For to be carnally minded is death; but to be spiritually minded is life and
-> peace. Because the carnal mind is enmity against God: for it is not subject to
-> the law of God, neither indeed can be. So then they that are in the flesh
-> cannot please God. [KJV]
-
-
-
-### Dead or Alive to the World
-
-this vein of reasoning as seriously misguided. The point at which we leave
-behind the flesh is the point at which we die, anything else is pretentiousness.
-
