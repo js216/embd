@@ -1,7 +1,7 @@
 ---
 title: The Power of Unconscious Intentions
 author: Jakob Kastelic
-date:
+date: 2 Nov 2026
 topic: Incoherent Thoughts
 description: >
    Your conscious mind is limited, but your unconscious can carry vast amounts
