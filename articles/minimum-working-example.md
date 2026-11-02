@@ -1,7 +1,7 @@
 ---
 title: The Minimum Working Example
 author: Jakob Kastelic
-date:
+date: 6 Nov 2026
 topic: Incoherent Thoughts
 description: >
    Keep projects as simple as possible. Stop inventing new rules and build only
