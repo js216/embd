@@ -303,3 +303,11 @@ Digital:
 *Mission Dolores Park*
 (JK, 2 Aug 2026)
 ![](../images/sf.jpg)
+
+*Rain in Spyglass-Barton's Bluff*
+(JK, 1 Oct 2026)
+![](../images/f.jpg)
+
+*West Elm Cozy Swivel Chair, Austin, Texas*
+(JK, 25 Oct 2026)
+![](../images/co.jpg)
