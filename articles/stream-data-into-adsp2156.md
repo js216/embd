@@ -1,9 +1,12 @@
 ---
-title: Stream Data In/Out of ADSP-2156
+title: Stream Data Into ADSP-2156
 author: Jakob Kastelic
-date:
+date: 3 Nov 2026
 topic: DSP
 description: >
+   Explore high-speed data streaming into the Analog Devices ADSP-21569 SHARC
+   DSP. Compare QSPI, SPI, and SPORT interfaces, measure transfer rates, and
+   investigate FT4222 quirks, DMA, and loopback configurations.
 ---
 
 ![](../images/lmp.jpg)
@@ -170,9 +173,9 @@ respectively.
 | 20      | `PB_10`    | `SPI1_SEL2*`  | Fn 1        |
 
 A simple code example can be
-se://www.st.com/en/evaluation-tools/stm32mp135f-dk.htmlt up that verifies which pin is connected against
-which pin. This makes debugging of the following "external loopback" examples
-much easier.
+se://www.st.com/en/evaluation-tools/stm32mp135f-dk.htmlt up that verifies which
+pin is connected against which pin. This makes debugging of the following
+"external loopback" examples much easier.
 
 ### SPI0 into SPI1 loopback
 
