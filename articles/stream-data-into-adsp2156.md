@@ -171,8 +171,3 @@ respectively.
 | 16      | `PA_12`    | `SPI1_MOSI`   | Fn 1        |
 | 18      | `PA_13`    | `SPI1_SEL1*`  | Fn 1        |
 | 20      | `PB_10`    | `SPI1_SEL2*`  | Fn 1        |
-
-A simple code example can be
-se://www.st.com/en/evaluation-tools/stm32mp135f-dk.htmlt up that verifies which
-pin is connected against which pin. This makes debugging of the following
-"external loopback" examples much easier.
