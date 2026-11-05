@@ -1,7 +1,7 @@
 ---
 title: Seeing God and the Pretentiousness of Purity
 author: Jakob Kastelic
-date: 6 Nov 2026
+date: 5 Nov 2026
 topic: Theology
 description: >
    Examining John Cassian's claim that purity of heart and freedom from worldly
