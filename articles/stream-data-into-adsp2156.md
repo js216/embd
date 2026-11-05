@@ -2,6 +2,7 @@
 title: Stream Data Into ADSP-2156
 author: Jakob Kastelic
 date: 3 Nov 2026
+modified: 5 Nov 2026
 topic: DSP
 description: >
    Explore high-speed data streaming into the Analog Devices ADSP-21569 SHARC
@@ -115,10 +116,9 @@ while the master supports all three bit widths, both data directions.
 
 ### GPIO loopback
 
-Some of the tests in the following sections will require wiring SPI and SPORT
-ports between each other as "external loopback". To verify wiring continuity, it
-is helpful to set up a GPIO example code that verifies which pins are connected
-to which pins.
+Some of the tests in the future will require wiring SPI and SPORT ports between
+each other as "external loopback". To verify wiring continuity, it is helpful to
+set up a GPIO example code that verifies which pins are connected to which pins.
 
 On the EZLITE board, connector P13 breaks out the DAI pins that are used for the
 SPORT interface. Note that the pins' presence on the board does not mean they
@@ -176,41 +176,3 @@ A simple code example can be
 se://www.st.com/en/evaluation-tools/stm32mp135f-dk.htmlt up that verifies which
 pin is connected against which pin. This makes debugging of the following
 "external loopback" examples much easier.
-
-### SPI0 into SPI1 loopback
-
-### SPORT internal loopback
-
-### SPORT external loopback
-
-┌───────────────────────────┬─────────────────────────┬─────────┐
-│       SPORT4 signal       │ default DAI1 pin buffer │ P13 pin │
-├───────────────────────────┼─────────────────────────┼─────────┤
-│ SPT4_AD0  (TX data)       │ DAI1_PB01               │ 2       │
-├───────────────────────────┼─────────────────────────┼─────────┤
-│ SPT4_ACLK (TX clock)      │ DAI1_PB03               │ 6       │
-├───────────────────────────┼─────────────────────────┼─────────┤
-│ SPT4_AFS  (TX frame sync) │ DAI1_PB04               │ 8       │
-├───────────────────────────┼─────────────────────────┼─────────┤
-│ SPT4_BD0  (RX data)       │ DAI1_PB05               │ 10      │
-├───────────────────────────┼─────────────────────────┼─────────┤
-│ SPT4_BCLK (RX clock)      │ DAI1_PB07               │ 14      │
-├───────────────────────────┼─────────────────────────┼─────────┤
-│ SPT4_BFS  (RX frame sync) │ DAI1_PB08               │ 16      │
-└───────────────────────────┴─────────────────────────┴─────────┘
-
-Jumpers on P13 (three wires)
-
-┌────────┬────────────────────┬──────────────────────────────────────┐
-│ Jumper │     From → To      │               Carries                │
-├────────┼────────────────────┼──────────────────────────────────────┤
-│ 1      │ P13 pin 2 ↔ pin 10 │ serial data (SPT4_AD0 → SPT4_BD0)    │
-├────────┼────────────────────┼──────────────────────────────────────┤
-│ 2      │ P13 pin 6 ↔ pin 14 │ serial clock (SPT4_ACLK → SPT4_BCLK) │
-├────────┼────────────────────┼──────────────────────────────────────┤
-│ 3      │ P13 pin 8 ↔ pin 16 │ frame sync (SPT4_AFS → SPT4_BFS)     │
-└────────┴────────────────────┴──────────────────────────────────────┘
-
-### SPORT with DMA (internal)
-
-### SPORT with DMA (external)

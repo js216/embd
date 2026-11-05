@@ -1,8 +1,8 @@
 ---
-title: Lightweight, Scriptable, and Crazy Fast: Using the Classic Unix Spreadsheet (sc)
+title: Using the Classic Unix Spreadsheet (sc)
 author: Jakob Kastelic
 date:
-topic: Tools & Utilities
+topic: Unix
 description: >
 ---
 
