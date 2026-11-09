@@ -86,7 +86,7 @@ Arcturus Photovoltain Cells:
 (Electronics Magazine, April 1930)
 [Source](https://www.worldradiohistory.com/Electronics%20_Master_Page.htm)
 [Link](https://www.worldradiohistory.com/Archive-Electronics/30s/Electronics-1930-04-Original.pdf)
-![](../images/rc.jpg)
+![](../images/arc.jpg)
 
 Yaxley Mfg. Co.:
 *For the Most Exacting Needs of Precision Manufacturing*
@@ -288,10 +288,6 @@ Digital:
 (JK, 18 Apr 2026)
 ![](../images/lmp.jpg)
 
-*Rainbow at Mountain View Shoreline Amphitheater*
-(JK, 21 Apr 2026)
-![](../images/rb.jpg)
-
 *Below Mission Peak*
 (JK, 10 Jul 2026)
 ![](../images/mp.jpg)
@@ -308,6 +304,43 @@ Digital:
 (JK, 1 Oct 2026)
 ![](../images/f.jpg)
 
+*Curry leaf plant in bloom*
+(JK, 5 Apr 2026)
+![](../images/cur.jpg)
+
+Ralph Unden:
+*Double convex yunzi stones and woven baskets for holding them placed on a Go
+board.*
+(2008)
+[Source](https://commons.wikimedia.org/wiki/File:Yunzi_double_convex.jpg)
+[Link](https://upload.wikimedia.org/wikipedia/commons/b/b3/Yunzi_double_convex.jpg)
+![](../images/go.jpg)
+
+*Hello World on the STM32MP135F-DK display*
+(JK, 9 Mar 2026)
+![](../images/hw.jpg)
+
+*Lighthouse Point, Santa Cruz*
+(JK, 2 May 2026)
+![](../images/scr.jpg)
+
+*Red Rocks of Sedona, Arizona*
+(JK, 16 Feb 2026)
+![](../images/sed.jpg)
+
+Tektronix:
+*TekExpress Automotive Ethernet 100BASE-T1 and 1000BASE-T1 Signal Separation
+and PAM3 Analysis*
+(2020)
+[Link](https://download.tek.com/datasheet/PAM3-Datasheet.pdf)
+![](../images/si.jpg)
+
 *West Elm Cozy Swivel Chair, Austin, Texas*
 (JK, 25 Oct 2026)
 ![](../images/co.jpg)
+
+<hr>
+
+*Rainbow at Mountain View Shoreline Amphitheater*
+(JK, 21 Apr 2026)
+![](../images/rb.jpg)
