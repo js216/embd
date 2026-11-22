@@ -1,4 +1,3 @@
-- algorithms from alg.nw
 - UVM/VMM applied to test & measurement instruments
 - describe reg.c
 - efficient use of multiple desktops: dwm/tmux vs Windows slowness
@@ -14,9 +13,6 @@
 - collect quotes for about page:
    - Knuth: email is for people who stay on top
    - Locke: underworker in knowledge ...
-- how I use the sc spreadsheet
-   - Quote from Raymond: SC interface is not "discoverable", but that's fine if
-     you use it often and know how to get started
 - Neuroscience of focus
    - The Problem
    - The Science
@@ -68,19 +64,12 @@
   accidental complexity by reducing coupling between layers/modules/parts of the
   program
 - write about how I set up the Milk-V Duo to measure air quality
-- how I use the classic unix sc spreadsheet program
 - type up the rest of the little black book from p. 102 onwards
    - incoherent thoughts
    - regular journal entries too
 - Best Books
    - Software tools
    - other 5 star books from Goodreads
-- Small Programs
-   - timetree as statement of purpose and focus
-   - rand.c
-      - give it a better name
-      - put it on Github
-      - talk about SMART disk utilities and long uptime etc
 - why are you so afraid of AI scrapers? isn't that the best way to serve the
   most people? let go of your monetization schemes, they're after all what made
   the web so awful in 2010-2020s.
@@ -130,7 +119,6 @@
   can never leave it or be reused elsewhere (maybe exception: somel libraries
   may have been created in some IDE-like project?)
 - The App is a Graph (run.rs)
-- projects page: timetree, continuo trainer, CG792, ...
 - on watches: reliable, accurate, legible
 - what's good for a company to sell (shiny, new features all the time) is not
   good for the customer to buy (who wants a stable UI, no bugs, no breaking
@@ -142,7 +130,8 @@
   while just "doing nothing" you get clarity and see what really needs to be
   done
 - Let's define lightweight, bloat-free
-- make param_gui public under js216 and write: LVGL with a single source of truth
+- make param_gui public under js216 and write: LVGL with a single source of
+  truth
 - How to use a smartphone without getting distracted
 - advantes of open source
     - anti-Gumption Trap
@@ -154,7 +143,15 @@
     - self-contained building blocks
     - more systematic reasoning
     - being able to refer to things after I had forgotten (doesn't happen with
-      closed-source documentation since it's not "beginner friendly", and after 6
-      months away from a given project I automatically reset to being a beginner)
-- Schiff moment derivation from my thesis
-- collect my notes about Ronald Fairbairn
+      closed-source documentation since it's not "beginner friendly", and after
+      6 months away from a given project I automatically reset to being a
+      beginner)
+- Poem and the Lease: code can be clean and beautifully written and even
+  profound, or it can be hacked/vibecoded/thrown together in a rush and if it
+  works it works; either is good, just good for a different purpose. Not all
+  writing must be poetry, and not all code must be lucid.
+- Meal Planning with Agents
+- Therapy (or Psychoanalysis) Agent
+- nine-criteria BPD theory (11feb23)
+- how to make a compiler
+- CAD Done Right
