@@ -339,8 +339,8 @@ and PAM3 Analysis*
 (JK, 25 Oct 2026)
 ![](../images/co.jpg)
 
-<hr>
-
 *Rainbow at Mountain View Shoreline Amphitheater*
 (JK, 21 Apr 2026)
 ![](../images/rb.jpg)
+
+<hr>
