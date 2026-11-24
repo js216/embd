@@ -86,5 +86,5 @@ from the "simple" world of pre-agentic code. The best consolation we have
 available is that handwritten code is still possible, even if not practical for
 realistic "useful" projects---it makes for a wonderful hobby.
 
-[^br] P. Brinch Hansen 1982. Programming a Personal Computer. Prentice-Hall,
-Englewood Cliffs, NJ.
+[^br]: P. Brinch Hansen 1982. Programming a Personal Computer. Prentice-Hall,
+    Englewood Cliffs, NJ.
